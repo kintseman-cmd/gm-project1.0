@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <title>Комерційна Пропозиція - General Machines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Корпоративна палітра */
+            --bg-body: #F5F7FA;
+            --bg-paper: #FFFFFF;
+            --text-main: #1A1A1A;
+            --text-secondary: #6B7280;
+            --accent: #F4C430; /* Жовтий General Machines */
+            --border: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .generator {
+            max-width: 1100px;
+            margin: 0 auto 20px auto;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .generator h2 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .generator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 16px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: rgba(244, 196, 48, 0.7);
+            box-shadow: 0 0 0 3px rgba(244, 196, 48, 0.18);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .page {
+            max-width: 210mm; /* Формат А4 */
+            margin: 0 auto;
+            background: var(--bg-paper);
+            padding: 60px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 60px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 30px;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .logo-placeholder {
+            /* Стилі для логотипу */
+            max-width: 200px;
+            height: auto;
+            display: block;
+        }
+
+        .company-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .meta-info {
+            text-align: right;
+        }
+
+        .date {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            margin-bottom: 50px;
+        }
+
+        .client-name {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+        }
+
+        .highlight {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: -2px;
+            right: -2px;
+            height: 12px;
+            background: var(--accent);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .sub-hero {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 80%;
+        }
+
+        /* GRID SECTIONS */
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .feature-item h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-item p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* TECH SPECS WITH IMAGE */
+        .specs-layout {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 60px;
+            align-items: start;
+        }
+
+        .specs-content {
+            flex: 1;
+        }
+
+        .specs-image {
+            flex: 1;
+            background: #f0f0f0;
+            height: 300px; /* Висота під фото */
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .specs-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        ul.minimal-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        ul.minimal-list li {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        ul.minimal-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        /* PRICING */
+        .pricing-section {
+            background: #FAFAFA;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .product-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .price-block {
+            text-align: right;
+        }
+
+        .price-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: block;
+        }
+
+        .price-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        /* TERMS FOOTER */
+        .terms-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 30px;
+            margin-bottom: 40px;
+        }
+
+        .term-item strong {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .term-item span {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 60px;
+        }
+
+        footer a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* PRINT SETTINGS */
+        @media print {
+            body { padding: 0; background: #fff; }
+            .page { box-shadow: none; padding: 40px; max-width: 100%; }
+            .generator { display: none !important; }
+        }
+
+        @media (max-width: 768px) {
+            .page { padding: 20px; }
+            body { padding: 20px 12px; }
+            .generator { padding: 14px; }
+            .generator-grid { grid-template-columns: 1fr; }
+            header, .features-grid, .specs-layout, .pricing-section, .terms-grid {
+                flex-direction: column;
+                grid-template-columns: 1fr;
+                text-align: left;
+                align-items: flex-start;
+            }
+            .meta-info { text-align: left; margin-top: 20px; }
+            .price-block { text-align: left; margin-top: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="generator" id="generator">
+    <h2>Генератор комерційної пропозиції</h2>
+    <div class="generator-grid">
+        <div class="field">
+            <label for="clientFullName">ПІБ (для кого КП)</label>
+            <input id="clientFullName" type="text" placeholder="Напр.: Олег Володимирович" autocomplete="name">
+        </div>
+
+        <div class="field">
+            <label for="clientTractor">Трактор клієнта</label>
+            <input id="clientTractor" type="text" placeholder="Напр.: МТЗ 1025" autocomplete="off">
+        </div>
+
+        <div class="field">
+            <label for="productSelect">Агрегат (зі списку)</label>
+            <select id="productSelect">
+                <option value="">Оберіть агрегат…</option>
+            </select>
+            <div class="hint">Після вибору можна відредагувати назву та ціну.</div>
+        </div>
+
+        <div class="field">
+            <label for="productName">Назва агрегату (редагується)</label>
+            <input id="productName" type="text" placeholder="Назва агрегату">
+        </div>
+
+        <div class="field">
+            <label for="priceVat">Ціна з ПДВ (грн)</label>
+            <input id="priceVat" type="number" inputmode="numeric" min="0" step="1" placeholder="Напр.: 330000">
+        </div>
+
+        <div class="field">
+            <label for="priceNoVat">Ціна без ПДВ (грн)</label>
+            <input id="priceNoVat" type="number" inputmode="numeric" min="0" step="1" placeholder="Напр.: 310000">
+        </div>
+
+        <div class="field">
+            <label for="managerPhone">Телефон менеджера</label>
+            <input id="managerPhone" type="tel" placeholder="+38 067 010 57 75" autocomplete="tel">
+        </div>
+
+        <div class="field">
+            <label for="managerEmail">Email менеджера</label>
+            <input id="managerEmail" type="email" placeholder="manager@email.com" autocomplete="email">
+        </div>
+
+        <div class="actions">
+            <button class="btn" type="button" id="updatePreview">Оновити</button>
+            <button class="btn btn-primary" type="button" id="generatePdf">Згенерувати PDF</button>
+        </div>
+    </div>
+    <div class="hint" id="status" aria-live="polite"></div>
+</div>
+
+<div class="page">
+    <header>
+        <div class="brand">
+            <!-- ВАШ ЛОГОТИП ТУТ -->
+            <!-- Замініть 'frame-85-1.png' на реальний шлях до файлу, якщо він не відображається -->
+            <img src="frame-85-1.png" alt="General Machines Logo" class="logo-placeholder" onerror="this.src='https://placehold.co/200x60/transparent/1A1A1A?text=GENERAL+MACHINES';">
+            
+            <div class="company-details">
+                ТОВ «АГРОКУБ» | Код ЄДРПОУ: 41408616<br>
+                Запорізька обл., вул. Лесі Українки, 45/112
+            </div>
+        </div>
+        <div class="meta-info">
+            <div class="date" id="docDate">19 Листопада 2025</div>
+            <div style="font-size: 14px; margin-top: 5px;">
+                <a id="managerPhoneLink" href="tel:+380670105775" style="color:var(--text-main); text-decoration:none;">+38 067 010 57 75</a><br>
+                general-machines.ua
+            </div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <span class="client-name" id="docClient">Шановний Олег Володимирович</span>
+        <h1>Рішення для ідеальної<br><span class="highlight">передпосівної підготовки</span></h1>
+        <p class="sub-hero" id="docSubHero">Культиватор КПС 4.0 — продуктивність 4 га/год, один прохід, без забивання.</p>
+    </section>
+
+    <!-- PROBLEMS & SOLUTIONS -->
+    <div class="section-title">Переваги в роботі</div>
+    <div class="features-grid">
+        <div class="feature-item">
+            <h3>🚫 Без забивання</h3>
+            <p>Колеса винесені за раму. Агрегат працює без пауз навіть на зарослих ділянках, рослинні рештки не налипають.</p>
+        </div>
+        <div class="feature-item">
+            <h3>🚜 Висока прохідність</h3>
+            <p>Працює в один прохід навіть на важких ґрунтах. Економія пального та зниження навантаження на трактор.</p>
+        </div>
+        <div class="feature-item">
+            <h3>📏 Ідеальна підошва</h3>
+            <p>Конструкція забезпечує точне копіювання ґрунту без хвиль і провалів для якісного посіву.</p>
+        </div>
+        <div class="feature-item">
+            <h3>🔧 Швидкий сервіс</h3>
+            <p>Всі основні елементи знімні, опорні колеса взаємозамінні. Мінімум простоїв у сезон.</p>
+        </div>
+    </div>
+
+    <!-- TECH SPECS -->
+    <div class="section-title">Технічні характеристики</div>
+    <div class="specs-layout">
+        <div class="specs-content">
+            <ul class="minimal-list">
+                <li><strong>Робочі органи:</strong> 18 стійок у 3 ряди (шахматний порядок). Лапа 280 мм для повного перекриття.</li>
+                <li><strong>Стійки на вибір:</strong> S-подібні (Bellota) або DV-стійки 30x30 (Bianchi).</li>
+                <li><strong>Рама:</strong> Профіль 80x80x5 мм. Вага 1200 кг. Міцність і довговічність.</li>
+                <li><strong>Котки (320 мм):</strong> Безосьова система (anti-clog). Спіральна полоса або труба.</li>
+                <li><strong>Виробництво:</strong> Повний цикл (лазер, плазма, ЧПУ). Імпортна гідравліка.</li>
+            </ul>
+        </div>
+        <div class="specs-image">
+            <!-- МІСЦЕ ДЛЯ ФОТО КУЛЬТИВАТОРА -->
+            <img src="https://placehold.co/600x400/EEE/333?text=KPS+4.0+Cultivator" alt="Культиватор КПС 4.0">
+        </div>
+    </div>
+
+    <!-- PRICING -->
+    <div class="pricing-section">
+        <div class="product-info">
+            <div class="product-name" id="docProductName">Культиватор КПС 4.0</div>
+            <div style="font-size: 13px; color: var(--text-secondary);" id="docProductConfig">Повна комплектація під МТЗ 1025</div>
+        </div>
+        <div class="price-block">
+            <span class="price-label">Ціна з ПДВ</span>
+            <span class="price-value" id="docPriceVat">330 000 грн</span>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;" id="docPriceNoVat">310 000 грн без ПДВ</div>
+        </div>
+    </div>
+
+    <!-- TERMS -->
+    <div class="terms-grid">
+        <div class="term-item">
+            <strong>Терміни</strong>
+            <span>До 14 днів</span>
+        </div>
+        <div class="term-item">
+            <strong>Оплата</strong>
+            <span>Будь-яка форма</span>
+        </div>
+        <div class="term-item">
+            <strong>Компенсація</strong>
+            <span>Державна 25%</span>
+        </div>
+        <div class="term-item">
+            <strong>Гарантія</strong>
+            <span>12 місяців</span>
+        </div>
+    </div>
+
+    <footer>
+        <p><span id="docManagerEmail">agrokube.manager4@gmail.com</span> &nbsp;|&nbsp; <a href="#">general-machines.ua</a></p>
+    </footer>
+</div>
+
+<!-- PDF generation deps (render DOM to image to keep Cyrillic/fonts) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+    // Каталог агрегатів (взято з прайсу calc.html). Після вибору — назву/ціну можна змінити.
+    // Використовуємо price1 (без ПДВ) / price2 (з ПДВ), як у прайсі.
+    const catalogData = [
+        {
+            category: "Куни",
+            items: [
+                { name: "GENERAL-X (без ковша)", price1: 165000, price2: 190000 },
+                { name: "GENERAL-X (з ковшем в комплекті)", price1: 185000, price2: 210000 },
+                { name: "GENERAL-XL (без ковша)", price1: 185000, price2: 210000 },
+                { name: "GENERAL-XL (з ковшем в комплекті)", price1: 205000, price2: 230000 },
+                { name: "GENERAL-EURO (без ковша)", price1: 185000, price2: 210000 },
+                { name: "GENERAL-EURO (з ковшем комплекті)", price1: 205000, price2: 230000 },
+                { name: "Джойстик 2Р-40", price1: 10000, price2: 12000 },
+                { name: "Джойстик 2Р-80", price1: 15000, price2: 17000 },
+                { name: "Комплект третьої секції", price1: 5000, price2: 6000 }
+            ]
+        },
+        {
+            category: "Навісне до кунів",
+            items: [
+                { name: "Ківш STANDART 2 м. 1.1 куб", price1: 30000, price2: 35000 },
+                { name: "Ківш STANDART 2.2м 1.3 куб.", price1: 32000, price2: 37000 },
+                { name: "Ківш збільшений 2.4 м на 1.5 куб", price1: 335000, price2: 40000 },
+                { name: "Ківш будівельний 1.6 м.", price1: 30000, price2: 35000 },
+                { name: "Ківш ЩЕЛЕПНИЙ 1.8 м.", price1: 60000, price2: 70000 },
+                { name: "Ківш ЩЕЛЕПНИЙ 2 м.", price1: 65000, price2: 75000 },
+                { name: "Ківш із ЗАХОПЛЕННЯМ", price1: 65000, price2: 75000 },
+                { name: "Ківш для БЕГІВ", price1: 95000, price2: 105000 },
+                { name: "Ківш для БЕГІВ (автоматичний)", price1: 100000, price2: 110000 },
+                { name: "Гак для бегів", price1: 25000, price2: 30000 },
+                { name: "Вила для піддонів", price1: 25000, price2: 30000 },
+                { name: "Вила для ТЮКІВ", price1: 25000, price2: 30000 },
+                { name: "Вила - Гак (3 в 1)", price1: 35000, price2: 40000 },
+                { name: "Вила - Гак (2 в 1)", price1: 33000, price2: 36000 },
+                { name: "Вила сінажні", price1: 60000, price2: 70000 },
+                { name: "Захват для ТЮКІВ", price1: 60000, price2: 70000 },
+                { name: "Захват для КОЛОД", price1: 40000, price2: 45000 },
+                { name: "Корчувач", price1: 55000, price2: 66000 }
+            ]
+        },
+        {
+            category: "Культиватори",
+            items: [
+                { name: "Культиватор навісний КНС 2.6", price1: 150000, price2: 165000 },
+                { name: "Культиватор навісний КНС 3.0", price1: 165000, price2: 180000 },
+                { name: "Культиватор навісний КНС 3.5", price1: 175000, price2: 190000 },
+                { name: "Культиватор навісний КНС 4.0", price1: 185000, price2: 200000 },
+                { name: "Причіпний пристрій до КНС 4.0", price1: 125000, price2: 130000 },
+                { name: "БПП балка причіпного пристрою", price1: 20000, price2: 23000 },
+                { name: "Культиватор причіпний КПС 4.0", price1: 310000, price2: 330000 },
+                { name: "Культиватор причіпний КПРС 5.0", price1: 430000, price2: 480000 },
+                { name: "Культиватор причіпний КПРС 6.0", price1: 530000, price2: 580000 }
+            ]
+        },
+        {
+            category: "Лущильники",
+            items: [
+                { name: "Лущильник 2.6 м.", price1: 260000, price2: 270000 },
+                { name: "Лущильник 2.6 м. з тандемним котком", price1: 300000, price2: 310000 },
+                { name: "Лущильник 2.6 м. (причіпний)", price1: 420000, price2: 435000 },
+                { name: "Лущильник 3.2 м.", price1: 350000, price2: 360000 },
+                { name: "Лущильник 3.2 м. з тандемним котком", price1: 415000, price2: 425000 },
+                { name: "Лущильник 3.2 м. (причіпний)", price1: 530000, price2: 550000 },
+                { name: "Лущильник 4.2 м. (причіпний)", price1: 750000, price2: 780000 },
+                { name: "Лущильник 5.2 м. (причіпний)", price1: 910000, price2: 960000 },
+                { name: "Причіпний пристрій до ЛН без катків", price1: 130000, price2: 130000 },
+                { name: "Причіпний пристрій до ЛН2.6 з подвійними катками", price1: 190000, price2: 210000 },
+                { name: "Причіпний пристрій до ЛН2.6 з одинарними катками", price1: 165000, price2: 190000 },
+                { name: "Причіпний пристрій до ЛН 3.2 з одинарними катками", price1: 175000, price2: 200000 },
+                { name: "Причіпний пристрій до ЛН3.2 з подвійними катками", price1: 215000, price2: 235000 },
+                { name: "Тандемний (подвійні) котки на ЛН", price1: 65000, price2: 65000 },
+                { name: "Тандемний коток замість одинарного", price1: 40000, price2: 40000 }
+            ]
+        },
+        {
+            category: "Борони пружинні",
+            items: [
+                { name: "Борона пружинна 6 м. (без опорних коліс)", price1: 130000, price2: 140000 },
+                { name: "Борона пружинна 6 м з колесами (7-ка/10-ка)", price1: 130000, price2: 140000 },
+                { name: "Борона пружинна 9 м. (без опорних коліс)", price1: 150000, price2: 160000 },
+                { name: "Борона пружинна 9 м. + опорні колеса", price1: 160000, price2: 175000 },
+                { name: "Колеса опорні", price1: 35000, price2: 40000 },
+                { name: "Кріплення \"євробалка\" до пружинної борони", price1: 5500, price2: 7000 },
+                { name: "Кріплення \"трьохточка\" до пружинної борони", price1: 8000, price2: 10000 },
+                { name: "Комплект пружин (7-ка/10ка)", price1: 40000, price2: 45000 },
+                { name: "Комплект пружин на трубі (7-ка/10ка)", price1: 65000, price2: 75000 },
+                { name: "Універсальна пружинна борона 9 м", price1: 250000, price2: 270000 }
+            ]
+        },
+        {
+            category: "КРНи",
+            items: [
+                { name: "КРН 4.2 навісний (міжрядний розкладний)", price1: 290000, price2: 320000 },
+                { name: "КРН 5.6 навісний РОЗКЛАДНА рама (міжрядний)", price1: 320000, price2: 360000 },
+                { name: "КРН 5.6 навісний СУЦІЛЬНА рама (міжрядний)", price1: 250000, price2: 280000 },
+                { name: "КРН 5.6 навісний розкладний з БОЧКОЮ 500л (Під МТЗ, бочка спереду)", price1: 455000, price2: 510000 },
+                { name: "КРН 5.6 навісний розкладний з БОЧКОЮ 500л (бочка на самому КРН)", price1: 420000, price2: 510000 },
+                { name: "КРН 5.6 навісний суцільна рама з БОЧКОЮ 500л", price1: 360000, price2: 395000 },
+                { name: "Захисний щиток рядка", price1: 31000, price2: 35000 },
+                { name: "Бочка для рідких добрив на КРН на раму", price1: 130000, price2: 145000 },
+                { name: "Бочка для рідких добнив на КРН розкладний (з переду трактора)", price1: 145000, price2: 160000 }
+            ]
+        },
+        {
+            category: "Глибокорозпушувачі",
+            items: [
+                { name: "Глибокорозпушувач 1.8 м.", price1: 350000, price2: 370000 },
+                { name: "Глибокорозпушувач 2.5 м.", price1: 400000, price2: 425000 },
+                { name: "Глибокорозпушувач 3 м. 5 лап", price1: 435000, price2: 450000 },
+                { name: "Глибокорозпушувач 3 м. 7 лап", price1: 490000, price2: 510000 }
+            ]
+        },
+        {
+            category: "Відвали",
+            items: [
+                { name: "Грейдерний відвал", price1: 60000, price2: 70000 },
+                { name: "Відвал Універсальний (Двосторонній) на СТРІЛУ", price1: 25000, price2: 60000 },
+                { name: "Відвал Універсальний (Двосторонній)", price1: 50000, price2: 60000 },
+                { name: "Відвал Універсальний (Двосторонній) гідро-поворотний", price1: 65000, price2: 75000 },
+                { name: "Відвал Універсальний (Двосторонній) гідро-поворотний EURO", price1: 70000, price2: 80000 },
+                { name: "Відвал для буртування зерна", price1: 27000, price2: 35000 }
+            ]
+        },
+        {
+            category: "Зубові борони",
+            items: [
+                { name: "Борона зубова 9 м. складна", price1: 390000, price2: 435000 }
+            ]
+        },
+        {
+            category: "Крани-маніпулятори",
+            items: [
+                { name: "Кран-маніпулятор S-1500", price1: 90000, price2: 100000 },
+                { name: "Кран-маніпулятор SL-2000", price1: 300000, price2: 340000 }
+            ]
+        },
+        {
+            category: "БОЧКА КАС 8 куб.",
+            items: [
+                { name: "Бочка для внесення добрив 8 куб.", price1: 480000, price2: 550000 }
+            ]
+        }
+    ];
+
+    function $(id) {
+        return document.getElementById(id);
+    }
+
+    function formatUAH(amount) {
+        const num = Number(amount);
+        if (!Number.isFinite(num)) return '';
+        return num.toLocaleString('uk-UA');
+    }
+
+    function normalizePhoneForTel(phone) {
+        const raw = (phone || '').trim();
+        if (!raw) return '';
+        const plus = raw.startsWith('+') ? '+' : '';
+        const digits = raw.replace(/[^0-9]/g, '');
+        return plus ? `+${digits}` : digits;
+    }
+
+    function setStatus(text) {
+        const el = $('status');
+        if (el) el.textContent = text || '';
+    }
+
+    function populateProductSelect() {
+        const select = $('productSelect');
+        if (!select) return;
+
+        for (const cat of catalogData) {
+            const group = document.createElement('optgroup');
+            group.label = cat.category;
+            for (const item of cat.items) {
+                const option = document.createElement('option');
+                option.value = JSON.stringify(item);
+                option.textContent = `${item.name} — ${formatUAH(item.price2)} грн (з ПДВ)`;
+                group.appendChild(option);
+            }
+            select.appendChild(group);
+        }
+    }
+
+    function applySelectedProductToInputs() {
+        const select = $('productSelect');
+        const value = select?.value;
+        if (!value) return;
+
+        let item;
+        try {
+            item = JSON.parse(value);
+        } catch {
+            return;
+        }
+
+        $('productName').value = item.name || '';
+        $('priceVat').value = Number.isFinite(Number(item.price2)) ? item.price2 : '';
+        $('priceNoVat').value = Number.isFinite(Number(item.price1)) ? item.price1 : '';
+    }
+
+    function updatePreview() {
+        const clientFullName = $('clientFullName').value.trim();
+        const clientTractor = $('clientTractor').value.trim();
+        const productName = $('productName').value.trim();
+        const priceVat = $('priceVat').value;
+        const priceNoVat = $('priceNoVat').value;
+        const managerPhone = $('managerPhone').value.trim();
+        const managerEmail = $('managerEmail').value.trim();
+
+        const now = new Date();
+        const dateText = now.toLocaleDateString('uk-UA', { day: '2-digit', month: 'long', year: 'numeric' });
+        $('docDate').textContent = dateText;
+
+        $('docClient').textContent = clientFullName ? `Шановний ${clientFullName}` : 'Шановний(а)';
+
+        // Мінімально оновлюємо опис, без вигаданих характеристик
+        if (productName) {
+            $('docSubHero').textContent = clientTractor
+                ? `${productName} — комплектація під ${clientTractor}.`
+                : `${productName} — комерційна пропозиція.`;
+        }
+
+        $('docProductName').textContent = productName || 'Агрегат';
+        $('docProductConfig').textContent = clientTractor ? `Повна комплектація під ${clientTractor}` : 'Повна комплектація';
+
+        const vatNum = Number(priceVat);
+        const noVatNum = Number(priceNoVat);
+        $('docPriceVat').textContent = Number.isFinite(vatNum) ? `${formatUAH(vatNum)} грн` : '— грн';
+        $('docPriceNoVat').textContent = Number.isFinite(noVatNum) ? `${formatUAH(noVatNum)} грн без ПДВ` : '— грн без ПДВ';
+
+        const tel = normalizePhoneForTel(managerPhone);
+        if (tel) {
+            $('managerPhoneLink').href = `tel:${tel}`;
+            $('managerPhoneLink').textContent = managerPhone;
+        }
+
+        $('docManagerEmail').textContent = managerEmail || '—';
+    }
+
+    function validateRequired() {
+        const required = [
+            { id: 'clientFullName', label: 'ПІБ' },
+            { id: 'clientTractor', label: 'Трактор клієнта' },
+            { id: 'productName', label: 'Назва агрегату' },
+            { id: 'priceVat', label: 'Ціна з ПДВ' },
+            { id: 'priceNoVat', label: 'Ціна без ПДВ' },
+            { id: 'managerPhone', label: 'Телефон менеджера' },
+            { id: 'managerEmail', label: 'Email менеджера' }
+        ];
+
+        const missing = [];
+        for (const field of required) {
+            const el = $(field.id);
+            const value = (el?.value || '').toString().trim();
+            if (!value) missing.push(field.label);
+        }
+
+        if (missing.length) {
+            setStatus(`Заповніть поля: ${missing.join(', ')}`);
+            return false;
+        }
+
+        setStatus('');
+        return true;
+    }
+
+    async function generatePdf() {
+        if (!validateRequired()) return;
+        updatePreview();
+
+        const pageEl = document.querySelector('.page');
+        if (!pageEl) return;
+
+        setStatus('Генерую PDF…');
+
+        const canvas = await html2canvas(pageEl, {
+            scale: Math.min(2, window.devicePixelRatio || 2),
+            useCORS: true,
+            backgroundColor: '#FFFFFF'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+            position -= pageHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        const clientSafe = $('clientFullName').value.trim().replace(/[\\/:*?"<>|]/g, '').slice(0, 40) || 'client';
+        const dateSafe = new Date().toISOString().slice(0, 10);
+        pdf.save(`KP_${clientSafe}_${dateSafe}.pdf`);
+
+        setStatus('PDF готовий.');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        populateProductSelect();
+
+        $('productSelect').addEventListener('change', () => {
+            applySelectedProductToInputs();
+            updatePreview();
+        });
+
+        $('updatePreview').addEventListener('click', updatePreview);
+        $('generatePdf').addEventListener('click', () => { generatePdf().catch(() => setStatus('Не вдалося згенерувати PDF.')); });
+
+        // Легка автопідстановка при редагуванні полів
+        ['clientFullName','clientTractor','productName','priceVat','priceNoVat','managerPhone','managerEmail'].forEach(id => {
+            const el = $(id);
+            if (!el) return;
+            el.addEventListener('input', () => {
+                // без агресивного перерендеру, але тримаємо превʼю актуальним
+                updatePreview();
+            });
+        });
+
+        updatePreview();
+    });
+</script>
+
+</body>
+</html>

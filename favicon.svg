@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>General Machines</title>
+  <defs>
+    <style>
+      .bg { fill: #F4C430; }
+      .fg { fill: #111827; font: 800 28px/1 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
+    </style>
+  </defs>
+  <circle class="bg" cx="32" cy="32" r="30" />
+  <text class="fg" x="32" y="40" text-anchor="middle">GM</text>
+</svg>
