@@ -2,12 +2,18 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#F4C430">
     <title>CRM - Авторизація та Менеджери</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        html, body { overflow-x: hidden; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
@@ -39,6 +45,7 @@
             margin: 0;
             font-size: 24px;
             color: #2c3e50;
+            font-weight: 800;
         }
 
         .nav {
@@ -62,6 +69,8 @@
             transition: background 0.3s, color 0.3s;
             display: flex;
             align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
         }
 
         .nav-link:hover, .nav-link.active {
@@ -208,22 +217,22 @@
     <div id="appContent" class="hidden">
         <!-- Header -->
         <nav class="bg-slate-900 text-white p-4 shadow-lg mb-8">
-            <div class="container mx-auto flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <h1 class="text-xl font-bold flex items-center gap-2">
+            <div class="container mx-auto flex justify-between items-center flex-wrap gap-2">
+                <div class="flex items-center gap-2 md:gap-4 flex-wrap">
+                    <h1 class="text-lg md:text-xl font-bold flex items-center gap-2">
                         <i class="fa-solid fa-wallet text-blue-400"></i> <span id="displayMonth">Грудень</span>
                     </h1>
-                    <div class="h-6 w-px bg-slate-700"></div>
-                    <div class="text-sm font-medium text-blue-300">
+                    <div class="hidden md:block h-6 w-px bg-slate-700"></div>
+                    <div class="text-xs md:text-sm font-medium text-blue-300">
                         <i class="fa-solid fa-user-tie"></i> <span id="currentManagerName">Менеджер</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <button onclick="toggleSettings()" class="text-slate-400 hover:text-white transition-colors text-sm">
-                        <i class="fa-solid fa-gear"></i> Налаштування
+                <div class="flex items-center gap-2 md:gap-4">
+                    <button onclick="toggleSettings()" class="text-slate-400 hover:text-white transition-colors text-xs md:text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Налаштування</span>
                     </button>
-                    <button onclick="logout()" class="text-red-400 hover:text-red-300 text-sm">
-                        <i class="fa-solid fa-right-from-bracket"></i> Вихід
+                    <button onclick="logout()" class="text-red-400 hover:text-red-300 text-xs md:text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Вихід</span>
                     </button>
                 </div>
             </div>

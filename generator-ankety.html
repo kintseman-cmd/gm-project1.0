@@ -4,27 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#F4C430">
     <title>Анкета Генератор (Автономний)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #eceff1; margin: 0; padding: 80px 0 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eceff1; margin: 0; padding: 60px 0 20px; }
+
+        .mr-2 { margin-right: 0.5rem; }
 
         /* Header styles (shared) */
         .header { position: fixed; top: 0; left: 0; right: 0; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; padding: 0; }
         .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
-        .logo h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .logo h1 { margin: 0; font-size: 24px; color: #2c3e50; font-weight: 800; }
         .nav { display: flex; }
         .nav-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 30px; }
-        .nav-link { text-decoration: none; color: #555; font-weight: 500; padding: 10px 15px; border-radius: 8px; transition: background 0.3s, color 0.3s; display: flex; align-items: center; }
+        .nav-link { text-decoration: none; color: #555; font-weight: 500; padding: 10px 15px; border-radius: 8px; transition: background 0.3s, color 0.3s; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
         .nav-link:hover, .nav-link.active { background: #4CAF50; color: #fff; }
         .hamburger { display: none; flex-direction: column; cursor: pointer; }
         .bar { width: 25px; height: 3px; background: #333; margin: 3px 0; transition: 0.3s; }
 
         /* Mobile header */
         @media (max-width: 768px) {
-            body { padding-top: 70px; }
+            body { padding-top: 60px; }
             .header-container { padding: 10px 15px; }
             .logo h1 { font-size: 20px; }
             .nav { position: fixed; top: 60px; left: -100%; width: 100%; height: calc(100vh - 60px); background: #fff; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 50px; transition: left 0.3s ease; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 999; }
@@ -37,7 +44,7 @@
             .hamburger.open .bar:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
         }
 
-        .page-container { display: flex; justify-content: center; padding: 0 20px; }
+        .page-container { display: flex; justify-content: center; padding: 0 20px; margin-top: 16px; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
         h2 { color: #1565c0; text-align: center; margin-bottom: 25px; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
@@ -105,9 +112,6 @@
         }
 
         @media (max-width: 480px) {
-            body { padding-top: 64px; }
-            .header-container { padding: 8px 12px; }
-            .logo h1 { font-size: 18px; }
             .card { padding: 18px; }
             h2 { font-size: 18px; text-align: left; }
             .modal { max-width: 100%; }
