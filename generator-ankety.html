@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анкета Генератор (Автономний)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #eceff1; margin: 0; padding: 80px 0 20px; }
+
+        /* Header styles (shared) */
+        .header { position: fixed; top: 0; left: 0; right: 0; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; padding: 0; }
+        .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
+        .logo h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .nav { display: flex; }
+        .nav-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 30px; }
+        .nav-link { text-decoration: none; color: #555; font-weight: 500; padding: 10px 15px; border-radius: 8px; transition: background 0.3s, color 0.3s; display: flex; align-items: center; }
+        .nav-link:hover, .nav-link.active { background: #4CAF50; color: #fff; }
+        .hamburger { display: none; flex-direction: column; cursor: pointer; }
+        .bar { width: 25px; height: 3px; background: #333; margin: 3px 0; transition: 0.3s; }
+
+        /* Mobile header */
+        @media (max-width: 768px) {
+            body { padding-top: 70px; }
+            .header-container { padding: 10px 15px; }
+            .logo h1 { font-size: 20px; }
+            .nav { position: fixed; top: 60px; left: -100%; width: 100%; height: calc(100vh - 60px); background: #fff; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 50px; transition: left 0.3s ease; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 999; }
+            .nav.open { left: 0; }
+            .nav-list { flex-direction: column; gap: 20px; }
+            .nav-link { font-size: 18px; padding: 15px 30px; display: flex; align-items: center; }
+            .hamburger { display: flex; }
+            .hamburger.open .bar:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+            .hamburger.open .bar:nth-child(2) { opacity: 0; }
+            .hamburger.open .bar:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+        }
+
+        .page-container { display: flex; justify-content: center; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2 { color: #1565c0; text-align: center; margin-bottom: 25px; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .field { display: flex; flex-direction: column; }
+        label { font-size: 13px; font-weight: 600; color: #546e7a; margin-bottom: 5px; }
+        input, select { padding: 10px; border: 1px solid #cfd8dc; border-radius: 6px; font-size: 14px; }
+        input:focus { border-color: #1e88e5; outline: none; }
+        .btn-download { background: #2e7d32; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; font-size: 16px; }
+        .btn-download:hover:not(:disabled) { background: #1b5e20; }
+        .btn-download:disabled { background: #a5d6a7; cursor: not-allowed; }
+
+        /* Modal styles */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1100; padding: 16px; }
+        .modal-backdrop.open { display: flex; }
+        .modal { background: #fff; border-radius: 12px; max-width: 520px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e5e7eb; }
+        .modal-title { margin: 0; font-size: 18px; color: #111827; }
+        .modal-close { background: none; border: none; cursor: pointer; font-size: 18px; color: #6b7280; }
+        .modal-body { padding: 16px 20px 20px; color: #374151; line-height: 1.55; }
+        .modal-body ol { padding-left: 20px; margin: 0; }
+        .modal-body li { margin-bottom: 10px; }
+        .btn-secondary { background: #1565c0; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-secondary:hover { background: #0f4f99; }
+
+        /* Buhalteria Modal Styles */
+        .buh-modal .modal { max-width: 800px; max-height: 90vh; overflow-y: auto; }
+        .buh-modal-body { max-height: calc(90vh - 120px); overflow-y: auto; }
+        .buh-container { padding: 10px 0; }
+        .buh-container .row { display: flex; gap: 10px; }
+        .buh-container .col-half { flex: 1; }
+        .buh-container .form-group { margin-bottom: 15px; }
+        .buh-container label { display: block; margin-bottom: 5px; font-weight: 600; }
+        .buh-container input, .buh-container select, .buh-container textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        .buh-container #buh_productList { background: #fafafa; border: 1px solid #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .buh-container .product-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .buh-container .product-select { width: 100%; }
+        .buh-container .product-price { width: 100%; }
+        .buh-container .btn-delete { background: #ff4d4d; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+        .buh-container .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: background 0.3s; }
+        .buh-container .btn-add { background-color: #27ae60; color: white; }
+        .buh-container .btn-gen { background-color: #2980b9; color: white; margin-top: 20px; }
+        .buh-container .btn-copy { background-color: #8e44ad; color: white; }
+        .buh-container .btn:hover { opacity: 0.9; }
+        .buh-container #buh_resultOutput { height: 300px; font-family: monospace; background-color: #f8f9fa; border: 1px solid #333; }
+        .buh-container .helper-text { font-size: 12px; color: #666; margin-top: 2px; }
+        .buh-container .sum-error { border: 2px solid #ff4d4d !important; background-color: #fff5f5 !important; }
+        .buh-container .sum-error-text { color: #ff4d4d; font-weight: bold; font-size: 13px; margin-top: 5px; }
+        .buh-container .price-error { border: 2px solid #ff9800 !important; background-color: #fff8f0 !important; }
+        .buh-container .price-error-msg { color: #ff9800; font-size: 11px; font-weight: bold; margin-top: 3px; }
+
+        /* Order Modal */
+        .order-modal .modal { max-width: 980px; max-height: 92vh; }
+        .order-modal .modal-body { max-height: calc(92vh - 60px); }
+
+        /* Page responsiveness */
+        @media (max-width: 768px) {
+            .page-container { padding: 0 12px; }
+            .card { padding: 22px; border-radius: 10px; }
+            h2 { font-size: 20px; }
+            .grid { gap: 12px; }
+            label { font-size: 12px; }
+            input, select { font-size: 15px; padding: 11px; }
+            .btn-download { font-size: 15px; padding: 13px; }
+            .btn-secondary { width: 100%; justify-content: center; }
+        }
+
+        @media (max-width: 480px) {
+            body { padding-top: 64px; }
+            .header-container { padding: 8px 12px; }
+            .logo h1 { font-size: 18px; }
+            .card { padding: 18px; }
+            h2 { font-size: 18px; text-align: left; }
+            .modal { max-width: 100%; }
+            .modal-header { padding: 14px 16px; }
+            .modal-body { padding: 12px 16px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <h1>General Machines</h1>
+            </div>
+            <nav class="nav">
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="gm-script.html" class="nav-link"><i class="fas fa-file-code mr-2"></i>Скрипти</a></li>
+                    <li class="nav-item"><a href="calc.html" class="nav-link"><i class="fas fa-calculator mr-2"></i>Прайс</a></li>
+                    <li class="nav-item"><a href="dov.html" class="nav-link"><i class="fas fa-calendar-check mr-2"></i>План</a></li>
+                    <li class="nav-item"><a href="generator-ankety.html" class="nav-link active"><i class="fas fa-file-excel mr-2"></i>Анкета</a></li>
+                    <li class="nav-item"><a href="education.html" class="nav-link"><i class="fas fa-graduation-cap mr-2"></i>Навчання</a></li>
+                </ul>
+            </nav>
+            <div class="hamburger" id="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-container">
+        <div class="card">
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h2 style="margin: 0;">Заповнення Анкети</h2>
+                <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+                    <button id="buhBtn" class="btn-secondary"><i class="fas fa-calculator"></i> Повідомлення</button>
+                    <button id="instructionBtn" class="btn-secondary"><i class="fas fa-info-circle"></i> Інструкція</button>
+                    <button id="orderFormBtn" class="btn-secondary"><i class="fas fa-shopping-cart"></i> Сформувати замовлення</button>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="field">
+                    <label>Система оподаткування (A6)</label>
+                    <select id="v_A6">
+                        <option>Платник єдиного податку 1 група</option>
+                        <option>Платник єдиного податку 2 група</option>
+                        <option>Платник єдиного податку 3 група</option>
+                        <option>Платник єдиного податку 4 група</option>
+                        <option>Платник податку на прибуток</option>
+                    </select>
+                </div>
+                <div class="field"><label>Скорочена назва</label><input type="text" id="v_C9" placeholder="Повна, якщо немає"></div>
+                <div class="field"><label>Код ЄДРПОУ</label><input type="text" id="v_L10" placeholder="34721445"></div>
+                <div class="field"><label>Місцезнаходження юридичної особи</label><input type="text" id="v_C13" placeholder="Україна, 80036, Львівська обл., Червоноградський р-н(п), село Шпиколоси(з), вул.Сокальська, будинок 30-Б"></div>
+                <div class="field"><label>Поточний рахунок</label><input type="text" id="v_C15" placeholder="UA263223130000026009000000000"></div>
+                <div class="field"><label>Телефон</label><input type="text" id="v_C18" placeholder="0661112233"></div>
+                <div class="field"><label>Контактна особа</label><input type="text" id="v_C20" placeholder="Іванов Іван Іванович"></div>
+                <div class="field"><label>ІПН / Не платник ПДВ</label><input type="text" id="v_F24" placeholder="347214413298 / не платник ПДВ"></div>
+            </div>
+            <button class="btn-download" id="downloadBtn" onclick="generate()" disabled>Скачати заповнений Excel</button>
+        </div>
+    </div>
+
+    <!-- Instruction Modal -->
+    <div id="instructionModal" class="modal-backdrop" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="instructionTitle">
+            <div class="modal-header">
+                <h3 id="instructionTitle" class="modal-title">Інструкція</h3>
+                <button class="modal-close" id="instructionClose" aria-label="Закрити">×</button>
+            </div>
+            <div class="modal-body">
+                <ol>
+                    <li>Просимо клієнта надати уставні документи та виписку з банку.</li>
+                    <li>Відкриваємо юконтрол та вбиваємо ЄДРПОУ <a href="https://youcontrol.com.ua/" target="_blank" rel="noopener noreferrer">https://youcontrol.com.ua/</a>.</li>
+                    <li>Переносимо в поля інформацію з YouControl.</li>
+                    <li>Клієнт може бути платником єдиного податку 1-ї, 2-ї, 3-ї або 4-ї групи, або платником податку на прибуток на загальних підставах. Інформацію про систему оподаткування клієнта необхідно перевіряти та брати з документів (файлів), наданих клієнтом.</li>
+                    <li>Натискаємо зберегти та зберігаємо де зручно.</li>
+                    <li>Відправляємо з робочого емейлу на пошту agrokubanketa@ukr.net.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buhalteria Modal -->
+    <div id="buhModal" class="modal-backdrop buh-modal" aria-hidden="true">
+        <div class="modal buh-modal-content" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h3 class="modal-title">Генератор повідомлення в вайбер</h3>
+                <button class="modal-close" id="buhClose" aria-label="Закрити">×</button>
+            </div>
+            
+            <!-- Instruction Section -->
+            <div style="background: #f0f4f8; border-left: 4px solid #1976D2; padding: 15px; margin: 15px; border-radius: 4px;">
+                <h4 style="margin-top: 0; color: #1976D2;">📋 Інструкція:</h4>
+                <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>Заповнюємо дані</strong> — всі поля форми (платник, товари, суми тощо)</li>
+                    <li><strong>Отриманий текст копіюємо</strong> — натискаємо кнопку "Копіювати текст"</li>
+                    <li><strong>Відправляємо в групу Вайбер</strong> — Рахунки / договора (попередньо відправив анкету на пошту)</li>
+                </ol>
+            </div>
+            
+            <div class="modal-body buh-modal-body">
+                <div class="buh-container">
+                    <div class="row">
+                        <div class="col-half form-group">
+                            <label>1. Платник (ФГ, ТОВ...)</label>
+                            <input type="text" id="buh_payer" placeholder="ФГ ШПИКОЛОС">
+                        </div>
+                        <div class="col-half form-group">
+                            <label>2. Продавець</label>
+                            <input type="text" id="buh_seller" value="ТОВ АГРОКУБ" placeholder="ТОВ АГРОКУБ або ФОП ДЖУС">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <label>3. Товари</label>
+                    <div id="buh_productList"></div>
+                    <button class="btn btn-add" onclick="buh_addProductRow()">+ Додати товар</button>
+                    <div class="helper-text" style="text-align: right; margin-bottom: 10px;">Автосума (довідково): <span id="buh_autoSumDisplay">0</span> грн</div>
+
+                    <div class="form-group">
+                        <label>3.1. Сума доставки (автоматично розподілиться між товарами)</label>
+                        <input type="text" id="buh_deliveryCost" placeholder="Наприклад: 5 000" oninput="buh_distributeDeliveryCost()">
+                        <div class="helper-text">Не відображається у фінальному тексті. Додається до цін товарів.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>4. Загальна сума (пишемо руками)</label>
+                        <input type="text" id="buh_totalSumManual" placeholder="Наприклад: 365 000" oninput="buh_validateSum()">
+                        <div id="buh_sumErrorMessage" class="sum-error-text" style="display: none;"></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-half form-group">
+                            <label>5. Передплата (%)</label>
+                            <select id="buh_paymentPercent" onchange="buh_updatePaymentLabel()">
+                                <option value="передплата">передплата</option>
+                                <option value="оплата по факту поставки">оплата по факту поставки</option>
+                                <option value="10">10% / 90%</option>
+                                <option value="20">20% / 80%</option>
+                                <option value="30">30% / 70%</option>
+                                <option value="50">50% / 50%</option>
+                                <option value="100">100% / 0%</option>
+                            </select>
+                            <div class="helper-text" id="buh_paymentTextPreview">передплата</div>
+                        </div>
+                        <div class="col-half form-group">
+                            <label>6. Термін поставки (днів)</label>
+                            <input type="number" id="buh_deliveryDays" value="10">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-half form-group">
+                            <label>7. Посада</label>
+                            <div style="display: flex; gap: 5px;">
+                                <select id="buh_positionSelect" onchange="buh_toggleCustomPosition()" style="flex: 1;">
+                                    <option value="Голова">Голова</option>
+                                    <option value="Директор">Директор</option>
+                                    <option value="Керівник">Керівник</option>
+                                    <option value="Власник">Власник</option>
+                                    <option value="custom">Свій варіант...</option>
+                                </select>
+                            </div>
+                            <input type="text" id="buh_positionCustom" placeholder="Впишіть посаду" style="display: none; margin-top: 5px;">
+                        </div>
+                        <div class="col-half form-group">
+                            <label>8. Платник ПДВ</label>
+                            <select id="buh_taxStatus">
+                                <option value="Платник ПДВ">Платник ПДВ</option>
+                                <option value="Не платник ПДВ">Не платник ПДВ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>9. Доставка</label>
+                        <select id="buh_deliveryStatus">
+                            <option value="Доставка врахована">Доставка врахована</option>
+                            <option value="Доставка НЕ врахована">Доставка НЕ врахована</option>
+                            <option value="Самовивіз">Самовивіз</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-half form-group">
+                            <label>10. ПІБ Клієнта</label>
+                            <input type="text" id="buh_clientName" placeholder="Іванов Іван Іванович">
+                        </div>
+                        <div class="col-half form-group">
+                            <label>11. Телефон</label>
+                            <input type="text" id="buh_clientPhone" placeholder="+380...">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-gen" onclick="buh_generateMessage()">Сформувати повідомлення</button>
+
+                    <div class="form-group">
+                        <label>Результат:</label>
+                        <textarea id="buh_resultOutput"></textarea>
+                    </div>
+                    
+                    <button class="btn btn-copy" onclick="buh_copyToClipboard()">Копіювати текст</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div id="orderModal" class="modal-backdrop order-modal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h3 class="modal-title">Форма Замовлення (GM)</h3>
+                <button class="modal-close" id="orderClose" aria-label="Закрити">×</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <iframe src="zakaz.html" title="Форма Замовлення" style="width: 100%; height: 82vh; border: 0; display: block;"></iframe>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // Сюди треба вставити Base64 код вашого файлу
+    // Щоб отримати його, скористайтеся будь-яким онлайн сервісом "File to Base64"
+    const TEMPLATE_BASE64 = "UEsDBBQABgAIAAAAIQBBN4LPbgEAAAQFAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACsVMluwjAQvVfqP0S+Vomhh6qqCBy6HFsk6AeYeJJYJLblGSj8fSdmUVWxCMElUWzPWybzPBit2iZZQkDjbC76WU8kYAunja1y8T39SJ9FgqSsVo2zkIs1oBgN7+8G07UHTLjaYi5qIv8iJRY1tAoz58HyTulCq4g/QyW9KuaqAvnY6z3JwlkCSyl1GGI4eINSLRpK3le8vFEyM1Ykr5tzHVUulPeNKRSxULm0+h9J6srSFKBdsWgZOkMfQGmsAahtMh8MM4YJELExFPIgZ4AGLyPdusq4MgrD2nh8YOtHGLqd4662dV/8O4LRkIxVoE/Vsne5auSPC/OZc/PsNMilrYktylpl7E73Cf54GGV89W8spPMXgc/oIJ4xkPF5vYQIc4YQad0A3rrtEfQcc60C6Anx9FY3F/AX+5QOjtQ4OI+c2gCXd2EXka469QwEgQzsQ3Jo2PaMHPmr2w7dnaJBH+CW8Q4b/gIAAP//AwBQSwMEFAAGAAgAAAAhALVVMCP0AAAATAIAAAsACAJfcmVscy8ucmVscyCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACskk1PwzAMhu9I/IfI99XdkBBCS3dBSLshVH6ASdwPtY2jJBvdvyccEFQagwNHf71+/Mrb3TyN6sgh9uI0rIsSFDsjtnethpf6cXUHKiZylkZxrOHEEXbV9dX2mUdKeSh2vY8qq7iooUvJ3yNG0/FEsRDPLlcaCROlHIYWPZmBWsZNWd5i+K4B1UJT7a2GsLc3oOqTz5t/15am6Q0/iDlM7NKZFchzYmfZrnzIbCH1+RpVU2g5abBinnI6InlfZGzA80SbvxP9fC1OnMhSIjQS+DLPR8cloPV/WrQ08cudecQ3CcOryPDJgosfqN4BAAD//wMAUEsDBBQABgAIAAAAIQBSdq2GJAMAAHAHAAAPAAAAeGwvd29ya2Jvb2sueG1srFXdbpswFL6ftHdAvqfY4ECDSqckEK3SNlX7vak0ueAUK4CZ7TSppl1sr7EX2WNsb7RjCEmz3HTdUGJjDnx83zkfx2fPNnXl3HKlhWwSRE4wcniTy0I0Nwl693buniJHG9YUrJINT9Ad1+jZ+dMnZ2upltdSLh0AaHSCSmPa2PN0XvKa6RPZ8gYiC6lqZmCpbjzdKs4KXXJu6srzMQ69mokG9QixegiGXCxEzlOZr2remB5E8YoZoK9L0eoBrc4fAlcztVy1bi7rFiCuRSXMXQeKnDqPL24aqdh1BbI3ZORsFPxC+BMMgz+8CUJHr6pFrqSWC3MC0F5P+kg/wR4hBynYHOfgYUjUU/xW2BruWKnwkazCHVa4ByP4n9EIWKvzSgzJeyTaaMfNR+dnC1Hx9711Hda2r1htK1Uhp2LaZIUwvEhQBEu55vsLoEqt2ulKVBD1aRBQ5J3v7HypYAG1n1SGq4YZPpONAattqf+rrTrsWSnBxM5r/mklFIdvBywEcmBkecyu9SUzpbNSVYJm8dU7DQqvDB5H5Crlemlke3XPeuzY539hPpZb7R7o7Tn1539qB2oqHgx2aZQD5xfpC0jyG3YLKYfCFtsv8gJySoKPTa5i8vHzbJJi6oepG05n1KXzlLrTaJq5k8CfjCKfZD7xv4AYFca5ZCtTbqtpoRNEoXRHoZdsM0QIjlei2NP4jLeHa+c/hiH2xQq2feu94Gu9r7tdOpsPoinkOkEu8UHU3eFy3QU/iMKUYJwxpnBLf+05FzclMCYgyrpc+ZZZgg4YpT2jORyuHQ4YefcodR0SqHWz03Su/vn9549fX399I9CNbQPt8gxGju1r1EVBujoOT+asyi+VY6fuxtAfk8DewTfmhTbdDAYTwJBQPInwmLo4C0YuPR377ikNfHdGUz8bRVmaTUe2RLbJx/+j1XU+j4fdw7IsmTJvFcuXsOe85osp0+CpXhDwvU82JXSMg2ziBoH1UzSP3NM5HrkBjehsRKcZwdGebLXObx/XZ3zqDQRn97eGrT3tt2rB4+2+6WhutqED4t6Q7h3a+W8AAAD//wMAUEsDBBQABgAIAAAAIQCBPpSX8wAAALoCAAAaAAgBeGwvX3JlbHMvd29ya2Jvb2sueG1sLnJlbHMgogQBKKAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACsUk1LxDAQvQv+hzB3m3YVEdl0LyLsVesPCMm0KdsmITN+9N8bKrpdWNZLLwNvhnnvzcd29zUO4gMT9cErqIoSBHoTbO87BW/N880DCGLtrR6CRwUTEuzq66vtCw6acxO5PpLILJ4UOOb4KCUZh6OmIkT0udKGNGrOMHUyanPQHcpNWd7LtOSA+oRT7K2CtLe3IJopZuX/uUPb9gafgnkf0fMZCUk8DXkA0ejUISv4wUX2CPK8/GZNec5rwaP6DOUcq0seqjU9fIZ0IIfIRx9/KZJz5aKZu1Xv4XRC+8opv9vyLMv072bkycfV3wAAAP//AwBQSwMEFAAGAAgAAAAhAE4ZicyICQAA9jEAABgAAAB4bC93b3Jrc2hlZXRzL3NoZWV0MS54bWyck8lu2zAQhu8F+g4E7xZF2TISwXJQNAiaSxF0PdPUyCLMRSUpLyj67h3KsR3AFyOCRI64fP+M+GvxsDeabMEH5WxNeZZTAla6Rtl1TX/+eJrcURKisI3QzkJNDxDow/Ljh8XO+U3oACJBgg017WLsK8aC7MCIkLkeLM60zhsR8dWvWeg9iGbcZDQr8nzOjFCWHgmVv4Xh2lZJeHRyMGDjEeJBi4j5h0714UQz8hacEX4z9BPpTI+IldIqHkYoJUZWz2vrvFhprHvPZ0KSvce7wGd6khnHr5SMkt4F18YMyeyY83X59+yeCXkmXdd/E4bPmIetSgd4QRXvS4mXZ1ZxgU3fCZufYelz+WpQTU3/5q/XBHuemvzSnOb+0eWiUXjCqSrioa3pJ159nXLKlovRQL8U7MKbmESx+g4aZAQU4ZQkf66c26SFzziUIzKMCxJSyKi28Bm0rukLTx7/M6qkGCXYWeNtfNJ7Gj394kkDrRh0/OZ2X0Ctu4jCJVaarFI1h0cIEj2K0llRJqp0GhHYEqPSz4YeE3vsZ5itamKHIc+Ku5KXc9xA5BCiM79fZ8a0RsJ/AAAA//8AAAD//6za7W7bNhSH8VsJfAFNLNt5GZICc6gXShTvIciCtRjWDk3WbXc/SiLNw/MYS7r4U4sfjhjnL4rkkXP7/Onp6cU8vDx8vP329a+zb3er9ers+Y+HL8/hfz+tt6uzv9fbh8effvnHPD0/Pn15uVtdfKh2q4+3j1Pxz1P1dM15hP0C1QHuNRgNtYZGQ6uh02A19BoGDU7DqMEvsJl+l/OQziGi6ocimqrvVtsc0QK7HJEGo6HW0GhoNXQarIZew6DBaRg1+AUuEdFGRfQpTJz17sPVbnX2+Ofzy9ffu6fPv8742gybRrpbXa3OwgjPYd59/3hxe/493JHHNOWWiuucpwajodbQaGg1dBqshl7DoMFpGDX4BW6QZ3gQi6dyju7yQ4jz5dPnx9/2X6d8j0a5OTyr0xih6iLPxCj58b2HGEgNaSAtpINYSA8ZIC5KmHiHCbEuJ8R4KEmrko8S0j1cVB0uKp7tkCiDXibu25OeBglJh596+HEbNWljiVgFIAZSQxpIC+kgFtJDBoiDjBAfhSvC5SmCnQYJwcrVYKuCjSViOYAYSA1pIC2kg1hIDxkgDjJCfBQuDSGM98/YaZC7VSXWhihibYAYSA1pIC2kg1hIDxkgDjJCfJT5hFI8+denyHEaJOQoF5qdmqCxJB8I7iEGUkMaSAvpIBbSQwaIg4wQH2Ve0Ypgb04R7DRICDY8BYcl9VIFG0uu8kEgSvhkh4uuyotMLJkfq/lIW0MaSAvpIBbSQ4ZFNvmxc1HCXn74yNdqe4sl+Yzto/CkGjb7EywO8yh3q404wyYS+1eieemfozSJ8i2pSQ2pJXUkS+pJQ6K8I7hEN/N5cnO5vd5dXFXbfCSYP/4Yy7b59vhE87JYzPL11C3Ixkkced9+cphHKRfiRGIlJhlSTWpILakjWVJPGkiONJJ8Iq7Ka91s/b9Ylz6lko0q6H7+WSH8XGVINakhtaSOZEk9aSA50kjyBZWzdWo09GzdhSmM7uwH5u7SvGzl0fxGrdHrWDMvVfNTdp9InpbXqsczqSivNzWpIbWkLlFeqGyioqtQbUXPzz685bM7foSR5ItPVd6rqXt5/8qy9EDyiDc1KNOmKlcWkGFVTWpILakjWVJPGkiONJJ8oiMry7FWr9pNPfV7HoKlASoegrXaWPbrWCSfgkjFU6CaRpOuk09BvC5Tw6qW1JEsqScNJEcaST4Re8P1SZrDeZRiOu9J9yRDqkkNqSV1JEvqSQPJkUaSL6hcOE7SGk7d9vQCM/yT37jorjsVibY7UTic5utUM2Ri0S4fsepEeVVqjg6ljv8th+o4lD06lGoKeg41cCh3dCh9WOdQvhiqvGEn6UHXSye2yw3CPpFccJaqrbw9lbqtJl0nb08cXd6eNwzVcqguUR7KJsqtRp8or3BDoryDO1448kJfXFhGP/VQ799kY4sn3qOsI8lNFmRYVZMaUkvqSJbUkwaSI40kn4ibbDhuMNZ3b7LzqHersGqIpUUfNVORCD5S8WK20kfNVCQ2WVJDakkdyZJ60kBypJHkE3GTDce8E8zweZSyQU0kg47fpYlOilU1qSG1pI5kST1pIDnSSPKJjszwkzSoVexGxcKRSMaKntWwqiY1pJbUkSypJw0kRxpJPtGRWI81qPEbxLe3pNOLWP0+tlJ93T4ViTeyJEOqSQ2pJXUkS+pJA8mRRpJPxLezle4u//sL/7k8LL3yNFjp/iYVidMgyZDqRPl1bBOpki9xK9UYtakoX9eRLKknDSRHGkk+0vI2t/yDAd1qvpLx0tNdysUgklwMQCb8YcY03S9zVZ0oHwabRPkw2CbKj0BHsqSeNJAcaST5REfmqO4PX8lv+a6syC+SzA9kpq8XdH6RZH6RZH6RZH4gm4YXh1vSQHKkkeQTHclPN4Kv5Ld0fEV+kWR+IFOB6kQyv1gl84sk8wPZNJbMD1UDqxxpJPlER/LTfdkr+S39UJFfJJkfyEyLnJ5/kWR+kWR+kWR+IJuGl/mhamCVI40kn+hIfrq5eiW/pT8q8osk8wOZClQnkvnFKplfJJkfyKaxZH6oGljlSCPJJ2J+YUs5wdF9HiXsDrlr3icS35mSDKlOlHf4JtImD98mysN3JEvqSQPJkUaSTzR/1GJb3pykI5pHKTuiRGK2kgypJjWkltSRLKknDSRHGkk+kTi6n+e/Jv0XAAD//wAAAP//bJPbbsIwDIZfJcoDjKYHoBFFCh2IjpIbnqCAaaOVJgphk3j6GSS2Sfiu9udj/Wd2Bt9CCX1/YQd7HULBk4jPZ79u5uFU8FpMpRZTPnohKo7kIo4IUiLRJFFxgiQhq6VyiQO89lnFqdQkUSKTC5FREyDRJFFigjnUPiWSpZhQEyBZk6RCsiFJjUSTpMQ/uiQnWCFZk6RCsqGvkOM65BFyzKBAnUudE1vWAq9GZiiRYBPqaiWSNUkqJB8k2SDRJFECxUFpAxOo7nUqtykVj8enVKHGUo+peJT4QxGjvzcxn7mmhW3jWzNcWA8nfB/R24Qzb9ru+R2se3gzzvY2BHt+Wh00R/B3K+HsZG14Gijve90dhKtjrnHgd+YGBY+zMWfWGxhCE4wdCu6sD74xgbMO/TeLoH93BkMjrPkFPpjDf4+X5lhwXx3FfcPRt/Wflw4gzH8AAAD//wMAUEsDBBQABgAIAAAAIQBNP4AshAYAAIAaAAATAAAAeGwvdGhlbWUvdGhlbWUxLnhtbOxZz2/bNhS+D9j/IOjuWrYl2Q7qFLZsJ2uTtmjcDj3SNm2xoURDpJMaRYFddxkwoBt2GbDbDsOAAttpl/03Lbbuj9gjJVtkTDf9kQLd0BgIJOp7jx/fe/r4Q9dvPE6oc4YzTljacWvXPNfB6YRNSTrvuPdHw0rLdbhA6RRRluKOu8LcvbH/+WfX0Z6IcYIdsE/5Huq4sRCLvWqVT6AZ8WtsgVN4NmNZggTcZvPqNEPn4Deh1brnhdUEkdR1UpSA2zuzGZlgZyRduvtr5wMKt6ngsmFCsxPpGhsWCjs9rUkEX/GIZs4Zoh0X+pmy8xF+LFyHIi7gQcf11J9b3b9eRXuFERU7bDW7ofor7AqD6Wld9ZnNx5tOfT/ww+7GvwJQsY0bNAfhINz4UwA0mcBIcy66z6DX7vWDAquB8kuL736z36gZeM1/Y4tzN5A/A69AuX9/Cz8cRhBFA69AOT6wxKRZj3wDr0A5PtzCN71u328aeAWKKUlPt9BeEDai9Wg3kBmjh1Z4O/CHzXrhvERBNWyqS3YxY6nYVWsJesSyIQAkkCJBUkesFniGJlDFEaJknBHniMxjKLwFShmHZq/uDb0G/Jc/X12piKA9jDRryQuY8K0mycfhk4wsRMe9CV5dDfJw6RwwEZNJ0atyYlgconSuW7z6+dt/fvzK+fu3n149+y7v9CKe6/iXv3798o8/X+cexloG4cX3z1/+/vzFD9/89cszi/duhsY6fEQSzJ3b+Ny5xxIYmoU/HmdvZzGKETEsUAy+La4HEDgdeHuFqA3Xw2YIH2SgLzbgwfKRwfUkzpaCWHq+FScG8Jgx2mOZNQC3ZF9ahEfLdG7vPFvquHsIndn6jlBqJHiwXICwEpvLKMYGzbsUpQLNcYqFI5+xU4wto3tIiBHXYzLJGGcz4TwkTg8Ra0hGZGwUUml0SBLIy8pGEFJtxOb4gdNj1DbqPj4zkfBaIGohP8LUCOMBWgqU2FyOUEL1gB8hEdtInqyyiY4bcAGZnmPKnMEUc26zuZPBeLWk3wJtsaf9mK4SE5kJcmrzeYQY05F9dhrFKFlYOZM01rFf8FMoUeTcZcIGP2bmGyLvIQ8o3ZnuBwQb6b5cCO6DrOqUygKRT5aZJZcHmJnv44rOEFYqA6pviHlC0kuV/YKmBx9a0+3qfAVqbnf8PjrezYj1bTq8oN67cP9Bze6jZXoXw2uyPWd9kuxPku3+7yV717t89UJdajPIdrk+V6v1ZOdifUYoPRErio+4Wq9zmJGmQ2hUGwm1m9xs3hYxXBZbAwM3z5CycTImviQiPonRAhb1NbX1nPPC9Zw7C8Zhra+a1SYYX/CtdgzL5JhN8z1qrSb3o7l4cCTKdi/YtMP+QuTosFnuuzbu1U52rvbHawLS9m1IaJ2ZJBoWEs11I2ThdSTUyK6ERdvCoiXdr1O1zuImFEBtkxVYMjmw0Oq4gZ/v/WEbhSieyjzlxwDr7MrkXGmmdwWT6hUA64d1BZSZbkuuO4cnR5eX2htk2iChlZtJQivDGE1xUZ36YclV5rpdptSgJ0OxfhtKGs3Wh8i1FJEL2kBTXSlo6px33LARwHnYBC067gz2+nCZLKB2uFzqIjqHA7OJyPIX/l2UZZFx0Uc8zgOuRCdXg4QInDmUJB1XDn9TDTRVGqK41eogCB8tuTbIysdGDpJuJhnPZngi9LRrLTLS+S0ofK4V1qfK/N3B0pItId0n8fTcGdNldg9BiQXNmgzglHA48qnl0ZwSOMPcCFlZfxcmpkJ29UNEVUN5O6KLGBUzii7mOVyJ6IaOutvEQLsrxgwB3Q7heC4n2PeedS+fqmXkNNEs50xDVeSsaRfTDzfJa6zKSdRglUu32jbwUuvaa62DQrXOEpfMum8wIWjUys4MapLxtgxLzS5aTWpXuCDQIhHuiNtmjrBG4l1nfrC7WLVyglivK1Xhq48d+vcINn4E4tGHk98lFVylEr42ZAgWffnZcS4b8Io8FsUaEa6cZUY67hMv6PpRPYgqXisYVPyG71VaQbdR6QZBozYIal6/V38KE4uIk1qQf2gZwhEUXRWfW1T71ieXZH3Kdm3CkipTn1Sqirj65FKr7/7k4hAQnSdhfdhutHthpd3oDit+v9eqtKOwV+mHUbM/7EdBqz186jpnCux3G5EfDlqVsBZFFT/0JP1Wu9L06/Wu3+y2Bn73abGMgZHn8lHEAsKreO3/CwAA//8DAFBLAwQUAAYACAAAACEAhd2zRTsGAABIRwAADQAAAHhsL3N0eWxlcy54bWzUXN1uozgUvl9p3wFxnwJpyCRRyKhpGmmk2dFq25X21iEmsYafyJBOMqu53ot5h32HvdyLfYf2jfbYQIFpaBInJpBeFAz4fMfn1web4fuN5yqPmIYk8C3VuNJVBft2MCf+wlJ/f5i2eqoSRsifIzfwsaVucai+H/380zCMti6+X2IcKdCFH1rqMopWA00L7SX2UHgVrLAPV5yAeiiCU7rQwhXFaB6yhzxXa+t6V/MQ8dW4h4FnH9KJh+jn9aplB94KRWRGXBJteV+q4tmDDws/oGjmAtSN0UG2sjG6tK1saEqEt76i4xGbBmHgRFfQrxY4DrHxa7h9ra8hO+sJehbryTA1vV3gfUMFe+poFD8SJj51NHQCPwoVO1j7kaV2ASgbgsFnP/jiT9klkHBy12gYflUekQsthqqNhnbgBlSJQHQwcrzFRx6O77hFLplRwm5zkEfcbdzcZg1c2sl9HoGxZ40awxGjydHR99G5oQS5O6nYS0RD0DQOuK13XhGZMSgpQxzYWww9EA+Hyif8Rfkt8JD/I8l4QPaRvBS5veI6L3d7pXYiOa4rISgLcd2c6sYNoyHYeISpP4WrSnL8sF2BjvrgjmI1gEt7715QtDXa5uEPhIFL5sxWFrfcMuhiZqnT5Me6mSUXiD/HGzwHc4u1MgeYGcIh4N6gpfPhl0/rVmd/1fHV7x9Liw8l6MksoHMIV6mTM3ogpLhtNHSxE4FoKFks2f8oWDFBBVEEPn00nBO0CHzkMgeVPpF/EuIchDRL9fCcrD3oNnYhieR1/uMKxMgUqBz8JCA6AlCRFclEDu6ejy4fXEmIxOVwjLTTwRXguxqleqFyMMJY0/creomJSKNzyhCfHVS1Vi5ZdiIWWCcx1wL/JTVigmA2xPKMslgjZtOnj+vZgVUUX4pkzsbFuXRkL6BchlCp76gFsCOFV5aJVM5Lkk5Cdmpj171naeQfTpaignlvHMVfe1Mv+gAzBaixsAlyeghThOQwzkbjE5al5nuL+8512+0L9atsnBcCBVSdfgbLgMNdsKA9fVxBq5W7/bT2ZphOeY2H1Q3iVlZryM7GPGPPzm9csvA9HN8yGkJxIT5VvlC0esAb/ihjf+P8MHCHQGzXH+J1/SF26g8RrKjuumjWByKYRWrRcJg5GiFBs2qMgH0vA0q+gmtgVUcb7B9DUfYomy9jQkgV6saEkLJciolcgCioE6s5J/Hl8AAhyIRouCgAfldXwBAkdhpslYBPNtgyJuClUmVqcjIT4CJTSQA/meuEfKn5TBiN8p1looB3WM2URcEXNVWhCkw0VqGKXDRKoXLRGCwk81BNiMYFwLWNxmUjXGUgOyrfyXlKSCybH7QKTDTWxxS5aJSPAeg789EqmYB1ShGxhaePZSwI1WMEJy3nY6GQi15alSSxJVTMO+OcWBJbVSrcrumPJDsyLi2uoyJkqUO7tHTOw0WjCntlsqgygZVkFFVmiJLcVZVSkOuuCjHz0pU0SdK6dG1NVobTqPp4zqEV87RL25JocCly0agidE4WUOw8cSos52V2GUSxuqZ0jM0tg5faZaPK4KVcNLWiULBLuYtMzheeCqDlrumQBFrohcPB3uXkF2+lXlHu0g95uOVqtjTcQjnLwWoiSbeF0uCqQJetr5NrkGdZXydWe692DWBN06YKo5zcaXSBEbkLLitkRG4Ir5ARuYs3K2Sk+jgvKRjJXQhaYc3s0lVlScWlM8z+Sle1VyidS5fIJFmP3PyzQn8mVDY7ab7VyORaXCJ8xwzskcltxClsw3nZUKOwr1tY6tPfT/88f3/+6+m/5+9P/+bWEM7WxI2Iv2MrDvQ932Sbe/ie+Yh9cIRv+3mhBh5ljh20dqOHl4uWmh3/wjeZQ+6U3PUreQwi3oWlZscf2U52o8t2ncO+mI8hbDuH/8qaEkv98278rj+5m7ZbPX3ca3Wusdnqm+NJy+zcjieTaV9v67ffcp89OeGjJ/wrLbAZx+gMQhc+jUITZhPw91mbpeZOYvh8zzzAzmPvt7v6jWnorem1brQ6XdRr9brXZmtqGu1JtzO+M6dmDrsp+HEUXTOM+DMrDLw5iODDHy7xU1mlEsq3gpDg9A0mtFQSWvYJnNH/AAAA//8DAFBLAwQUAAYACAAAACEA0I3skQMDAACABgAAFAAAAHhsL3NoYXJlZFN0cmluZ3MueG1srFXdThpREL5v0nc42StJhF2XfwOYpkmfoD4A0a2QwGLZtWnv8CfYCxNRttCi/Ci23jR1/SG1IPoKc96o3zlgStnamLQkwp6Z78x8883Mmlh4m8+xN0bRyhbMpDIX0BRmmEuF5ay5klQWX77wxxRm2WlzOZ0rmEZSeWdYykLq6ZOEZdkMd00rqWRse3VeVa2ljJFPW4HCqmHC86pQzKdtHIsrqrVaNNLLVsYw7HxO1TUtoubTWVNhS4U1004qelRha2b29ZrxfGwIK6mElU0l7BRVqEkN+kDHVGHk0AGdMergvEVHsHXg/0Jl2mYAtQAdmaoAiOdKQrVTCVWEGoe74TW+znd5me9M+3iJ16g/bZ0LMJmpgnBdOmLUBgdxaNJH5ASpNhI70tSgLoNd2jpw7+HGMbwNpjIQvqJrGtItXdItozs8XJHLN6jPN9lM0DcT8jGqgsQmfNce4m0aSPQQQfqMO3+LFmR0+VAgHfXUwbaKvwP6OqJbxs8JiHbocCwoVG7j2Hqsrm2Uc4HqXCa+6DsOrqeGQ5miRXU/WrYvW3sqO4XeoXZpkPKJpguNW6CI5gIrzYJi2xO1IZQU+jogLJrRnfdgvvESdEMD+PaIpEtXMPX4OrledBc9KUHtusDOsnB0TgvNMmgD6ZFMNKJOF5ijHZxR8S2d0yDwIOKafjBe8tNwliFfD/fR/zM8SrmEcgO+O0oF9gO+w99DwuGv+MdURfA7cILImA8EwAxg8HtAbQiq4hYiIBOA54Dcz1qfxT1inADfx+A9TgyhqOjEqZz4T2L7KvQZk90Ukz0dfPFZPBbUwno8romPHtE1PRoMx2LRsBbyMHFknTUmZUUpY2JYEl6HrJBISOtZBinEeQB4iBnw9u9GXLt3e9Z8S2ZZn7YbfryUcn+crklmot1jXi6bwbyVaU80R1oxVeT65n87/uctmA4Xwj47E2+gllgsBlb/vtEO7aPCMmps+jxVDKknypx8KQGIK9PIYEyLBGPhSETXJwZAxX+Q1E8AAAD//wMAUEsDBBQABgAIAAAAIQA7bTJLwQAAAEIBAAAjAAAAeGwvd29ya3NoZWV0cy9fcmVscy9zaGVldDEueG1sLnJlbHOEj8GKwjAURfcD/kN4e5PWhQxDUzciuFXnA2L62gbbl5D3FP17sxxlwOXlcM/lNpv7PKkbZg6RLNS6AoXkYxdosPB72i2/QbE46twUCS08kGHTLr6aA05OSonHkFgVC7GFUST9GMN+xNmxjgmpkD7m2UmJeTDJ+Ysb0Kyqam3yXwe0L0617yzkfVeDOj1SWf7sjn0fPG6jv85I8s+ESTmQYD6iSDnIRe3ygGJB63f2nmt9DgSmbczL8/YJAAD//wMAUEsDBBQABgAIAAAAIQAWBIyT+wAAAAQGAAAnAAAAeGwvcHJpbnRlclNldHRpbmdzL3ByaW50ZXJTZXR0aW5nczEuYmluCmDwZwhmCGFwZfBmUGBwZjBkMGOwYNBnMGIwAMJiBkKAkYWJ/Q6DBiu/KiMDIwMD4w9mQZYUMOs0kGRkAJEMDKFAO1wZggiaRpoCJqByZiAG2QAhUPUvAQr6uoT4gdSxAvFpkLQkA8MTHoi6HdwMDAXiEPYdoIIIkEIk8O8/bveYA824BcQC6qh4ARcDwyE2BoYdQKzDwsDgAHTcJaAxEmCjBNRBEKIDt9mjMqMhMBoCIyMEalhAJRgDwzlgAYFc/DCBeULAMpiBQQkaFKDylBPKTgHSoHIPWJyBAYwGl4VIQScHZAOLJGzFI0NxcXFqQU4LCwAAAP//AwBQSwMEFAAGAAgAAAAhAI496IxPAQAAawIAABEACAFkb2NQcm9wcy9jb3JlLnhtbCCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHySX0+DMBTF3038DqTvUGBjmw2w+Cd7comJGI1vtb3biLQlbXXj21tgQ3TGx/ac++s5N02XB1F5n6BNqWSGoiBEHkimeCm3GXoqVv4CecZSyWmlJGSoAYOW+eVFymrClIYHrWrQtgTjOZI0hNUZ2llbE4wN24GgJnAO6cSN0oJad9RbXFP2TreA4zCcYQGWcmopboF+PRDREcnZgKw/dNUBOMNQgQBpDY6CCH97LWhh/hzolJFTlLapXadj3DGbs14c3AdTDsb9fh/sJ10Mlz/CL+v7x66qX8p2VwxQnnJGmAZqlc6vKzh4j0rAm+JNikdKu8WKGrt2C9+UwG+a3+ZzgyN3RXo8cM9FI32Rk/I8ub0rViiPwyjxw5kfJkW0INEVmUxf2/d/zLdR+wtxTPEvMU78KPbjeeFwyYJM5yPiCZCn+Ox75F8AAAD//wMAUEsDBBQABgAIAAAAIQCltOI8lAEAABQDAAAQAAgBZG9jUHJvcHMvYXBwLnhtbCCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJySwW4TMRCG70i8w8r3xpuCKhR5XaEU1AOISEl7H7yziYXXtuzpKuEGVx6BF+ExmjdidldNN8CJ28z8v35/Hltd71tXdJiyDb4S81kpCvQm1NZvK3G3eX/xRhSZwNfggsdKHDCLa/3yhVqlEDGRxVxwhM+V2BHFhZTZ7LCFPGPZs9KE1AJxm7YyNI01eBPMQ4ue5GVZXkncE/oa64t4ChRj4qKj/w2tg+n58v3mEBlYq7cxOmuA+Jb6ozUp5NBQ8W5v0Ck5FRXTrdE8JEsHXSo5bdXagMMlB+sGXEYlnwfqFqFf2gpsylp1tOjQUEhFtl95bZei+AwZe5xKdJAseGKs3jY2Q+1ipqQffz7+On47fj/+UJIN43Aop95pbV/r+WDg4tzYB4wgLJwjbiw5zJ+aFST6B/F8SjwwjLznjOOxU8Th1nzYH/HL0EbwBxZO1Qfrv+S7uAk3QPi00fOhWu8gYc2PcNr4aaBueZnJ9SHLHfgt1k+ev4X+/e/HT67nV7PyVclPO5kp+fyd9W8AAAD//wMAUEsBAi0AFAAGAAgAAAAhAEE3gs9uAQAABAUAABMAAAAAAAAAAAAAAAAAAAAAAFtDb250ZW50X1R5cGVzXS54bWxQSwECLQAUAAYACAAAACEAtVUwI/QAAABMAgAACwAAAAAAAAAAAAAAAACnAwAAX3JlbHMvLnJlbHNQSwECLQAUAAYACAAAACEAUnathiQDAABwBwAADwAAAAAAAAAAAAAAAADMBgAAeGwvd29ya2Jvb2sueG1sUEsBAi0AFAAGAAgAAAAhAIE+lJfzAAAAugIAABoAAAAAAAAAAAAAAAAAHQoAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAi0AFAAGAAgAAAAhAE4ZicyICQAA9jEAABgAAAAAAAAAAAAAAAAAUAwAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbFBLAQItABQABgAIAAAAIQBNP4AshAYAAIAaAAATAAAAAAAAAAAAAAAAAA4WAAB4bC90aGVtZS90aGVtZTEueG1sUEsBAi0AFAAGAAgAAAAhAIXds0U7BgAASEcAAA0AAAAAAAAAAAAAAAAAwxwAAHhsL3N0eWxlcy54bWxQSwECLQAUAAYACAAAACEA0I3skQMDAACABgAAFAAAAAAAAAAAAAAAAAApIwAAeGwvc2hhcmVkU3RyaW5ncy54bWxQSwECLQAUAAYACAAAACEAO20yS8EAAABCAQAAIwAAAAAAAAAAAAAAAABeJgAAeGwvd29ya3NoZWV0cy9fcmVscy9zaGVldDEueG1sLnJlbHNQSwECLQAUAAYACAAAACEAFgSMk/sAAAAEBgAAJwAAAAAAAAAAAAAAAABgJwAAeGwvcHJpbnRlclNldHRpbmdzL3ByaW50ZXJTZXR0aW5nczEuYmluUEsBAi0AFAAGAAgAAAAhAI496IxPAQAAawIAABEAAAAAAAAAAAAAAAAAoCgAAGRvY1Byb3BzL2NvcmUueG1sUEsBAi0AFAAGAAgAAAAhAKW04jyUAQAAFAMAABAAAAAAAAAAAAAAAAAAJisAAGRvY1Byb3BzL2FwcC54bWxQSwUGAAAAAAwADAAmAwAA8C0AAAAA";
+
+    const requiredFieldIds = ['v_A6', 'v_C9', 'v_L10', 'v_C13', 'v_C15', 'v_C18', 'v_C20', 'v_F24'];
+
+    function allFieldsFilled() {
+        return requiredFieldIds.every(id => {
+            const el = document.getElementById(id);
+            return el && el.value.trim().length > 0;
+        });
+    }
+
+    function toggleDownloadState() {
+        document.getElementById('downloadBtn').disabled = !allFieldsFilled();
+    }
+
+    requiredFieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+        el.addEventListener(eventName, toggleDownloadState);
+    });
+
+    toggleDownloadState();
+
+    async function saveWorkbook(outBuffer, fileName) {
+        // Пытаемся показать системное окно выбора папки/файла, если браузер поддерживает File System Access API
+        if (window.showSaveFilePicker) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'Excel Workbook',
+                        accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(outBuffer);
+                await writable.close();
+                return;
+            } catch (err) {
+                // Если пользователь отменил — просто выходим без ошибки
+                if (err && err.name === 'AbortError') return;
+                console.warn('Fallback to FileSaver after picker error:', err);
+            }
+        }
+
+        // Фолбэк: стандартная загрузка через FileSaver (поведение зависит от настроек браузера)
+        const blob = new Blob([outBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, fileName);
+    }
+
+    async function generate() {
+        if (!allFieldsFilled()) {
+            alert('Заповніть усі поля перед завантаженням файлу.');
+            return;
+        }
+
+        if (TEMPLATE_BASE64.length < 100) {
+            alert("Помилка: Код шаблону не вшитий у скрипт!");
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const buffer = Uint8Array.from(atob(TEMPLATE_BASE64), c => c.charCodeAt(0));
+        await workbook.xlsx.load(buffer);
+        const ws = workbook.getWorksheet(1);
+
+        // Заповнення
+        ws.getCell('A6').value = document.getElementById('v_A6').value;
+        ws.getCell('C9').value = document.getElementById('v_C9').value;
+        ws.getCell('L10').value = document.getElementById('v_L10').value;
+        ws.getCell('C13').value = document.getElementById('v_C13').value;
+        ws.getCell('K13').value = document.getElementById('v_C13').value;
+        ws.getCell('C15').value = document.getElementById('v_C15').value;
+        ws.getCell('C18').value = document.getElementById('v_C18').value;
+        ws.getCell('F18').value = document.getElementById('v_C18').value;
+        ws.getCell('C20').value = document.getElementById('v_C20').value;
+        ws.getCell('F24').value = document.getElementById('v_F24').value;
+
+        const outBuffer = await workbook.xlsx.writeBuffer();
+        const shortName = document.getElementById('v_C9').value || 'new';
+        await saveWorkbook(outBuffer, `Анкета ${shortName}.xlsx`);
+    }
+
+    // Mobile nav toggle
+    const hamburger = document.getElementById('hamburger');
+    const nav = document.querySelector('.nav');
+    if (hamburger && nav) {
+        hamburger.addEventListener('click', () => {
+            nav.classList.toggle('open');
+            hamburger.classList.toggle('open');
+        });
+    }
+
+    // Instruction modal
+    const instructionBtn = document.getElementById('instructionBtn');
+    const instructionModal = document.getElementById('instructionModal');
+    const instructionClose = document.getElementById('instructionClose');
+
+    const closeInstruction = () => {
+        instructionModal?.classList.remove('open');
+        instructionModal?.setAttribute('aria-hidden', 'true');
+    };
+
+    const openInstruction = () => {
+        instructionModal?.classList.add('open');
+        instructionModal?.setAttribute('aria-hidden', 'false');
+    };
+
+    instructionBtn?.addEventListener('click', openInstruction);
+    instructionClose?.addEventListener('click', closeInstruction);
+    instructionModal?.addEventListener('click', (e) => {
+        if (e.target === instructionModal) closeInstruction();
+    });
+
+    // Buhalteria modal
+    const buhBtn = document.getElementById('buhBtn');
+    const buhModal = document.getElementById('buhModal');
+    const buhClose = document.getElementById('buhClose');
+
+    const closeBuh = () => {
+        buhModal?.classList.remove('open');
+        buhModal?.setAttribute('aria-hidden', 'true');
+    };
+
+    const openBuh = () => {
+        buhModal?.classList.add('open');
+        buhModal?.setAttribute('aria-hidden', 'false');
+        if (document.getElementById('buh_productList').children.length === 0) {
+            buh_addProductRow();
+        }
+        buh_updatePaymentLabel();
+    };
+
+    buhBtn?.addEventListener('click', openBuh);
+    buhClose?.addEventListener('click', closeBuh);
+    buhModal?.addEventListener('click', (e) => {
+        if (e.target === buhModal) closeBuh();
+    });
+
+    // Order form modal
+    const orderFormBtn = document.getElementById('orderFormBtn');
+    const orderModal = document.getElementById('orderModal');
+    const orderClose = document.getElementById('orderClose');
+
+    const closeOrder = () => {
+        orderModal?.classList.remove('open');
+        orderModal?.setAttribute('aria-hidden', 'true');
+    };
+
+    const openOrder = () => {
+        orderModal?.classList.add('open');
+        orderModal?.setAttribute('aria-hidden', 'false');
+    };
+
+    orderFormBtn?.addEventListener('click', openOrder);
+    orderClose?.addEventListener('click', closeOrder);
+    orderModal?.addEventListener('click', (e) => {
+        if (e.target === orderModal) closeOrder();
+    });
+
+    // Buhalteria functionality
+    const buh_productsDB = [
+        {name: "Швидкоз'ємний фронтальний навантажувач General-Х", price: 170000},
+        {name: "Швидкоз'ємний фронтальний навантажувач General-ХL", price: 190000},
+        {name: "Швидкоз'ємний фронтальний навантажувач General-EURO", price: 190000},
+        {name: "Швидкоз'ємний фронтальний навантажувач General-Х 3-х секційний", price: 175000},
+        {name: "Швидкоз'ємний фронтальний навантажувач General-ХL 3-х секційний", price: 195000},
+        {name: "Швидкоз'ємний фронтальний навантажувач General-EURO 3-х секційний", price: 195000},
+        {name: "Швидкоз'ємний фронтальний навантажувач General - Х 2.0", price: 260000},
+        {name: "Комплект керування гідравлікою на дві секції", price: 14000},
+        {name: "Комплект керування гідравлікою на три секції", price: 25000},
+        {name: "Ківш 1,8 м", price: 35000},
+        {name: "Ківш 2 м", price: 37000},
+        {name: "Ківш 2,2 м", price: 39000},
+        {name: "Ківш 2,4 м", price: 41000},
+        {name: "Ківш будівельний 1,6 м", price: 35000},
+        {name: "Ківш з захватом", price: 80000},
+        {name: "Ківш високого висипу", price: 85000},
+        {name: "Ківш щелепний 1.8 м", price: 75000},
+        {name: "Ківш щелепний 2 м", price: 80000},
+        {name: "Ківш для біг - бегів", price: 100000},
+        {name: "Збільшений Ківш на 1.5м3", price: 45000},
+        {name: "Вила для піддонів", price: 30000},
+        {name: "Гак для біг - бегів", price: 30000},
+        {name: "Вила-гак 2 в 1", price: 38000},
+        {name: "Вила-гак 3 в 1", price: 42000},
+        {name: "Відвал гідроповоротний двосторонній", price: 65000},
+        {name: "Відвал грейдерний", price: 70000},
+        {name: "Відвал для буртування зерна", price: 45000},
+        {name: "Відвал універсальний двосторонній", price: 55000},
+        {name: "Відвал універсальний (двосторонній) гідроповоротний EURO", price: 85000},
+        {name: "Захват для тюків", price: 85000},
+        {name: "Вила сінажні General", price: 78000},
+        {name: "Вила для тюків General", price: 28000},
+        {name: "Захват для колод General", price: 50000},
+        {name: "Кран-маніпулятор GENERAL CRANE Mini", price: 120000},
+        {name: "Кран-маніпулятор поворотний General SL-2000", price: 400000},
+        {name: "Культиватор КНС 3.0 DV", price: 220000},
+        {name: "Культиватор КНС 3.5 DV", price: 230000},
+        {name: "Культиватор КНС 4.0 DV", price: 240000},
+        {name: "Культиватор КНС 3.0 S", price: 220000},
+        {name: "Культиватор КНС 3.5 S", price: 230000},
+        {name: "Культиватор КНС 4.0 S", price: 240000},
+        {name: "Культиватор КПС 4.0 S", price: 380000},
+        {name: "Культиватор КПС 4.0 DV", price: 380000},
+        {name: "Культиватор КПРС 5.0 S", price: 500000},
+        {name: "Культиватор КПРС 5.0 DV", price: 500000},
+        {name: "Культиватор КПРС 6.0 S", price: 600000},
+        {name: "Культиватор КПРС 6.0 DV", price: 600000},
+        {name: "Культиватор КПРС 8.0 S", price: 800000},
+        {name: "Культиватор КПРС 8.0 DV", price: 800000},
+        {name: "Культиватор КРН 5.6 міжрядний (суцільна рама)", price: 350000},
+        {name: "Культиватор КРН 5.6 міжрядний розкладний", price: 450000},
+        {name: "Культиватор КРН 4.2 міжрядний (суцільна рама)", price: 300000},
+        {name: "Культиватор КРН 4.2 міжрядний розкладний", price: 400000},
+        {name: "Борона пружинна з плаваючими секціями", price: 360000},
+        {name: "Борона пружинна 9 м", price: 260000},
+        {name: "Борона пружинна 15 м", price: 480000},
+        {name: "Лущильник навісний 2,6 м", price: 300000},
+        {name: "Лущильник навісний 3,2 м", price: 390000},
+        {name: "Лущильник причіпний 3,2 м", price: 530000},
+        {name: "Лущильник причіпний 2,6 м", price: 420000},
+        {name: "Лущильник причіпний 4,2 м", price: 830000},
+        {name: "Лущильник причіпний 5,0 м", price: 1000000},
+        {name: "Борона дискова тяжка 6,0 м", price: 2400000},
+        {name: "Пристрій для внесення рідких добрив", price: 160000},
+        {name: "Глибокорозпушувач навісний 2.0 м", price: 400000},
+        {name: "Глибокорозпушувач навісний 2.5 м", price: 470000},
+        {name: "Глибокорозпушувач навісний 3.0 м", price: 570000},
+        {name: "Глибокорозпушувач навісний 3.5 м", price: 640000},
+        {name: "Глибокорозпушувач навісний 4.0 м", price: 720000},
+        {name: "Агрегат комбінований передпосівний навісний 3.0 м", price: 600000},
+        {name: "Агрегат комбінований передпосівний причіпний 3.0 м", price: 800000},
+        {name: "Агрегат комбінований передпосівний причіпний 4.0 м", price: 1100000},
+        {name: "Агрегат комбінований передпосівний причіпний 5.0 м", price: 1400000},
+        {name: "Агрегат комбінований передпосівний причіпний 6.0 м", price: 1800000}
+    ];
+
+    function buh_formatMoney(amount) {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+
+    function buh_addProductRow() {
+        const list = document.getElementById('buh_productList');
+        const div = document.createElement('div');
+        div.className = 'product-item';
+        
+        let options = `<option value="" data-price="0">-- Оберіть товар --</option>`;
+        buh_productsDB.forEach(p => {
+            options += `<option value="${p.name}" data-price="${p.price}">${p.name}</option>`;
+        });
+
+        div.innerHTML = `
+            <div style="flex: 3;">
+                <select class="product-select" onchange="buh_updateRowPrice(this)">
+                    ${options}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <input type="text" class="product-price" placeholder="Ціна" value="0" data-base-price="0" oninput="buh_validateProductPrice(this); buh_calculateAutoSum();">
+                <div class="price-error-msg" style="display: none;"></div>
+            </div>
+            <button class="btn-delete" onclick="buh_removeRow(this)">X</button>
+        `;
+        list.appendChild(div);
+    }
+
+    function buh_removeRow(btn) {
+        btn.parentElement.remove();
+        buh_distributeDeliveryCost();
+    }
+
+    function buh_updateRowPrice(select) {
+        const row = select.closest('.product-item');
+        const priceInput = row.querySelector('.product-price');
+        const price = select.options[select.selectedIndex].getAttribute('data-price');
+        
+        priceInput.setAttribute('data-base-price', price);
+        priceInput.value = buh_formatMoney(price);
+        
+        const errorMsg = row.querySelector('.price-error-msg');
+        if (errorMsg) {
+            errorMsg.style.display = 'none';
+            priceInput.classList.remove('price-error');
+        }
+        
+        buh_distributeDeliveryCost();
+    }
+
+    function buh_calculateAutoSum() {
+        let total = 0;
+        document.querySelectorAll('#buh_productList .product-price').forEach(inp => {
+            const cleanValue = inp.value.replace(/\s/g, '');
+            total += parseInt(cleanValue) || 0;
+        });
+        document.getElementById('buh_autoSumDisplay').innerText = buh_formatMoney(total);
+        buh_validateSum();
+    }
+
+    function buh_distributeDeliveryCost() {
+        const deliveryInput = document.getElementById('buh_deliveryCost');
+        const deliveryCost = parseInt(deliveryInput.value.replace(/\s/g, '')) || 0;
+        
+        const rows = document.querySelectorAll('#buh_productList .product-item');
+        const products = Array.from(rows).map(row => ({
+            input: row.querySelector('.product-price'),
+            select: row.querySelector('.product-select'),
+            basePrice: parseInt(row.querySelector('.product-price').getAttribute('data-base-price')) || 0
+        })).filter(p => p.basePrice > 0);
+        
+        if (products.length === 0) {
+            buh_calculateAutoSum();
+            return;
+        }
+        
+        products.forEach(p => p.finalPrice = p.basePrice);
+        
+        if (deliveryCost > 0) {
+            const totalBase = products.reduce((sum, p) => sum + p.basePrice, 0);
+            let remaining = deliveryCost;
+            
+            for (let i = 0; i < products.length; i++) {
+                const p = products[i];
+                let share;
+                if (i === products.length - 1) {
+                    share = remaining;
+                } else {
+                    share = Math.floor(deliveryCost * (p.basePrice / totalBase));
+                }
+                p.finalPrice = p.basePrice + share;
+                remaining -= share;
+                if (!remaining) break;
+            }
+        }
+        
+        products.forEach(p => {
+            p.input.value = buh_formatMoney(p.finalPrice);
+            buh_validateProductPrice(p.input);
+        });
+        
+        buh_calculateAutoSum();
+    }
+    
+    function buh_validateProductPrice(priceInput) {
+        const row = priceInput.closest('.product-item');
+        const errorMsg = row.querySelector('.price-error-msg');
+        const basePrice = parseInt(priceInput.getAttribute('data-base-price')) || 0;
+        
+        if (basePrice === 0) {
+            priceInput.classList.remove('price-error');
+            if (errorMsg) errorMsg.style.display = 'none';
+            return;
+        }
+        
+        const currentValue = priceInput.value.replace(/\s/g, '');
+        const currentPrice = parseInt(currentValue) || 0;
+        const maxAllowed = Math.floor(basePrice * 1.2);
+        
+        if (currentPrice > maxAllowed) {
+            priceInput.classList.add('price-error');
+            if (errorMsg) {
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = `⚠️ Перевищено максимум! Базова: ${buh_formatMoney(basePrice)}, Макс (+20%): ${buh_formatMoney(maxAllowed)}`;
+            }
+        } else {
+            priceInput.classList.remove('price-error');
+            if (errorMsg) errorMsg.style.display = 'none';
+        }
+    }
+    
+    function buh_validateSum() {
+        const manualInput = document.getElementById('buh_totalSumManual');
+        const errorDiv = document.getElementById('buh_sumErrorMessage');
+        
+        const manualValue = manualInput.value.replace(/\s/g, '').replace(/грн\.?/gi, '');
+        const manualSum = parseInt(manualValue) || 0;
+        
+        const autoSumText = document.getElementById('buh_autoSumDisplay').innerText.replace(/\s/g, '');
+        const autoSum = parseInt(autoSumText) || 0;
+        
+        if (manualSum > 0 && autoSum > 0 && manualSum !== autoSum) {
+            manualInput.classList.add('sum-error');
+            errorDiv.style.display = 'block';
+            errorDiv.innerText = `⚠️ Сума не збігається! Автосума: ${buh_formatMoney(autoSum)} грн, Вказано: ${buh_formatMoney(manualSum)} грн`;
+        } else {
+            manualInput.classList.remove('sum-error');
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    function buh_updatePaymentLabel() {
+        const p = document.getElementById('buh_paymentPercent').value;
+        if (p === 'передплата' || p === 'оплата по факту поставки') {
+            document.getElementById('buh_paymentTextPreview').innerText = p;
+        } else {
+            const remainder = 100 - p;
+            document.getElementById('buh_paymentTextPreview').innerText = `${p}% передплата, ${remainder}% по факту поставки`;
+        }
+    }
+
+    function buh_toggleCustomPosition() {
+        const sel = document.getElementById('buh_positionSelect');
+        const inp = document.getElementById('buh_positionCustom');
+        if (sel.value === 'custom') {
+            inp.style.display = 'block';
+            inp.focus();
+        } else {
+            inp.style.display = 'none';
+        }
+    }
+
+    function buh_generateMessage() {
+        const payer = document.getElementById('buh_payer').value;
+        const seller = document.getElementById('buh_seller').value;
+        
+        let productsText = "";
+        const rows = document.querySelectorAll('#buh_productList .product-item');
+        rows.forEach(row => {
+            const sel = row.querySelector('.product-select');
+            const price = row.querySelector('.product-price').value;
+            const name = sel.value;
+            if(name) {
+                productsText += `${name} 1 шт. - ${price} грн.\n`;
+            }
+        });
+
+        const totalSum = document.getElementById('buh_totalSumManual').value;
+        const percent = document.getElementById('buh_paymentPercent').value;
+        
+        let paymentText;
+        if (percent === 'передплата') {
+            paymentText = 'Оплата: передплата';
+        } else if (percent === 'оплата по факту поставки') {
+            paymentText = 'Оплата: оплата по факту поставки';
+        } else {
+            paymentText = `Оплата: ${percent}% передплата, ${100-percent}% по факту поставки`;
+        }
+        
+        const deliveryDays = document.getElementById('buh_deliveryDays').value;
+        
+        let position = document.getElementById('buh_positionSelect').value;
+        if(position === 'custom') {
+            position = document.getElementById('buh_positionCustom').value;
+        }
+
+        const tax = document.getElementById('buh_taxStatus').value;
+        const delivery = document.getElementById('buh_deliveryStatus').value;
+        const clientName = document.getElementById('buh_clientName').value;
+        const phone = document.getElementById('buh_clientPhone').value;
+
+        const finalMessage = `${payer}
+${seller}
+
+${productsText}
+ЗАГАЛЬНА СУМА: ${totalSum} грн.
+
+${paymentText}
+Термін доставки: ${deliveryDays} робочих днів з моменту передплати
+Посада - ${position}
+${tax}
+
+${delivery}
+
+${clientName}
+${phone}
+
+Анкета на пошті`;
+
+        document.getElementById('buh_resultOutput').value = finalMessage;
+    }
+
+    function buh_copyToClipboard() {
+        const copyText = document.getElementById("buh_resultOutput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(copyText.value);
+        alert("Текст скопійовано!");
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Prep context for LN 2.6 changes",
+			"type": "shell",
+			"command": "echo Preparing edits for LN 2.6 modal and buttons"
+		},
+		{
+			"label": "Apply LN 2.6 modal and buttons edits",
+			"type": "shell",
+			"command": "echo Applying replacements in gm-script.html"
+		}
+	]
+}

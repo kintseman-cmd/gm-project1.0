@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор повідомлення</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .col-half {
+            flex: 1;
+        }
+        
+        /* Product List Styling */
+        #productList {
+            background: #fafafa;
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .product-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: flex-start;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .product-select {
+            width: 100%;
+        }
+        .product-price {
+            width: 100%;
+        }
+        .btn-delete {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        
+        /* Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        .btn-add {
+            background-color: #27ae60;
+            color: white;
+        }
+        .btn-gen {
+            background-color: #2980b9;
+            color: white;
+            margin-top: 20px;
+        }
+        .btn-copy {
+            background-color: #8e44ad;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Result Area */
+        #resultOutput {
+            height: 300px;
+            font-family: monospace;
+            background-color: #f8f9fa;
+            border: 1px solid #333;
+        }
+        
+        .helper-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .sum-error {
+            border: 2px solid #ff4d4d !important;
+            background-color: #fff5f5 !important;
+        }
+        
+        .sum-error-text {
+            color: #ff4d4d;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        
+        .price-error {
+            border: 2px solid #ff9800 !important;
+            background-color: #fff8f0 !important;
+        }
+        
+        .price-error-msg {
+            color: #ff9800;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Генератор повідомлення в групу рахунки/договора</h2>
+
+    <div class="row">
+        <div class="col-half form-group">
+            <label>1. Платник (ФГ, ТОВ...)</label>
+            <input type="text" id="payer" placeholder="ФГ ШПИКОЛОС">
+        </div>
+        <div class="col-half form-group">
+            <label>2. Продавець</label>
+            <input type="text" id="seller" value="ТОВ АГРОКУБ" placeholder="ТОВ АГРОКУБ або ФОП ДЖУС">
+        </div>
+    </div>
+
+    <hr>
+
+    <label>3. Товари</label>
+    <div id="productList">
+        </div>
+    <button class="btn btn-add" onclick="addProductRow()">+ Додати товар</button>
+    <div class="helper-text" style="text-align: right; margin-bottom: 10px;">Автосума (довідково): <span id="autoSumDisplay">0</span> грн</div>
+
+    <div class="form-group">
+        <label>3.1. Сума доставки (автоматично розподілиться між товарами)</label>
+        <input type="text" id="deliveryCost" placeholder="Наприклад: 5 000" oninput="distributeDeliveryCost()">
+        <div class="helper-text">Не відображається у фінальному тексті. Додається до цін товарів.</div>
+    </div>
+
+    <div class="form-group">
+        <label>4. Загальна сума (пишемо руками)</label>
+        <input type="text" id="totalSumManual" placeholder="Наприклад: 365 000" oninput="validateSum()">
+        <div id="sumErrorMessage" class="sum-error-text" style="display: none;"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-half form-group">
+            <label>5. Передплата (%)</label>
+            <select id="paymentPercent" onchange="updatePaymentLabel()">
+                <option value="передплата">передплата</option>
+                <option value="оплата по факту поставки">оплата по факту поставки</option>
+                <option value="10">10% / 90%</option>
+                <option value="20">20% / 80%</option>
+                <option value="30">30% / 70%</option>
+                <option value="50">50% / 50%</option>
+                <option value="100">100% / 0%</option>
+            </select>
+            <div class="helper-text" id="paymentTextPreview">передплата</div>
+        </div>
+        <div class="col-half form-group">
+            <label>6. Термін поставки (днів)</label>
+            <input type="number" id="deliveryDays" value="10">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-half form-group">
+            <label>7. Посада</label>
+            <div style="display: flex; gap: 5px;">
+                <select id="positionSelect" onchange="toggleCustomPosition()" style="flex: 1;">
+                    <option value="Голова">Голова</option>
+                    <option value="Директор">Директор</option>
+                    <option value="Керівник">Керівник</option>
+                    <option value="Власник">Власник</option>
+                    <option value="custom">Свій варіант...</option>
+                </select>
+            </div>
+            <input type="text" id="positionCustom" placeholder="Впишіть посаду" style="display: none; margin-top: 5px;">
+        </div>
+        <div class="col-half form-group">
+            <label>8. Платник ПДВ</label>
+            <select id="taxStatus">
+                <option value="Платник ПДВ">Платник ПДВ</option>
+                <option value="Не платник ПДВ">Не платник ПДВ</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>9. Доставка</label>
+        <select id="deliveryStatus">
+            <option value="Доставка врахована">Доставка врахована</option>
+            <option value="Доставка НЕ врахована">Доставка НЕ врахована</option>
+            <option value="Самовивіз">Самовивіз</option>
+        </select>
+    </div>
+
+    <div class="row">
+        <div class="col-half form-group">
+            <label>10. ПІБ Клієнта</label>
+            <input type="text" id="clientName" placeholder="Іванов Іван Іванович">
+        </div>
+        <div class="col-half form-group">
+            <label>11. Телефон</label>
+            <input type="text" id="clientPhone" placeholder="0660000000">
+        </div>
+    </div>
+
+    <button class="btn btn-gen" onclick="generateMessage()">Сформувати повідомлення</button>
+
+    <div class="form-group">
+        <label>Результат:</label>
+        <textarea id="resultOutput"></textarea>
+    </div>
+    
+    <button class="btn btn-copy" onclick="copyToClipboard()">Копіювати текст</button>
+</div>
+
+<script>
+    // Database of products from your list
+    const productsDB = [
+        {name: "Швидкоз’ємний фронтальний навантажувач General-Х", price: 170000},
+        {name: "Швидкоз’ємний фронтальний навантажувач General-ХL", price: 190000},
+        {name: "Швидкоз’ємний фронтальний навантажувач General-EURO", price: 190000},
+        {name: "Швидкоз’ємний фронтальний навантажувач General-Х 3-х секційний", price: 175000},
+        {name: "Швидкоз’ємний фронтальний навантажувач General-ХL 3-х секційний", price: 195000},
+        {name: "Швидкоз’ємний фронтальний навантажувач General-EURO 3-х секційний", price: 195000},
+        {name: "Швидкоз’ємний фронтальний навантажувач General - Х 2.0", price: 260000},
+        {name: "Комплект керування гідравлікою на дві секції", price: 14000},
+        {name: "Комплект керування гідравлікою на три секції", price: 25000},
+        {name: "Ківш 1,8 м", price: 35000},
+        {name: "Ківш 2 м", price: 37000},
+        {name: "Ківш 2,2 м", price: 39000},
+        {name: "Ківш 2,4 м", price: 41000},
+        {name: "Ківш будівельний 1,6 м", price: 35000},
+        {name: "Ківш з захватом", price: 80000},
+        {name: "Ківш високого висипу", price: 85000},
+        {name: "Ківш щелепний 1.8 м", price: 75000},
+        {name: "Ківш щелепний 2 м", price: 80000},
+        {name: "Ківш для біг - бегів", price: 100000},
+        {name: "Збільшений Ківш на 1.5м3", price: 45000},
+        {name: "Вила для піддонів", price: 30000},
+        {name: "Гак для біг - бегів", price: 30000},
+        {name: "Вила-гак 2 в 1", price: 38000},
+        {name: "Вила-гак 3 в 1", price: 42000},
+        {name: "Відвал гідроповоротний двосторонній", price: 65000},
+        {name: "Відвал грейдерний", price: 70000},
+        {name: "Відвал для буртування зерна", price: 45000},
+        {name: "Відвал універсальний двосторонній", price: 55000},
+        {name: "Відвал універсальний (двосторонній) гідроповоротний EURO", price: 85000},
+        {name: "Захват для тюків", price: 85000},
+        {name: "Вила сінажні General", price: 78000},
+        {name: "Вила для тюків General", price: 28000},
+        {name: "Захват для колод General", price: 50000},
+        {name: "Кран-маніпулятор GENERAL CRANE Mini", price: 120000},
+        {name: "Кран-маніпулятор поворотний General SL-2000", price: 400000},
+        {name: "Культиватор КНС 3.0 DV", price: 220000},
+        {name: "Культиватор КНС 3.5 DV", price: 230000},
+        {name: "Культиватор КНС 4.0 DV", price: 240000},
+        {name: "Культиватор КНС 3.0 S", price: 220000},
+        {name: "Культиватор КНС 3.5 S", price: 230000},
+        {name: "Культиватор КНС 4.0 S", price: 240000},
+        {name: "Культиватор КПС 4.0 S", price: 380000},
+        {name: "Культиватор КПС 4.0 DV", price: 380000},
+        {name: "Культиватор КПРС 5.0 S", price: 500000},
+        {name: "Культиватор КПРС 5.0 DV", price: 500000},
+        {name: "Культиватор КПРС 6.0 S", price: 600000},
+        {name: "Культиватор КПРС 6.0 DV", price: 600000},
+        {name: "Культиватор КПРС 8.0 S", price: 800000},
+        {name: "Культиватор КПРС 8.0 DV", price: 800000},
+        {name: "Культиватор КРН 5.6 міжрядний (суцільна рама)", price: 350000},
+        {name: "Культиватор КРН 5.6 міжрядний розкладний", price: 450000},
+        {name: "Культиватор КРН 4.2 міжрядний (суцільна рама)", price: 300000},
+        {name: "Культиватор КРН 4.2 міжрядний розкладний", price: 400000},
+        {name: "Борона пружинна з плаваючими секціями", price: 360000},
+        {name: "Борона пружинна 9 м", price: 260000},
+        {name: "Борона пружинна 15 м", price: 480000},
+        {name: "Лущильник навісний 2,6 м", price: 300000},
+        {name: "Лущильник навісний 3,2 м", price: 390000},
+        {name: "Лущильник причіпний 3,2 м", price: 530000},
+        {name: "Лущильник причіпний 2,6 м", price: 420000},
+        {name: "Лущильник причіпний 4,2 м", price: 830000},
+        {name: "Лущильник причіпний 5,0 м", price: 1000000},
+        {name: "Борона дискова тяжка 6,0 м", price: 2400000},
+        {name: "Пристрій для внесення рідких добрив", price: 160000},
+        {name: "Глибокорозпушувач навісний 2.0 м", price: 400000},
+        {name: "Глибокорозпушувач навісний 2.5 м", price: 470000},
+        {name: "Глибокорозпушувач навісний 3.0 м", price: 570000},
+        {name: "Глибокорозпушувач навісний 3.5 м", price: 640000},
+        {name: "Глибокорозпушувач навісний 4.0 м", price: 720000},
+        {name: "Агрегат комбінований передпосівний навісний 3.0 м", price: 600000},
+        {name: "Агрегат комбінований передпосівний причіпний 3.0 м", price: 800000},
+        {name: "Агрегат комбінований передпосівний причіпний 4.0 м", price: 1100000},
+        {name: "Агрегат комбінований передпосівний причіпний 5.0 м", price: 1400000},
+        {name: "Агрегат комбінований передпосівний причіпний 6.0 м", price: 1800000}
+    ];
+
+    // Helper to format money
+    function formatMoney(amount) {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+
+    // Initialize
+    window.onload = function() {
+        addProductRow();
+        updatePaymentLabel();
+    };
+
+    function addProductRow() {
+        const list = document.getElementById('productList');
+        const div = document.createElement('div');
+        div.className = 'product-item';
+        
+        let options = `<option value="" data-price="0">-- Оберіть товар --</option>`;
+        productsDB.forEach(p => {
+            options += `<option value="${p.name}" data-price="${p.price}">${p.name}</option>`;
+        });
+
+        div.innerHTML = `
+            <div style="flex: 3;">
+                <select class="product-select" onchange="updateRowPrice(this)">
+                    ${options}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <input type="text" class="product-price" placeholder="Ціна" value="0" data-base-price="0" oninput="validateProductPrice(this); calculateAutoSum();">
+                <div class="price-error-msg" style="display: none;"></div>
+            </div>
+            <button class="btn-delete" onclick="removeRow(this)">X</button>
+        `;
+        list.appendChild(div);
+    }
+
+    function removeRow(btn) {
+        btn.parentElement.remove();
+        distributeDeliveryCost();
+    }
+
+    function updateRowPrice(select) {
+        const row = select.closest('.product-item');
+        const priceInput = row.querySelector('.product-price');
+        const price = select.options[select.selectedIndex].getAttribute('data-price');
+        
+        // Store base price for validation
+        priceInput.setAttribute('data-base-price', price);
+        priceInput.value = formatMoney(price);
+        
+        // Clear any previous error
+        const errorMsg = row.querySelector('.price-error-msg');
+        if (errorMsg) {
+            errorMsg.style.display = 'none';
+            priceInput.classList.remove('price-error');
+        }
+        
+        // Redistribute delivery if set
+        distributeDeliveryCost();
+    }
+
+    function calculateAutoSum() {
+        let sum = 0;
+        const priceInputs = document.querySelectorAll('.product-price');
+        priceInputs.forEach(inp => {
+            // Remove spaces to parse int
+            let val = parseInt(inp.value.replace(/\s/g, '')) || 0;
+            sum += val;
+        });
+        document.getElementById('autoSumDisplay').innerText = formatMoney(sum);
+        
+        // Optional: Auto-fill manual sum field if empty
+        // document.getElementById('totalSumManual').value = formatMoney(sum) + " грн.";
+        
+        // Re-validate whenever auto sum changes
+        validateSum();
+    }
+    
+    function distributeDeliveryCost() {
+        const deliveryCostInput = document.getElementById('deliveryCost');
+        const deliveryCostValue = deliveryCostInput ? deliveryCostInput.value.replace(/\s/g, '') : '0';
+        const deliveryCost = parseInt(deliveryCostValue) || 0;
+        
+        const priceInputs = document.querySelectorAll('.product-price');
+        
+        // If no delivery cost, reset all to base prices
+        if (deliveryCost === 0) {
+            priceInputs.forEach(inp => {
+                const basePrice = parseInt(inp.getAttribute('data-base-price')) || 0;
+                if (basePrice > 0) {
+                    inp.value = formatMoney(basePrice);
+                    validateProductPrice(inp);
+                }
+            });
+            calculateAutoSum();
+            return;
+        }
+        
+        // Collect all products with base prices
+        const products = [];
+        priceInputs.forEach(inp => {
+            const basePrice = parseInt(inp.getAttribute('data-base-price')) || 0;
+            if (basePrice > 0) {
+                const maxAllowed = Math.floor(basePrice * 1.2);
+                products.push({ input: inp, basePrice, maxAllowed, finalPrice: basePrice });
+            }
+        });
+        
+        if (products.length === 0) {
+            calculateAutoSum();
+            return;
+        }
+        
+        // Calculate total base price for proportional distribution
+        const totalBasePrice = products.reduce((sum, p) => sum + p.basePrice, 0);
+        
+        let remainingDelivery = deliveryCost;
+        
+        // First pass: distribute proportionally
+        products.forEach(p => {
+            const proportion = p.basePrice / totalBasePrice;
+            const deliveryShare = Math.floor(proportion * deliveryCost);
+            const proposedPrice = p.basePrice + deliveryShare;
+            
+            if (proposedPrice <= p.maxAllowed) {
+                p.finalPrice = proposedPrice;
+                remainingDelivery -= deliveryShare;
+            } else {
+                p.finalPrice = p.maxAllowed;
+                remainingDelivery -= (p.maxAllowed - p.basePrice);
+            }
+        });
+        
+        // Second pass: distribute remaining among products that have room
+        if (remainingDelivery > 0) {
+            const flexibleProducts = products.filter(p => p.finalPrice < p.maxAllowed);
+            
+            while (remainingDelivery > 0 && flexibleProducts.length > 0) {
+                const sharePerProduct = Math.max(1, Math.floor(remainingDelivery / flexibleProducts.length));
+                let distributed = false;
+                
+                for (let i = flexibleProducts.length - 1; i >= 0; i--) {
+                    const p = flexibleProducts[i];
+                    const room = p.maxAllowed - p.finalPrice;
+                    
+                    if (room > 0) {
+                        const toAdd = Math.min(room, sharePerProduct, remainingDelivery);
+                        p.finalPrice += toAdd;
+                        remainingDelivery -= toAdd;
+                        distributed = true;
+                        
+                        if (p.finalPrice >= p.maxAllowed) {
+                            flexibleProducts.splice(i, 1);
+                        }
+                        
+                        if (remainingDelivery === 0) break;
+                    }
+                }
+                
+                if (!distributed) break; // Can't distribute more
+            }
+        }
+        
+        // Apply final prices
+        products.forEach(p => {
+            p.input.value = formatMoney(p.finalPrice);
+            validateProductPrice(p.input);
+        });
+        
+        calculateAutoSum();
+    }
+    
+    function validateProductPrice(priceInput) {
+        const row = priceInput.closest('.product-item');
+        const errorMsg = row.querySelector('.price-error-msg');
+        
+        // Get base price from data attribute
+        const basePrice = parseInt(priceInput.getAttribute('data-base-price')) || 0;
+        
+        // Skip validation if no product selected yet
+        if (basePrice === 0) {
+            priceInput.classList.remove('price-error');
+            if (errorMsg) errorMsg.style.display = 'none';
+            return;
+        }
+        
+        // Get current entered price
+        const currentValue = priceInput.value.replace(/\s/g, '');
+        const currentPrice = parseInt(currentValue) || 0;
+        
+        // Calculate max allowed (base + 20%)
+        const maxAllowed = Math.floor(basePrice * 1.2);
+        
+        // Check if exceeded
+        if (currentPrice > maxAllowed) {
+            priceInput.classList.add('price-error');
+            if (errorMsg) {
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = `⚠️ Перевищено максимум! Базова: ${formatMoney(basePrice)}, Макс (+20%): ${formatMoney(maxAllowed)}`;
+            }
+        } else {
+            priceInput.classList.remove('price-error');
+            if (errorMsg) errorMsg.style.display = 'none';
+        }
+    }
+    
+    function validateSum() {
+        const manualInput = document.getElementById('totalSumManual');
+        const errorDiv = document.getElementById('sumErrorMessage');
+        
+        // Get manual sum (remove spaces and "грн." if present)
+        const manualValue = manualInput.value.replace(/\s/g, '').replace(/грн\.?/gi, '');
+        const manualSum = parseInt(manualValue) || 0;
+        
+        // Get auto-calculated sum
+        const autoSumText = document.getElementById('autoSumDisplay').innerText.replace(/\s/g, '');
+        const autoSum = parseInt(autoSumText) || 0;
+        
+        // Check if there's a mismatch
+        if (manualSum > 0 && autoSum > 0 && manualSum !== autoSum) {
+            manualInput.classList.add('sum-error');
+            errorDiv.style.display = 'block';
+            errorDiv.innerText = `⚠️ Сума не збігається! Автосума: ${formatMoney(autoSum)} грн, Вказано: ${formatMoney(manualSum)} грн`;
+        } else {
+            manualInput.classList.remove('sum-error');
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    function updatePaymentLabel() {
+        const p = document.getElementById('paymentPercent').value;
+        const remainder = 100 - p;
+        document.getElementById('paymentTextPreview').innerText = `${p}% передплата, ${remainder}% по факту поставки`;
+    }
+
+    function toggleCustomPosition() {
+        const sel = document.getElementById('positionSelect');
+        const inp = document.getElementById('positionCustom');
+        if (sel.value === 'custom') {
+            inp.style.display = 'block';
+            inp.focus();
+        } else {
+            inp.style.display = 'none';
+        }
+    }
+
+    function generateMessage() {
+        const payer = document.getElementById('payer').value;
+        const seller = document.getElementById('seller').value;
+        
+        // Products
+        let productsText = "";
+        const rows = document.querySelectorAll('.product-item');
+        rows.forEach(row => {
+            const sel = row.querySelector('.product-select');
+            const price = row.querySelector('.product-price').value;
+            const name = sel.value;
+            if(name) {
+                productsText += `${name} 1 шт. - ${price} грн.\n`;
+            }
+        });
+
+        const totalSum = document.getElementById('totalSumManual').value;
+        
+        // Payment
+        const percent = document.getElementById('paymentPercent').value;
+        const paymentText = `Оплата: ${percent}% передплата, ${100-percent}% по факту поставки`;
+        
+        const deliveryDays = document.getElementById('deliveryDays').value;
+        
+        // Position
+        let position = document.getElementById('positionSelect').value;
+        if(position === 'custom') {
+            position = document.getElementById('positionCustom').value;
+        }
+
+        const tax = document.getElementById('taxStatus').value;
+        const delivery = document.getElementById('deliveryStatus').value;
+        const clientName = document.getElementById('clientName').value;
+        const phone = document.getElementById('clientPhone').value;
+
+        // Construct Final Text
+        const finalMessage = `${payer}
+${seller}
+
+${productsText}
+ЗАГАЛЬНА СУМА: ${totalSum} грн.
+
+${paymentText}
+Термін доставки: ${deliveryDays} робочих днів з моменту передплати
+Посада - ${position}
+${tax}
+
+${delivery}
+
+${clientName}
+${phone}
+
+Анкета на пошті`;
+
+        document.getElementById('resultOutput').value = finalMessage;
+    }
+
+    function copyToClipboard() {
+        const copyText = document.getElementById("resultOutput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(copyText.value);
+        alert("Текст скопійовано!");
+    }
+</script>
+
+</body>
+</html>

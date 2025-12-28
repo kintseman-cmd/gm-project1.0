@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Форма Замовлення GM</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { fontFamily: { sans: ['Inter', 'Arial', 'sans-serif'] } }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-body: #1c1c1e; --card-bg: #2c2c2e; --text-main: #ffffff;
+            --text-muted: #9CA3AF; --accent: #FFC107; --accent-hover: #ffcf45;
+            --border: #444444; --input-bg: #38383a; --success: #32D74B; --telegram: #2AABEE;
+        }
+        .light-theme {
+            --bg-body: #F2F2F7; --card-bg: #FFFFFF; --text-main: #000000;
+            --text-muted: #666666; --accent: #FFC107; --accent-hover: #ffdb68;
+            --border: #C6C6C8; --input-bg: #E5E5EA; --success: #34C759;
+        }
+        * {
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+          transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+          font-family: 'Inter', sans-serif;
+          background-color: var(--bg-body);
+          color: var(--text-main);
+          margin: 0;
+          padding: 0;
+          display: flex; /* Flexbox для центрування */
+          justify-content: center; /* Центр по горизонталі */
+          align-items: flex-start; /* Верхній край (щоб не було проблем при скролі на мобільному) */
+          min-height: 100vh;
+        }
+
+        /* Стилі контейнера */
+        .gm-container {
+          background-color: var(--card-bg);
+          width: 100%;
+          max-width: 480px; 
+          padding: 20px 20px 50px 20px;
+          padding-top: 30px;
+          position: relative;
+          z-index: 10;
+        }
+
+        /* --- ВИПРАВЛЕНИЙ БЛОК ДЛЯ ПК/ПЛАНШЕТІВ --- */
+        @media (min-width: 500px) {
+          body {
+            padding: 20px;
+            align-items: flex-start; /* Можна змінити на center, якщо хочете по центру висоти */
+            padding-top: 40px;
+          }
+
+          .gm-container {
+            max-width: 500px; 
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            /* margin: 0 auto; - не обов'язково при justify-content: center у body, але не завадить */
+          }
+        }
+        /* ------------------------------------------ */
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 6px; background-color: var(--input-bg); z-index: 50; }
+        .progress-bar { height: 100%; width: 0%; background-color: var(--accent); transition: width 0.4s ease; }
+        
+        /* Theme Switch */
+        .theme-switch-wrapper { position: absolute; top: 15px; right: 15px; z-index: 20; }
+        .theme-checkbox { display: none; }
+        .theme-label { cursor: pointer; background-color: var(--input-bg); width: 50px; height: 26px; border-radius: 50px; position: relative; display: block; border: 1px solid var(--border); }
+        .theme-label::after { content: '🌙'; font-size: 14px; position: absolute; top: 2px; left: 3px; width: 20px; height: 20px; background-color: var(--card-bg); border-radius: 50%; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .theme-checkbox:checked + .theme-label::after { left: 25px; content: '☀️'; }
+        .theme-checkbox:checked + .theme-label { background-color: var(--accent); }
+        
+        /* Elements */
+        h2 { text-align: center; color: var(--accent); margin-bottom: 25px; font-weight: 800; font-size: 1.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 15px; margin-top: 10px; }
+        .form-group { margin-bottom: 18px; margin-top: 18px }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+        input, select, textarea { width: 100%; padding: 14px; background-color: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; font-size: 16px; color: var(--text-main); outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+        optgroup { font-weight: bold; background-color: var(--card-bg); }
+        hr { border: none; height: 1px; background-color: var(--border); margin: 25px 0; opacity: 0.5; }
+        
+        /* Radio/Check */
+        .radio-group, .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
+        .radio-group label, .checkbox-group label { font-weight: normal; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); margin: 0; }
+        input[type="radio"], input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border: 2px solid var(--border); background-color: var(--input-bg); border-radius: 6px; position: relative; flex-shrink: 0; }
+        input[type="radio"] { border-radius: 50%; }
+        input:checked { background-color: var(--accent); border-color: var(--accent); }
+        input[type="checkbox"]:checked:after { content: '✓'; font-size: 16px; color: #1c1c1e; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; }
+        input[type="radio"]:checked:after { content: ''; width: 10px; height: 10px; background: #1c1c1e; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        /* Info button */
+        .info-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-left: 8px; cursor: pointer; }
+        .info-btn:hover { background: var(--accent); color: #1c1c1e; border-color: var(--accent); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9998; padding: 15px; }
+        .modal-overlay.visible { display: flex; }
+        .modal-card { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 14px; max-width: 520px; width: 100%; box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+        .modal-title { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--accent); }
+        .modal-close { background: none; border: none; color: var(--text-main); font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 4px 8px; border-radius: 8px; }
+        .modal-close:hover { background: var(--input-bg); }
+        .modal-body { padding: 16px 18px 20px; max-height: 70vh; overflow-y: auto; }
+        .gift-section { margin-bottom: 18px; }
+        .gift-section h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-main); }
+        .gift-list { margin: 0; padding-left: 18px; color: var(--text-main); }
+        .gift-list li { margin-bottom: 6px; line-height: 1.35; }
+        .gift-note { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
+        
+        /* Buttons */
+        .btn { width: 100%; padding: 16px; background-color: var(--accent); color: #1c1c1e; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background-color: var(--border); color: var(--text-main); text-transform: none; font-weight: 600; font-size: 1rem; }
+        .btn-telegram { background-color: var(--telegram); color: #fff; }
+        
+        /* Lists & Result */
+        .product-adder { background: rgba(125,125,125,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        #added-products-list { list-style: none; padding: 0; margin-top: 15px; }
+        #added-products-list li { padding: 12px; margin-bottom: 8px; background-color: var(--input-bg); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-main); }
+        .remove-item { color: #ff6666; font-weight: bold; font-size: 1.5rem; padding: 0 10px; }
+        .edit-item { background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; }
+        .edit-item:hover { border-color: var(--accent); color: var(--accent); }
+        #result-area { display: none; margin-top: 30px; padding: 20px; background-color: var(--input-bg); border-top: 5px solid var(--accent); border-radius: 12px; }
+        #final-text { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: var(--text-main); background-color: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+        
+        /* Address Grid */
+        .address-grid { display: flex; flex-direction: column; gap: 15px; }
+        @media (min-width: 500px) { .address-grid { display: grid; grid-template-columns: 1fr 1fr; } .address-grid > .form-group:last-child { grid-column: 1 / -1; } }
+        
+        /* Animation */
+        #celebration-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(28,28,30,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; overflow: hidden; }
+        #celebration-overlay.visible { opacity: 1; pointer-events: all; }
+        #fireworks-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        .celebration-content { position: relative; z-index: 10; text-align: center; padding: 20px; }
+        .salute-text { font-size: 2.5rem; font-weight: 800; color: var(--accent); margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,193,7,0.5); animation: popIn 0.5s; }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+        
+        /* Alert */
+        #status-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; border-radius: 10px; text-align: center; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 10000; display: none; }
+    </style>
+</head>
+<body>
+
+<div id="status-message"></div>
+
+<div id="celebration-overlay">
+    <canvas id="fireworks-canvas"></canvas>
+    <div class="celebration-content">
+        <div id="celebration-text" class="salute-text"></div>
+    </div>
+</div>
+
+<div class="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
+</div>
+
+<div class="gm-container">
+    <div class="theme-switch-wrapper">
+        <input type="checkbox" class="theme-checkbox" id="theme-toggle">
+        <label class="theme-label" for="theme-toggle"></label>
+    </div>
+    
+    <div id="order-form">
+        <h2>Формування Замовлення (GM)</h2>
+        
+        <div class="form-group p-4 bg-[rgba(125,125,125,0.05)] rounded-xl border border-border">
+            <label class="flex items-center cursor-pointer text-base font-bold mb-0" style="color: var(--text-main);">
+                <input type="checkbox" id="is-preorder" class="mr-3"> ❗️ Це Передзамовлення
+            </label>
+        </div>
+        
+        <hr>
+        
+        <div class="space-y-4">
+            <div class="form-group">
+                <label for="manager">Оберіть менеджера:</label>
+                <select id="manager" onchange="updateProgress()">
+                    <option value="" disabled selected>-- Не обрано --</option>
+                    <option value="Олександра Намістника">Олександр Намістник</option>
+                    <option value="Андрія Пашика">Андрій Пашик</option>
+                    <option value="Олександра Денисова">Олександр Денисов</option>
+                    <option value="Андрія Чорного">Іван</option>
+                    <option value="Артура Евтушенка">Артур Евтушенко</option>
+                </select>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="product-adder space-y-4">
+            <div class="form-group !mb-0">
+                <label for="product-select">Оберіть позицію:</label>
+                <select id="product-select">
+                    <option value="" disabled selected>-- Оберіть зі списку --</option>
+                    
+                    <optgroup label="Фронтальні навантажувачі">
+                        <option>Швидкоз’ємний фронтальний навантажувач General-Х</option>
+                        <option>Швидкоз’ємний фронтальний навантажувач General-ХL</option>
+                        <option>Швидкоз’ємний фронтальний навантажувач General- EURO</option>
+                        <option>Швидкоз’ємний фронтальний навантажувач General- Х 3-х секційний</option>
+                        <option>Швидкоз’ємний фронтальний навантажувач General- ХL 3-х секційний</option>
+                        <option>Швидкоз’ємний фронтальний навантажувач General- EURO 3-х секційний</option>
+                    </optgroup>
+
+                    <optgroup label="Керування гідравлікою">
+                        <option>Комплект керування гідравлікою на дві секції</option>
+                        <option>Комплект керування гідравлікою на три секції</option>
+                    </optgroup>
+
+                    <optgroup label="Ковші">
+                        <option>Ківш 1,8 м</option>
+                        <option>Ківш 2 м</option>
+                        <option>Ківш 2,2 м</option>
+                        <option>Ківш 2,4 м</option>
+                        <option>Ківш будівельний 1,6 м</option>
+                        <option>Ківш з захватом</option>
+                        <option>Ківш високого висипу</option>
+                        <option>Ківш щелепний 1.8 м</option>
+                        <option>Ківш щелепний 2 м</option>
+                        <option>Ківш для біг - бегів</option>
+                        <option>Збільшений Ківш на 1.5м3</option>
+                    </optgroup>
+
+                    <optgroup label="Вила та Захвати">
+                        <option>Вила для піддонів</option>
+                        <option>Гак для біг - бегів</option>
+                        <option>Вила- гак 2 в 1</option>
+                        <option>Вила- гак 3 в 1</option>
+                        <option>Захват для тюків</option>
+                        <option>Вила сінажні General</option>
+                        <option>Вила для тюків General</option>
+                        <option>Захват для колод General</option>
+                    </optgroup>
+
+                    <optgroup label="Відвали">
+                        <option>Відвал гідроповоротний двосторонній</option>
+                        <option>Відвал грейдерний</option>
+                        <option>Відвал для буртування зерна</option>
+                        <option>Відвал універсальний двосторонній</option>
+                        <option>Відвал універсальний (двосторонній) гідроповоротний EURO</option>
+                    </optgroup>
+
+                    <optgroup label="Маніпулятори">
+                        <option>Кран-маніпулятор GENERAL CRANE Mini</option>
+                        <option>Кран-маніпулятор поворотний General SL-2000</option>
+                    </optgroup>
+
+                    <optgroup label="Культиватори">
+                        <option>Культиватор КНС 3.0 DV</option>
+                        <option>Культиватор КНС 3.5 DV</option>
+                        <option>Культиватор КНС 4.0 DV</option>
+                        <option>Культиватор КНС 3.0 S</option>
+                        <option>Культиватор КНС 3.5 S</option>
+                        <option>Культиватор КНС 4.0 S</option>
+                        <option>Культиватор КПС 4.0 S</option>
+                        <option>Культиватор КПС 4.0 DV</option>
+                        <option>Культиватор КПРС 5.0 S</option>
+                        <option>Культиватор КПРС 5.0 DV</option>
+                        <option>Культиватор КПРС 6.0 S</option>
+                        <option>Культиватор КПРС 6.0 DV</option>
+                        <option>Культиватор КПРС 8.0 S</option>
+                        <option>Культиватор КПРС 8.0 DV</option>
+                        <option>Культиватор КРН 5.6 міжрядний (суцільна рама)</option>
+                        <option>Культиватор КРН 5.6 міжрядний розкладний</option>
+                        <option>Культиватор КРН 4.2 міжрядний (суцільна рама)</option>
+                        <option>Культиватор КРН 4.2 міжрядний розкладний</option>
+                    </optgroup>
+
+                    <optgroup label="Борони та Інше">
+                        <option>Борона пружинна з плаваючими секціями</option>
+                        <option>Борона пружинна 9 м</option>
+                        <option>Борона пружинна 15 м</option>
+                        <option>Лущильник навісний 2,6 м</option>
+                        <option>Лущильник навісний 3,2 м</option>
+                        <option>Лущильник причіпний 3,2 м</option>
+                        <option>Лущильник причіпний 2,6 м</option>
+                        <option>Лущильник причіпний 4,2 м</option>
+                        <option>Лущильник причіпний 5,0 м</option>
+                        <option>Борона дискова тяжка 6,0 м</option>
+                        <option>Пристрій для внесення рідких добрив</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div class="form-group !mb-0 pt-3">
+                <label for="item-comment">Коментар до цієї позиції (опціонально):</label>
+                <input type="text" id="item-comment" placeholder="напр. вуха та крючки не приварювати">
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="addItem()">+ Додати позицію</button>
+            <ul id="added-products-list"></ul>
+        </div>
+
+        <div class="form-group">
+            <label for="gift" class="flex items-center gap-2">Подарунок (опціонально):
+                <button type="button" class="info-btn" id="gift-info-btn" aria-label="Інструкція щодо подарунків">i</button>
+            </label>
+            <input type="text" id="gift" placeholder="шапка генерал, кепка, тощо">
+        </div>
+
+        <hr>
+
+        <div class="space-y-4">
+            <div class="form-group">
+                <label for="recipient-company">Отримувач (Назва фірми/господарства):</label>
+                <input type="text" id="recipient-company" placeholder="напр. К-Славік і К" oninput="updateProgress()">
+            </div>
+
+            <div class="form-group">
+                <label>Сума:</label>
+                <input type="number" id="amount" placeholder="напр. 338 000" inputmode="numeric" oninput="updateProgress()">
+
+                <div class="radio-group">
+                    <label><input type="radio" name="vat" value="ПДВ" checked> З ПДВ</label>
+                    <label><input type="radio" name="vat" value="Без ПДВ"> Без ПДВ (ФОП)</label>
+                    <label><input type="radio" name="vat" value="Готівка по факту поставки"> Готівка (при отриманні)</label>
+                </div>
+                
+                <label for="prepayment-details" class="block mt-4">Деталі передплати (опціонально):</label>
+                <input type="text" id="prepayment-details" placeholder="5000 грн на карту Жені Бутенко">
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+            <label>Адреса доставки:</label>
+            <div class="address-grid">
+                <div class="form-group !mb-0">
+                    <label for="delivery-oblast">Область:</label>
+                    <select id="delivery-oblast" onchange="populateRaions(); updateProgress()">
+                        <option value="" disabled selected>Оберіть область</option>
+                    </select>
+                </div>
+                
+                <div class="form-group !mb-0">
+                    <label for="delivery-raion">Новий Район (після реформи):</label>
+                    <select id="delivery-raion" disabled>
+                        <option value="" disabled selected>Спочатку оберіть область</option>
+                    </select>
+                </div>
+
+                <div class="form-group !mb-0">
+                    <label for="delivery-old-raion">Старий Район (до реформи) - опціонально:</label>
+                    <select id="delivery-old-raion" disabled>
+                        <option value="" selected>-- Не обрано --</option>
+                    </select>
+                </div>
+                
+                <div class="form-group !mb-0">
+                    <label for="delivery-village">Село / Населений пункт:</label>
+                    <input type="text" id="delivery-village" placeholder="напр. Село Городище">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="delivery-cost">Вартість доставки (текстом):</label>
+            <input type="text" id="delivery-cost" placeholder="10'000грн">
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="delivery-included"> Доставка врахована</label>
+            </div>
+        </div>
+
+        <hr>
+        
+        <div class="space-y-4">
+            <div class="form-group">
+                <label for="contact-name">ПІБ Отримувача:</label>
+                <input type="text" id="contact-name" placeholder="Іванов Іван Іванович" oninput="updateProgress()">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Номер телефону:</label>
+                <input type="tel" id="phone" placeholder="0989218673" oninput="updateProgress()">
+            </div>
+
+            <div class="form-group">
+                <label for="tractor">Трактор (модель):</label>
+                <input type="text" id="tractor" placeholder="МТЗ 892">
+            </div>
+
+            <div class="form-group">
+                <label for="additional-info">Додаткова інформація:</label>
+                <textarea id="additional-info" rows="3" placeholder="Веземо тоді то тоді то, пусконаладка, тощо"></textarea>
+            </div>
+        </div>
+        
+        <hr>
+
+        <button type="button" class="btn" onclick="generateOrder()">Сформувати замовлення</button>
+
+        <div id="result-area">
+            <h3 class="text-xl font-semibold mt-0 mb-3" style="color: var(--accent);">Готовий текст:</h3>
+            <div id="final-text"></div>
+            
+            <button type="button" class="btn btn-secondary" onclick="copyText()">Скопіювати текст</button>
+            <button type="button" class="btn btn-telegram" onclick="shareTelegram()">
+                <span class="mr-2">✈️</span> Відправити в Telegram
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Gift info modal -->
+<div class="modal-overlay" id="gift-info-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">Підказка щодо подарунків</h3>
+            <button type="button" class="modal-close" id="gift-info-close" aria-label="Закрити">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="gift-section">
+                <h4>🆕 Новий клієнт. Перше замовлення</h4>
+                <ul class="gift-list">
+                    <li>General X: ковш+джойстик, 1 шт — шапка General</li>
+                    <li>General X: ковш+1 навісне, 1 шт — 1️⃣ подарунок</li>
+                    <li>КНС 3/3.5/4 або ЛН 2.6/3.2, 1 шт — шапка General</li>
+                    <li>КПС 4.0 або КПРС 5.0, 1 шт — 1️⃣ подарунок</li>
+                    <li>КПРС 6.0, 1 шт — 2️⃣ подарунки</li>
+                    <li>ЛП 2.6/3.2, 1 шт — 1️⃣ подарунок</li>
+                    <li>ЛПР 4.2/5.2, 1 шт — 2️⃣ подарунки</li>
+                    <li>Глибокорозпушувач, 1 шт — 1️⃣ подарунок</li>
+                    <li>Пружинна борона стандарт, 1 шт — шапка General</li>
+                    <li>Пружинна борона з колесами і дод. пружинами, 1 шт — 1️⃣ подарунок</li>
+                    <li>КРН, 1 шт — 1️⃣ подарунок</li>
+                </ul>
+            </div>
+
+            <div class="gift-section">
+                <h4>🫡 Лояльні клієнти</h4>
+                <ul class="gift-list">
+                    <li>Повторна покупка* — мінімум 1️⃣ подарунок</li>
+                    <li>Якщо чек агрегата від 500 000 грн — мінімум 2️⃣</li>
+                    <li>За замовлення 2+ агрегатів — 2️⃣ подарунки</li>
+                    <li>Клієнт який порекомендував іншого клієнта — взяти реквізити і вислати Шапку General за наш рахунок</li>
+                </ul>
+                <div class="gift-note">*без дрібних позицій</div>
+            </div>
+
+            <div class="gift-section">
+                <h4>🌾 День поля</h4>
+                <ul class="gift-list">
+                    <li>Веземо один тип подарунку</li>
+                    <li>1️⃣ подарунок в одні руки</li>
+                    <li>Середина листопада: Тернопіль/Львів/Хмельницький — кожному фермеру шапка</li>
+                    <li>Бюджет приклад: 250 грн × 50 осіб = 12 500 грн</li>
+                </ul>
+            </div>
+
+            <div class="gift-section">
+                <h4>🎪 Виставка</h4>
+                <ul class="gift-list">
+                    <li>1️⃣ подарунок в одні руки</li>
+                    <li>Умова: заповнити мініанкету (ПІБ, Телефон, Область/район, Трактори в господарстві, Яка техніка цікавить)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    try { const tg = window.Telegram.WebApp; tg.ready(); tg.expand(); } catch(e) {}
+
+    let addedItems = [];
+    const statusMessageEl = document.getElementById('status-message');
+    let lastFormattedAmount = '0'; 
+    let fireworksInterval;
+    
+    // ПОВНА БАЗА НОВИХ І СТАРИХ РАЙОНІВ
+    const ukrRegions = {
+        "Вінницька область": {
+            new: ["Вінницький", "Гайсинський", "Жмеринський", "Могилів-Подільський", "Тульчинський", "Хмільницький"],
+            old: ["Барський", "Бершадський", "Вінницький", "Гайсинський", "Жмеринський", "Іллінецький", "Калинівський", "Козятинський", "Крижопільський", "Липовецький", "Літинський", "Могилів-Подільський", "Мурованокуриловецький", "Немирівський", "Оратівський", "Піщанський", "Погребищенський", "Теплицький", "Тиврівський", "Томашпільський", "Тростянецький", "Тульчинський", "Хмільницький", "Чернівецький", "Чечельницький", "Шаргородський", "Ямпільський"]
+        },
+        "Волинська область": {
+            new: ["Володимирський", "Камінь-Каширський", "Ковельський", "Луцький"],
+            old: ["Володимир-Волинський", "Горохівський", "Іваничівський", "Камінь-Каширський", "Ківерцівський", "Ковельський", "Локачинський", "Луцький", "Любешівський", "Любомльський", "Маневицький", "Ратнівський", "Рожищенський", "Старовижівський", "Турійський", "Шацький"]
+        },
+        "Дніпропетровська область": {
+            new: ["Дніпровський", "Кам'янський", "Криворізький", "Нікопольський", "Новомосковський", "Павлоградський", "Синельниківський"],
+            old: ["Апостолівський", "Васильківський", "Верхньодніпровський", "Дніпровський", "Криворізький", "Криничанський", "Магдалинівський", "Межівський", "Нікопольський", "Новомосковський", "Павлоградський", "Петриківський", "Петропавлівський", "Покровський", "П'ятихатський", "Синельниківський", "Солонянський", "Софіївський", "Томаківський", "Царичанський", "Широківський", "Юр'ївський"]
+        },
+        "Донецька область": {
+            new: ["Бахмутський", "Волноваський", "Горлівський", "Донецький", "Кальміуський", "Краматорський", "Маріупольський", "Покровський"],
+            old: ["Амвросіївський", "Бахмутський", "Великоновосілківський", "Волноваський", "Добропільський", "Костянтинівський", "Лиманський", "Мангушський", "Мар'їнський", "Нікольський", "Олександрівський", "Покровський", "Слов'янський", "Старобешівський", "Тельманівський", "Шахтарський", "Ясинуватський"]
+        },
+        "Житомирська область": {
+            new: ["Бердичівський", "Житомирський", "Коростенський", "Звягельський"],
+            old: ["Андрушівський", "Баранівський", "Бердичівський", "Брусилівський", "Ємільчинський", "Житомирський", "Коростенський", "Коростишівський", "Лугинський", "Любарський", "Малинський", "Народицький", "Новоград-Волинський", "Овруцький", "Олевський", "Попільнянський", "Пулинський", "Радомишльський", "Романівський", "Ружинський", "Хорошівський", "Черняхівський", "Чуднівський"]
+        },
+        "Закарпатська область": {
+            new: ["Берегівський", "Мукачівський", "Рахівський", "Тячівський", "Ужгородський", "Хустський"],
+            old: ["Берегівський", "Великоберезнянський", "Виноградівський", "Воловецький", "Іршавський", "Міжгірський", "Мукачівський", "Перечинський", "Рахівський", "Свалявський", "Тячівський", "Ужгородський", "Хустський"]
+        },
+        "Запорізька область": {
+            new: ["Бердянський", "Василівський", "Запорізький", "Мелітопольський", "Пологівський"],
+            old: ["Бердянський", "Більмацький", "Василівський", "Веселівський", "Гуляйпільський", "Запорізький", "Кам'янсько-Дніпровський", "Мелітопольський", "Михайлівський", "Новомиколаївський", "Оріхівський", "Пологівський", "Приазовський", "Приморський", "Розівський", "Токмацький", "Чернігівський", "Якимівський"]
+        },
+        "Івано-Франківська область": {
+            new: ["Верховинський", "Івано-Франківський", "Калуський", "Коломийський", "Косівський", "Надвірнянський"],
+            old: ["Богородчанський", "Верховинський", "Галицький", "Городенківський", "Долинський", "Калуський", "Коломийський", "Косівський", "Надвірнянський", "Рогатинський", "Рожнятівський", "Снятинський", "Тисменицький", "Тлумацький"]
+        },
+        "Київська область": {
+            new: ["Білоцерківський", "Бориспільський", "Броварський", "Бучанський", "Вишгородський", "Обухівський", "Фастівський"],
+            old: ["Баришівський", "Білоцерківський", "Богуславський", "Бориспільський", "Бородянський", "Броварський", "Васильківський", "Вишгородський", "Володарський", "Згурівський", "Іванківський", "Кагарлицький", "Києво-Святошинський", "Макарівський", "Миронівський", "Обухівський", "Переяслав-Хмельницький", "Поліський", "Рокитнянський", "Сквирський", "Ставищенський", "Таращанський", "Тетіївський", "Фастівський", "Яготинський"]
+        },
+        "Кіровоградська область": {
+            new: ["Голованівський", "Кропивницький", "Новоукраїнський", "Олександрійський"],
+            old: ["Бобринецький", "Вільшанський", "Гайворонський", "Голованівський", "Добровеличківський", "Долинський", "Знам'янський", "Кіровоградський", "Компаніївський", "Маловисківський", "Новгородківський", "Новоархангельський", "Новомиргородський", "Новоукраїнський", "Олександрівський", "Олександрійський", "Онуфріївський", "Петрівський", "Світловодський", "Устинівський"]
+        },
+        "Луганська область": {
+            new: ["Алчевський", "Довжанський", "Луганський", "Ровеньківський", "Сватівський", "Сєвєродонецький", "Старобільський", "Щастинський"],
+            old: ["Антрацитівський", "Біловодський", "Білокуракинський", "Довжанський", "Кремінський", "Лутугинський", "Марківський", "Міловський", "Новоайдарський", "Новопсковський", "Перевальський", "Попаснянський", "Сватівський", "Слов'яносербський", "Сорокинський", "Станично-Луганський", "Старобільський", "Троїцький"]
+        },
+        "Львівська область": {
+            new: ["Дрогобицький", "Золочівський", "Львівський", "Самбірський", "Стрийський", "Червоноградський", "Яворівський"],
+            old: ["Бродівський", "Буський", "Городоцький", "Дрогобицький", "Жидачівський", "Жовківський", "Золочівський", "Кам'янка-Бузький", "Миколаївський", "Мостиський", "Перемишлянський", "Пустомитівський", "Радехівський", "Самбірський", "Сколівський", "Сокальський", "Старосамбірський", "Стрийський", "Турківський", "Яворівський"]
+        },
+        "Миколаївська область": {
+            new: ["Баштанський", "Вознесенський", "Миколаївський", "Первомайський"],
+            old: ["Арбузинський", "Баштанський", "Березанський", "Березнегуватський", "Братський", "Веселинівський", "Вітовський", "Вознесенський", "Врадіївський", "Доманівський", "Єланецький", "Казанківський", "Кривоозерський", "Миколаївський", "Новобузький", "Новоодеський", "Очаківський", "Первомайський", "Снігурівський"]
+        },
+        "Одеська область": {
+            new: ["Березівський", "Білгород-Дністровський", "Болградський", "Ізмаїльський", "Одеський", "Подільський", "Роздільнянський"],
+            old: ["Ананьївський", "Арцизький", "Балтський", "Березівський", "Білгород-Дністровський", "Біляївський", "Болградський", "Великомихайлівський", "Захарівський", "Іванівський", "Ізмаїльський", "Кілійський", "Кодимський", "Лиманський", "Любашівський", "Миколаївський", "Овідіопольський", "Окнянський", "Подільський", "Ренійський", "Роздільнянський", "Савранський", "Саратський", "Тарутинський", "Татарбунарський", "Ширяївський"]
+        },
+        "Полтавська область": {
+            new: ["Кременчуцький", "Лубенський", "Миргородський", "Полтавський"],
+            old: ["Великобагачанський", "Гадяцький", "Глобинський", "Гребінківський", "Диканський", "Зіньківський", "Карлівський", "Кобеляцький", "Козельщинський", "Котелевський", "Кременчуцький", "Лохвицький", "Лубенський", "Машівський", "Миргородський", "Новосанжарський", "Оржицький", "Пирятинський", "Полтавський", "Решетилівський", "Семенівський", "Хорольський", "Чорнухинський", "Чутівський", "Шишацький"]
+        },
+        "Рівненська область": {
+            new: ["Вараський", "Дубенський", "Рівненський", "Сарненський"],
+            old: ["Березнівський", "Володимирецький", "Гощанський", "Демидівський", "Дубенський", "Дубровицький", "Зарічненський", "Здолбунівський", "Корецький", "Костопільський", "Млинівський", "Острозький", "Радивилівський", "Рівненський", "Рокитнівський", "Сарненський"]
+        },
+        "Сумська область": {
+            new: ["Конотопський", "Охтирський", "Роменський", "Сумський", "Шосткинський"],
+            old: ["Білопільський", "Буринський", "Великописарівський", "Глухівський", "Конотопський", "Кролевецький", "Лебединський", "Липоводолинський", "Недригайлівський", "Охтирський", "Путивльський", "Роменський", "Середино-Будський", "Сумський", "Тростянецький", "Шосткинський", "Ямпільський"]
+        },
+        "Тернопільська область": {
+            new: ["Кременецький", "Тернопільський", "Чортківський"],
+            old: ["Бережанський", "Борщівський", "Бучацький", "Гусятинський", "Заліщицький", "Збаразький", "Зборівський", "Козівський", "Кременецький", "Лановецький", "Монастириський", "Підволочиський", "Підгаєцький", "Теребовлянський", "Тернопільський", "Чортківський", "Шумський"]
+        },
+        "Харківська область": {
+            new: ["Богодухівський", "Ізюмський", "Красноградський", "Куп'янський", "Лозівський", "Харківський", "Чугуївський"],
+            old: ["Балаклійський", "Барвінківський", "Близнюківський", "Богодухівський", "Борівський", "Валківський", "Великобурлуцький", "Вовчанський", "Дворічанський", "Дергачівський", "Зачепилівський", "Зміївський", "Золочівський", "Ізюмський", "Кегичівський", "Коломацький", "Красноградський", "Краснокутський", "Куп'янський", "Лозівський", "Нововодолазький", "Первомайський", "Печенізький", "Сахновщинський", "Харківський", "Чугуївський", "Шевченківський"]
+        },
+        "Херсонська область": {
+            new: ["Бериславський", "Генічеський", "Каховський", "Скадовський", "Херсонський"],
+            old: ["Бериславський", "Білозерський", "Великолепетиський", "Великоолександрівський", "Верхньорогачицький", "Високопільський", "Генічеський", "Голопристанський", "Горностаївський", "Іванівський", "Каланчацький", "Каховський", "Нижньосірогозький", "Нововоронцовський", "Новотроїцький", "Олешківський", "Скадовський", "Чаплинський"]
+        },
+        "Хмельницька область": {
+            new: ["Кам'янець-Подільський", "Хмельницький", "Шепетівський"],
+            old: ["Білогірський", "Віньковецький", "Волочиський", "Городоцький", "Деражнянський", "Дунаєвецький", "Ізяславський", "Кам'янець-Подільський", "Красилівський", "Летичівський", "Новоушицький", "Полонський", "Славутський", "Старокостянтинівський", "Старосинявський", "Теофіпольський", "Хмельницький", "Чемеровецький", "Шепетівський", "Ярмолинецький"]
+        },
+        "Черкаська область": {
+            new: ["Звенигородський", "Золотоніський", "Уманський", "Черкаський"],
+            old: ["Городищенський", "Драбівський", "Жашківський", "Звенигородський", "Золотоніський", "Кам'янський", "Канівський", "Катеринопільський", "Корсунь-Шевченківський", "Лисянський", "Маньківський", "Монастирищенський", "Смілянський", "Тальнівський", "Уманський", "Христинівський", "Черкаський", "Чигиринський", "Чорнобаївський", "Шполянський"]
+        },
+        "Чернівецька область": {
+            new: ["Вижницький", "Дністровський", "Чернівецький"],
+            old: ["Вижницький", "Герцаївський", "Глибоцький", "Заставнівський", "Кельменецький", "Кіцманський", "Новоселицький", "Путильський", "Сокирянський", "Сторожинецький", "Хотинський"]
+        },
+        "Чернігівська область": {
+            new: ["Корюківський", "Ніжинський", "Новгород-Сіверський", "Прилуцький", "Чернігівський"],
+            old: ["Бахмацький", "Бобровицький", "Борзнянський", "Варвинський", "Городнянський", "Ічнянський", "Козелецький", "Коропський", "Корюківський", "Куликівський", "Менський", "Ніжинський", "Новгород-Сіверський", "Носівський", "Прилуцький", "Ріпкинський", "Семенівський", "Сновський", "Сосницький", "Срібнянський", "Талалаївський", "Чернігівський"]
+        },
+        "м. Київ": {
+            new: ["м. Київ"],
+            old: []
+        }
+    };
+
+    // Перемикач теми
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('change', function() {
+        if(this.checked) document.body.classList.add('light-theme');
+        else document.body.classList.remove('light-theme');
+    });
+
+    // Gift info modal
+    const giftInfoBtn = document.getElementById('gift-info-btn');
+    const giftInfoModal = document.getElementById('gift-info-modal');
+    const giftInfoClose = document.getElementById('gift-info-close');
+
+    function openGiftInfoModal() { giftInfoModal.classList.add('visible'); }
+    function closeGiftInfoModal() { giftInfoModal.classList.remove('visible'); }
+
+    giftInfoBtn.addEventListener('click', openGiftInfoModal);
+    giftInfoClose.addEventListener('click', closeGiftInfoModal);
+    giftInfoModal.addEventListener('click', (e) => { if (e.target === giftInfoModal) closeGiftInfoModal(); });
+
+    // Прогрес
+    function updateProgress() {
+        const fields = [
+            document.getElementById('manager').value,
+            addedItems.length > 0 ? "yes" : "",
+            document.getElementById('recipient-company').value,
+            document.getElementById('amount').value,
+            document.getElementById('delivery-oblast').value,
+            document.getElementById('phone').value
+        ];
+        const filled = fields.filter(v => v !== "").length;
+        const total = fields.length;
+        const percent = (filled / total) * 100;
+        
+        const bar = document.getElementById('progress-bar');
+        bar.style.width = percent + '%';
+        bar.style.backgroundColor = (percent === 100) ? 'var(--success)' : 'var(--accent)';
+    }
+
+    // Допоміжні функції
+    function showStatus(message, isError = false) {
+        const bgColor = isError ? '#ff6666' : 'var(--accent)'; 
+        const textColor = isError ? '#fff' : '#1c1c1e'; 
+        statusMessageEl.textContent = message;
+        statusMessageEl.style.backgroundColor = bgColor; 
+        statusMessageEl.style.color = textColor;
+        statusMessageEl.style.display = 'block';
+        setTimeout(() => { statusMessageEl.style.display = 'none'; }, 3000);
+    }
+
+    function populateOblasts() {
+        const oblastSelect = document.getElementById('delivery-oblast');
+        if (oblastSelect.options.length > 1) return;
+        Object.keys(ukrRegions).sort().forEach(oblast => {
+            const option = document.createElement('option');
+            option.value = oblast; option.textContent = oblast;
+            oblastSelect.appendChild(option);
+        });
+    }
+
+    function populateRaions() {
+        const oblastSelect = document.getElementById('delivery-oblast');
+        const raionSelect = document.getElementById('delivery-raion');
+        const oldRaionSelect = document.getElementById('delivery-old-raion');
+        const selectedOblast = oblastSelect.value;
+        
+        // Скидання
+        raionSelect.innerHTML = '<option value="" disabled selected>Оберіть район</option>';
+        raionSelect.disabled = true;
+        oldRaionSelect.innerHTML = '<option value="" selected>-- Не обрано --</option>';
+        oldRaionSelect.disabled = true;
+
+        if (selectedOblast && ukrRegions[selectedOblast]) {
+            // Заповнюємо НОВІ райони
+            const regionData = ukrRegions[selectedOblast];
+            
+            regionData.new.sort().forEach(raion => {
+                const option = document.createElement('option');
+                option.value = raion; option.textContent = raion;
+                raionSelect.appendChild(option);
+            });
+            raionSelect.disabled = false;
+
+            // Заповнюємо СТАРІ райони
+            if (regionData.old && regionData.old.length > 0) {
+                regionData.old.sort().forEach(oldRaion => {
+                    const option = document.createElement('option');
+                    option.value = oldRaion; option.textContent = oldRaion;
+                    oldRaionSelect.appendChild(option);
+                });
+                oldRaionSelect.disabled = false;
+            }
+        }
+        
+        if (selectedOblast === "м. Київ") {
+            raionSelect.innerHTML = '<option value="м. Київ" selected>м. Київ</option>';
+            raionSelect.disabled = true;
+            oldRaionSelect.disabled = true;
+        }
+    }
+
+    function addItem() {
+        const select = document.getElementById('product-select');
+        const itemCommentEl = document.getElementById('item-comment');
+        const itemText = select.value;
+        const itemComment = itemCommentEl.value.trim();
+
+        if (itemText === "") { showStatus("Оберіть позицію!", true); return; }
+
+        addedItems.push({ name: itemText, comment: itemComment });
+        renderList(); updateProgress();
+        select.value = ""; itemCommentEl.value = "";
+        showStatus(`Додано`);
+    }
+
+    function removeItem(index) {
+        addedItems.splice(index, 1); renderList(); updateProgress(); showStatus(`Видалено`);
+    }
+
+    function editItem(index) {
+        const current = addedItems[index];
+        const newName = prompt("Змінити назву позиції", current.name || "");
+        if (newName === null) return; // скасовано
+        const trimmed = newName.trim();
+        if (!trimmed) { showStatus("Назва не може бути порожньою", true); return; }
+        addedItems[index] = { ...current, name: trimmed };
+        renderList(); showStatus("Оновлено");
+    }
+
+    function renderList() {
+        const listEl = document.getElementById('added-products-list');
+        listEl.innerHTML = "";
+        addedItems.forEach((item, index) => {
+            const li = document.createElement('li');
+            const commentStr = item.comment ? ` (i)` : '';
+            li.innerHTML = `<span class="truncate pr-4">${item.name}<small style="color:var(--accent)">${commentStr}</small></span>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="edit-item" onclick="editItem(${index})">✏️</button>
+                    <span class="remove-item" onclick="removeItem(${index})">&times;</span>
+                </div>`;
+            listEl.appendChild(li);
+        });
+    }
+
+    function formatNumber(str) {
+        if (!str) return '';
+        return str.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+    }
+
+    // Генерація замовлення
+    function generateOrder() {
+        try {
+            const manager = document.getElementById('manager').value;
+            const isPreorder = document.getElementById('is-preorder').checked;
+            const oblast = document.getElementById('delivery-oblast').value;
+            const raion = document.getElementById('delivery-raion').value;
+            const oldRaion = document.getElementById('delivery-old-raion').value; // Отримуємо старий район
+            const village = document.getElementById('delivery-village').value.trim();
+            const company = document.getElementById('recipient-company').value.trim();
+            const rawAmount = document.getElementById('amount').value.trim();
+            lastFormattedAmount = formatNumber(rawAmount);
+            
+            const vat = document.querySelector('input[name="vat"]:checked').value;
+            const prepayment = document.getElementById('prepayment-details').value.trim().replace(/[()]/g, '');
+            const rawDelCost = document.getElementById('delivery-cost').value.trim();
+            const delIncluded = document.getElementById('delivery-included').checked;
+            const name = document.getElementById('contact-name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const tractor = document.getElementById('tractor').value.trim();
+            const gift = document.getElementById('gift').value.trim();
+            const info = document.getElementById('additional-info').value.trim();
+
+            const prefix = isPreorder ? "❗️Передзамовлення❗️\n" : "";
+            
+            // Адреса
+            let addr = [];
+            if (oblast) {
+                addr.push(oblast);
+                if (raion && raion !== "м. Київ") {
+                    // ФОРМУВАННЯ РАЙОНУ
+                    // Якщо обрано старий район, додаємо його в дужках маленькими літерами
+                    if (oldRaion && oldRaion !== "") {
+                        // Видаляємо слово "район" для форматування, якщо воно там є, і переводимо в нижній регістр
+                        const oldRaionClean = oldRaion.replace(/ район/i, '').trim().toLowerCase();
+                        const newRaionClean = raion.replace(/ район/i, '').trim();
+                        // Камʼянець подільський район (волочиський)
+                        addr.push(`${newRaionClean} район (${oldRaionClean})`);
+                    } else {
+                        // Просто новий район
+                        addr.push(raion.replace(/ район/i, '').trim() + " район");
+                    }
+                }
+                if (village) addr.push(village);
+            } else { addr.push("⚠️ Адреса не вказана"); }
+
+            // Товари
+            let prods = addedItems.length > 0 
+                ? addedItems.map((it, i) => `${i+1}. ${it.name}` + (it.comment ? `\n     -${it.comment}` : '')).join('\n')
+                : "⚠️ Товари не додано";
+
+            // Оплата
+            let pay = `${lastFormattedAmount || rawAmount} грн. ${vat}`;
+            if (prepayment) pay += ` (Передплата: ${prepayment})`;
+
+            // Доставка
+            let del = "";
+            if (rawDelCost) {
+                del = `(${formatNumber(rawDelCost)} доставка)` + (delIncluded ? " - врахована" : " - оплата при отриманні");
+            } else if (delIncluded) { del = "(Доставка включена)"; }
+
+            // Фінальний текст
+            const finalText = `${prefix}Замовлення - Менеджера ${manager || '...'}:
+
+${addr.join('\n')}
+
+${prods}
+
+Подарунок:
+${gift || 'Не вказано'}
+
+${pay}
+${del}
+
+${company || '⚠️ Фірма не вказана'}
+
+${name || '⚠️ Ім’я не вказано'}
+${phone || '⚠️ Телефон не вказано'}
+
+${tractor || '⚠️ Трактор не вказано'}
+
+Додаткова інформація:
+${info || 'Коментар відсутній'}`;
+
+            const resDiv = document.getElementById('final-text');
+            resDiv.textContent = finalText;
+            document.getElementById('result-area').style.display = 'block';
+            resDiv.scrollIntoView({behavior: "smooth"});
+            updateProgress();
+            showStatus('Замовлення сформовано!');
+
+        } catch (error) {
+            alert("Помилка при формуванні: " + error.message);
+        }
+    }
+
+    // Копіювання
+    function copyText() {
+        const text = document.getElementById('final-text').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            animateSuccess(lastFormattedAmount);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+            animateSuccess(lastFormattedAmount);
+        });
+    }
+
+    function shareTelegram() {
+        const text = document.getElementById('final-text').textContent;
+        if(!text) return showStatus("Спочатку сформуйте!", true);
+        window.location.href = `tg://msg?text=${encodeURIComponent(text)}`;
+    }
+
+    // Анімація
+    function animateSuccess(amount) {
+        const overlay = document.getElementById('celebration-overlay');
+        document.getElementById('celebration-text').innerHTML = `${amount || '0'} <br>грн. в план!<br>ВІТАЮ!`;
+        overlay.classList.add('visible');
+        startFireworks();
+        setTimeout(() => { overlay.classList.remove('visible'); stopFireworks(); }, 3500);
+    }
+
+    function startFireworks() {
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const particles = [];
+        const colors = ['#FFC107', '#FF453A', '#32D74B', '#0A84FF'];
+
+        function create(x, y) {
+            for(let i=0; i<30; i++) {
+                particles.push({
+                    x, y, color: colors[Math.floor(Math.random()*colors.length)],
+                    vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                    alpha: 1, life: 60
+                });
+            }
+        }
+        function loop() {
+            ctx.fillStyle = 'rgba(28,28,30,0.2)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            particles.forEach((p, i) => {
+                if(p.life > 0) {
+                    ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.alpha -= 0.02; p.life--;
+                } else particles.splice(i, 1);
+            });
+            fireworksInterval = requestAnimationFrame(loop);
+        }
+        loop();
+        let autoFire = setInterval(() => create(Math.random()*canvas.width, Math.random()*canvas.height/2), 600);
+        create(canvas.width/2, canvas.height/3);
+        
+        setTimeout(() => { cancelAnimationFrame(fireworksInterval); clearInterval(autoFire); }, 3500);
+    }
+    function stopFireworks() { /* handled by timeout */ }
+
+    window.onload = () => { populateOblasts(); updateProgress(); };
+</script>
+</body>
+</html>

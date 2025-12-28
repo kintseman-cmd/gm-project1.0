@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Як оформити угоду в Kommo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f6f8;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #2563eb;
+            --border: #e5e7eb;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        header .title { font-size: 18px; font-weight: 700; }
+
+        header .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        header a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        header a:hover { background: #eff6ff; border-color: #dbeafe; }
+
+        main {
+            max-width: 960px;
+            margin: 16px auto 32px;
+            padding: 0 16px;
+        }
+
+        .intro {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .intro h1 { margin: 0 0 8px; font-size: 24px; }
+        .intro p { margin: 0; color: var(--muted); }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .step {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .step h2 {
+            margin: 0 0 10px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step h2 span {
+            background: var(--primary);
+            color: #fff;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 14px;
+        }
+
+        .step img {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin: 10px 0;
+            display: block;
+        }
+
+        .step p { margin: 0 0 8px; color: var(--muted); }
+        ul { margin: 8px 0 0 18px; color: var(--text); }
+        li { margin-bottom: 6px; }
+
+        .warning {
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 640px) {
+            header { align-items: flex-start; }
+            header .title { font-size: 17px; }
+            .intro h1 { font-size: 20px; }
+            .step h2 { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title">Комmo • Як оформити угоду</div>
+        <div class="actions">
+            <a href="generator-ankety.html"><i class="fas fa-file-excel"></i> Анкета</a>
+            <a href="education.html"><i class="fas fa-arrow-left"></i> Назад до навчання</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="intro">
+            <h1>Як оформити угоду в Kommo</h1>
+            <p>Покрокова інструкція зі скрінами для менеджера.</p>
+        </section>
+
+        <section class="steps">
+            <article class="step">
+                <h2><span>Крок 1</span> Відкриваємо угоди</h2>
+                    <img src="images/Kommo/1.png" alt="Крок 1 - відкриваємо угоди">
+                <p>Зайдіть у розділ угод у Kommo, щоб додати новий запис.</p>
+            </article>
+
+            <article class="step">
+                <h2><span>Крок 2</span> Додаємо угоду</h2>
+                    <img src="images/Kommo/2.png" alt="Крок 2 - додаємо угоду">
+                <p>Натисніть кнопку додати угоду та перейдіть до заповнення полів.</p>
+            </article>
+
+            <article class="step">
+                <h2><span>Крок 3</span> Заповнюємо картку угоди</h2>
+                    <img src="images/Kommo/3.jpg" alt="Крок 3 - картка угоди">
+                <h3>📋 Інструкція із заповнення картки угоди</h3>
+                <ul>
+                    <li><strong>Основна інформація:</strong> Назва угоди = короткий опис запиту (наприклад: "кун х / 2р40 / дост / без ПДВ"). Бюджет = сума з доставкою.</li>
+                    <li><strong>Етапи Pipeline:</strong> Оберіть статус: Недозвін; Перемовини (чекає кошти); Перемовини (від 3 міс+); Перемовини (вибирає між нами і конкурентами); Готовимо на відправку; Готовимо на відправку (передзамовлення); Не реалізовано.</li>
+                    <li><strong>Важливо:</strong> "Факт поставки", "Факт оплати", "Успішно реалізовано" виставляє лише керівник.</li>
+                    <li><strong>Дані клієнта та компанії:</strong> Контакт = ПІБ. Компанія обов'язкова перед відправкою. Формат для 1С: назва великими + форма власності (напр. ШПИКОЛОС ФГ). Якщо юр. особи немає — дублюємо ПІБ. Телефон вводимо з 0 (без 38).</li>
+                    <li><strong>Адреси та техніка:</strong> Юр. і факт. адреси за даними YouControl (факт. можна коригувати). Трактор: марка, модель, через кому, якщо декілька.</li>
+                    <li><strong>Додатково:</strong> Заповнюйте інші поля по мірі отримання інформації від клієнта.</li>
+                </ul>
+                <div class="warning">⚠️ Стадії "Факт поставки", "Факт оплати" та "Успішно реалізовано" ставить тільки керівник (Саня).</div>
+            </article>
+
+            <article class="step">
+                <h2><span>Крок 4</span> Product</h2>
+                    <img src="images/Kommo/5.png" alt="Крок 4 - додавання продуктів">
+                <p>Дуже важливо додати продукти перед тим, як поставити на відправку. Як ставити, які ціни та що саме додавати, перший час запитуйте у Сані або колег :)</p>
+                <div class="warning">⚠️ Продукти потрібно додавати обов'язково перед відправкою угоди!</div>
+            </article>
+
+            <article class="step">
+                <h2><span>Крок 5</span> Додаємо угоду для існуючого клієнта</h2>
+                    <img src="images/Kommo/4.png" alt="Крок 5 - додаємо угоду через картку клієнта">
+                <p>Також можна створити угоду зі сторінки вже наявного клієнта: відкрийте його картку та натисніть "Створити угоду".</p>
+            </article>
+        </section>
+    </main>
+</body>
+</html>
