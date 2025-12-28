@@ -9,6 +9,28 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     <link rel="manifest" href="site.webmanifest">
     <meta name="theme-color" content="#F4C430">
+    <script>
+        // Динамічно оновлюємо манніфест для додавання точної сторінки на головний екран
+        (function() {
+            const currentPage = window.location.pathname.split('/').pop() || 'education.html';
+            const baseUrl = '/gm-project1.0';
+            const manifest = {
+                name: 'General Machines',
+                short_name: 'GM',
+                icons: [
+                    { src: `${baseUrl}/android-chrome-192x192.png`, sizes: '192x192', type: 'image/png' },
+                    { src: `${baseUrl}/android-chrome-512x512.png`, sizes: '512x512', type: 'image/png' }
+                ],
+                theme_color: '#F4C430',
+                background_color: '#F5F7FA',
+                display: 'standalone',
+                start_url: `${baseUrl}/${currentPage}`
+            };
+            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            document.querySelector('link[rel="manifest"]').href = url;
+        })();
+    </script>
     <title>Навчання - General Machines</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
