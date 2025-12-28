@@ -369,7 +369,7 @@
             'manager6': { name: 'Адмін', pass: '6666' }
         };
 
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwi6dKQI3FEanrIv_95o8ouX7SH1YwcdmnRnP1yNuHO4tE53U39CHI8RHrgBLqbgkpODg/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpQxPrMYCqkGAsmTFtwE3wbRmr-P5GD4TAzwFOMRsxZKSn_cXPuPrgnhY91Nem6kSSqQ/exec'; 
         
         let loggedInManagerId = null;
         let currentMonth = 'Грудень';
@@ -392,8 +392,59 @@
             localStorage.setItem(`crm_goal_${managerId}`, String(currentGoal));
         }
 
+        function applyRemoteManagerConfig(managerId, remote) {
+            if (!managerId || !remote) return;
+            const month = typeof remote.month === 'string' ? remote.month.trim() : '';
+            const goal = Number(remote.goal);
+            if (month) currentMonth = month;
+            if (Number.isFinite(goal) && goal > 0) currentGoal = Math.trunc(goal);
+            saveManagerConfig(managerId);
+        }
+
+        async function syncManagerConfigFromServer(managerId) {
+            if (!managerId || SCRIPT_URL.includes('ВАШ_URL')) return;
+            try {
+                const url = `${SCRIPT_URL}?action=getConfig&managerId=${encodeURIComponent(managerId)}`;
+                const response = await fetch(url, { cache: 'no-store' });
+                const data = await response.json();
+                // Підтримка різних форматів відповіді (на випадок старого/оновленого скрипта)
+                if (data && typeof data === 'object') {
+                    if (data.config && typeof data.config === 'object') {
+                        applyRemoteManagerConfig(managerId, data.config);
+                    } else {
+                        const hasMonth = Object.prototype.hasOwnProperty.call(data, 'month');
+                        const hasGoal = Object.prototype.hasOwnProperty.call(data, 'goal');
+                        if (hasMonth || hasGoal) {
+                            applyRemoteManagerConfig(managerId, { month: data.month, goal: data.goal });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Config sync failed', e);
+            }
+        }
+
+        function pushManagerConfigToServer(managerId) {
+            if (!managerId || SCRIPT_URL.includes('ВАШ_URL')) return;
+            try {
+                // no-cors як і для запису продажів: нам не потрібна відповідь
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'setConfig',
+                        managerId,
+                        month: currentMonth,
+                        goal: currentGoal
+                    })
+                });
+            } catch (e) {
+                console.error('Config push failed', e);
+            }
+        }
+
         // --- АВТОРИЗАЦІЯ ---
-        function login() {
+        async function login() {
             const mId = document.getElementById('managerSelect').value;
             const pass = document.getElementById('passInput').value;
             const error = document.getElementById('loginError');
@@ -405,8 +456,9 @@
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('appContent').classList.remove('hidden');
                 document.getElementById('currentManagerName').innerText = MANAGERS[mId].name;
-                // Завантажуємо персональні налаштування плану менеджера
+                // Спочатку беремо кэш, потім пробуємо підтягнути з сервера
                 loadManagerConfig(loggedInManagerId);
+                await syncManagerConfigFromServer(loggedInManagerId);
                 updateStats();
             } else {
                 error.classList.remove('hidden');
@@ -497,8 +549,20 @@
             if (!loggedInManagerId || SCRIPT_URL.includes('ВАШ_URL')) return; 
             try {
                 // Відправляємо ID менеджера, щоб отримати ТІЛЬКИ його дані
-                const response = await fetch(`${SCRIPT_URL}?managerId=${loggedInManagerId}`);
+                const response = await fetch(`${SCRIPT_URL}?managerId=${encodeURIComponent(loggedInManagerId)}`, { cache: 'no-store' });
                 const data = await response.json();
+                // Якщо скрипт повертає конфіг разом зі статистикою — застосуємо його
+                if (data && typeof data === 'object') {
+                    if (data.config && typeof data.config === 'object') {
+                        applyRemoteManagerConfig(loggedInManagerId, data.config);
+                    } else {
+                        const hasMonth = Object.prototype.hasOwnProperty.call(data, 'month');
+                        const hasGoal = Object.prototype.hasOwnProperty.call(data, 'goal');
+                        if (hasMonth || hasGoal) {
+                            applyRemoteManagerConfig(loggedInManagerId, { month: data.month, goal: data.goal });
+                        }
+                    }
+                }
                 updateUI(data.total || 0, data.history || []);
             } catch (e) { console.error(e); }
         }
@@ -542,12 +606,14 @@
             currentGoal = parseInt(document.getElementById('configGoal').value) || 1000000;
             // Зберігаємо план ТІЛЬКИ для поточного менеджера
             saveManagerConfig(loggedInManagerId);
+            // І пушимо в "базу" (Google Apps Script), щоб було однаково на всіх пристроях
+            pushManagerConfigToServer(loggedInManagerId);
             toggleSettings();
             updateStats();
         }
 
         // Восстановление сессии при загрузке страницы
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const stored = localStorage.getItem('crm_logged_manager');
             if (stored && MANAGERS[stored]) {
                 loggedInManagerId = stored;
@@ -558,8 +624,9 @@
                 // Установим селектор менеджера, если он есть
                 const sel = document.getElementById('managerSelect');
                 if (sel) sel.value = stored;
-                // Підтягнути персональні налаштування плану менеджера
+                // Підтягнути персональні налаштування плану менеджера (кэш -> сервер)
                 loadManagerConfig(stored);
+                await syncManagerConfigFromServer(stored);
                 updateStats();
             }
         });
