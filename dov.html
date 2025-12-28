@@ -12,7 +12,8 @@
     <script>
         // Динамічно оновлюємо манніфест для додавання точної сторінки на головний екран
         (function() {
-            const currentPage = window.location.pathname.split('/').pop() || 'education.html';
+            const pathParts = window.location.pathname.split('/').filter(p => p.includes('.html'));
+            const currentPage = pathParts.length > 0 ? pathParts[0] : 'education.html';
             const baseUrl = '/gm-project1.0';
             const manifest = {
                 name: 'General Machines',
