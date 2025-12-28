@@ -197,12 +197,19 @@
         </div>
     </header>
     <!-- Верхня панель: Доставка -->
-    <div class="bg-white shadow-md sticky top-16 z-50 p-4 mb-4">
+    <div class="bg-white shadow-md sticky top-16 z-50 p-4 mb-4" id="delivery-panel">
         <div class="max-w-7xl mx-auto">
-            <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Вартість доставки:</h3>
-            <div class="flex flex-wrap gap-2" id="delivery-buttons">
-                <!-- Кнопки генеруються JS -->
+            <div id="delivery-menu">
+                <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Вартість доставки:</h3>
+                <div class="flex flex-wrap gap-2" id="delivery-buttons">
+                    <!-- Кнопки генеруються JS -->
+                </div>
             </div>
+
+            <button id="delivery-reopen" type="button"
+                    class="hidden mt-2 w-full md:w-auto px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition">
+                Змінити доставку
+            </button>
         </div>
     </div>
 
@@ -435,7 +442,35 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderDeliveryButtons();
             renderCatalog();
+
+            const reopenBtn = document.getElementById('delivery-reopen');
+            if (reopenBtn) {
+                reopenBtn.addEventListener('click', () => setDeliveryMenuCollapsed(false));
+            }
+
+            // Якщо вийшли з мобільного режиму — повертаємо панель доставки
+            window.addEventListener('resize', () => {
+                if (!isMobileViewport()) setDeliveryMenuCollapsed(false);
+            });
         });
+
+        function isMobileViewport() {
+            return window.matchMedia('(max-width: 768px)').matches;
+        }
+
+        function setDeliveryMenuCollapsed(collapsed) {
+            const menu = document.getElementById('delivery-menu');
+            const reopenBtn = document.getElementById('delivery-reopen');
+            if (!menu || !reopenBtn) return;
+
+            if (collapsed) {
+                menu.classList.add('hidden');
+                reopenBtn.classList.remove('hidden');
+            } else {
+                menu.classList.remove('hidden');
+                reopenBtn.classList.add('hidden');
+            }
+        }
 
         // --- Рендеринг ---
         function renderDeliveryButtons() {
@@ -458,9 +493,16 @@
             if (selectedDelivery === price) {
                 selectedDelivery = 0;
                 btn.classList.remove('active');
+                // якщо доставку зняли — показуємо меню назад
+                setDeliveryMenuCollapsed(false);
             } else {
                 selectedDelivery = price;
                 btn.classList.add('active');
+
+                // На мобільному після вибору доставки ховаємо меню, але залишаємо кнопку для повторного відкриття
+                if (isMobileViewport()) {
+                    setDeliveryMenuCollapsed(true);
+                }
             }
             calculateTotal();
         }
@@ -607,6 +649,7 @@
             });
             document.getElementById('discount-input').value = '';
             document.getElementById('markup-input').value = '';
+            setDeliveryMenuCollapsed(false);
             calculateTotal();
         }
 
