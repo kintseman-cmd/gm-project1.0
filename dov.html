@@ -194,11 +194,11 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Менеджер</label>
                     <select id="managerSelect" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="manager1">Олександр Намістник</option>
-                        <option value="manager2">Андрій Пашик</option>
-                        <option value="manager3">Олександр Денисов</option>
-                        <option value="manager4">Артур Євтушенко</option>
-                        <option value="manager5">Іван</option>
+                        <option value="OleksandrNamistnyk">Олександр Намістник</option>
+                        <option value="AndriyPashyk">Андрій Пашик</option>
+                        <option value="OleksandrDenisov">Олександр Денисов</option>
+                        <option value="ArturEvtushenko">Артур Євтушенко</option>
+                        <option value="IvanYakushik">Іван Якушик</option>
                     </select>
                 </div>
                 <div>
@@ -228,6 +228,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 md:gap-4">
+                    <button onclick="togglePlans()" class="text-slate-400 hover:text-white transition-colors text-xs md:text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-flag"></i> <span class="hidden sm:inline">Плани</span>
+                    </button>
                     <button onclick="toggleSettings()" class="text-slate-400 hover:text-white transition-colors text-xs md:text-sm whitespace-nowrap">
                         <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Налаштування</span>
                     </button>
@@ -241,19 +244,50 @@
         <main class="container mx-auto px-4 max-w-6xl">
             <!-- Settings Panel -->
             <div id="settingsPanel" class="hidden mb-8 glass p-6 rounded-2xl border border-blue-200 shadow-xl">
-                <h3 class="text-lg font-bold mb-4">Налаштування періоду</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm mb-1 text-slate-500">Назва місяця</label>
-                        <input type="text" id="configMonth" class="w-full p-2 border rounded">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <h3 class="text-lg font-bold">Налаштування</h3>
+                    <span class="text-xs text-slate-500">Скоро</span>
+                </div>
+                <div class="text-sm text-slate-500">Поки що немає налаштувань.</div>
+            </div>
+
+            <!-- Plans Panel -->
+            <div id="plansPanel" class="hidden mb-8 glass p-6 rounded-2xl border border-blue-200 shadow-xl">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <h3 class="text-lg font-bold">Плани</h3>
+                    <span class="text-xs text-slate-500">Зберігається в БД</span>
+                </div>
+                <div class="flex items-center justify-end">
+                    <button type="button" id="addPlanBtn" class="px-4 py-3 rounded-2xl bg-blue-600 text-white font-semibold">Додати план</button>
+                </div>
+
+                <div id="addPlanPanel" class="hidden mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Рік</label>
+                            <input type="number" id="addPlanYear" min="2000" max="2100" placeholder="2025" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Місяць</label>
+                            <select id="addPlanMonth" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Сума, ₴</label>
+                            <input type="number" id="addPlanGoal" min="0" placeholder="0" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                        </div>
+                        <div class="md:col-span-3 flex justify-end gap-2">
+                                    <button type="button" id="addPlanCancelBtn" class="px-4 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold transition-colors">Скасувати</button>
+                                    <button type="button" id="addPlanSaveBtn" class="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-semibold transition-colors disabled:cursor-not-allowed">Зберегти</button>
+                                </div>
                     </div>
-                    <div>
-                        <label class="block text-sm mb-1 text-slate-500">Сума плану (₴)</label>
-                        <input type="number" id="configGoal" class="w-full p-2 border rounded">
+                </div>
+
+                <div class="mt-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Збережені плани</div>
+                        <div class="text-xs text-slate-400">Редагування локально</div>
                     </div>
-                    <div class="flex items-end">
-                        <button onclick="saveSettings()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 w-full">Зберегти</button>
-                    </div>
+                    <div id="plansList" class="space-y-2"></div>
                 </div>
             </div>
 
@@ -291,6 +325,15 @@
                     </div>
 
                     <div class="glass p-6 rounded-3xl shadow-sm border border-slate-200 text-center">
+                        <div class="flex justify-end mb-2">
+                            <div class="relative inline-flex items-center gap-2">
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Період</span>
+                                <button type="button" id="progressPeriodBtn" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold">
+                                    Обрати місяці
+                                </button>
+                                <div id="progressPeriodMenu" class="hidden absolute right-0 top-full mt-2 w-64 max-h-64 overflow-auto bg-white border border-slate-200 rounded-2xl shadow-lg p-3 text-left z-10"></div>
+                            </div>
+                        </div>
                         <div class="relative inline-flex items-center justify-center">
                             <svg width="180" height="180">
                                 <circle stroke="#f1f5f9" stroke-width="14" fill="transparent" r="80" cx="90" cy="90"/>
@@ -321,17 +364,63 @@
                             <i class="fa-solid fa-plus-circle text-blue-600"></i> Нове замовлення
                         </h2>
                         <form id="orderForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Дата</label>
+                                <input type="date" id="orderDate" required
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Платник</label>
                                 <input type="text" id="payer" required placeholder="Назва клієнта"
                                     class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Область</label>
+                                <select id="regionSelect" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">Оберіть область</option>
+                                    <option value="Вінницька">Вінницька</option>
+                                    <option value="Волинська">Волинська</option>
+                                    <option value="Дніпропетровська">Дніпропетровська</option>
+                                    <option value="Донецька">Донецька</option>
+                                    <option value="Житомирська">Житомирська</option>
+                                    <option value="Закарпатська">Закарпатська</option>
+                                    <option value="Запорізька">Запорізька</option>
+                                    <option value="Івано-Франківська">Івано-Франківська</option>
+                                    <option value="Київська">Київська</option>
+                                    <option value="Кіровоградська">Кіровоградська</option>
+                                    <option value="Луганська">Луганська</option>
+                                    <option value="Львівська">Львівська</option>
+                                    <option value="Миколаївська">Миколаївська</option>
+                                    <option value="Одеська">Одеська</option>
+                                    <option value="Полтавська">Полтавська</option>
+                                    <option value="Рівненська">Рівненська</option>
+                                    <option value="Сумська">Сумська</option>
+                                    <option value="Тернопільська">Тернопільська</option>
+                                    <option value="Харківська">Харківська</option>
+                                    <option value="Херсонська">Херсонська</option>
+                                    <option value="Хмельницька">Хмельницька</option>
+                                    <option value="Черкаська">Черкаська</option>
+                                    <option value="Чернівецька">Чернівецька</option>
+                                    <option value="Чернігівська">Чернігівська</option>
+                                    <option value="м. Київ">м. Київ</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Сума (₴)</label>
                                 <input type="number" id="amount" required placeholder="0.00"
                                     class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
-                            <div class="flex items-end">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Додаткові пункти / позиції (опціонально)</label>
+                                <input type="text" id="orderItems" placeholder="Напр.: ЛН 2.6; ковш 2.2; доставка"
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Коментар (опціонально)</label>
+                                <input type="text" id="orderComment" placeholder="Будь-які примітки по замовленню"
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="md:col-span-2 flex items-end">
                                 <button type="submit" id="submitBtn" 
                                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all">
                                     Додати
@@ -342,7 +431,7 @@
 
                     <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-5 bg-slate-50/50 flex justify-between items-center border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-500">
-                            <span>Мої останні продажі</span>
+                            <span>Мої продажі</span>
                             <div id="connectionStatus" class="text-[10px] text-green-500 bg-green-50 px-2 py-1 rounded">З'єднано</div>
                         </div>
                         <div class="max-h-[300px] overflow-y-auto">
@@ -361,86 +450,579 @@
     <script>
         // --- КОНФІГУРАЦІЯ МЕНЕДЖЕРІВ ---
         const MANAGERS = {
-            'manager1': { name: 'Намістник', pass: '1111' },
-            'manager2': { name: 'Пашик', pass: '2222' },
-            'manager3': { name: 'Денисов', pass: '3333' },
-            'manager4': { name: 'Артур', pass: '4444' },
-            'manager5': { name: 'Іван', pass: '5555' },
+            'OleksandrNamistnyk': { name: 'Олександр Намістник', pass: '1111' },
+            'AndriyPashyk': { name: 'Андрій Пашик', pass: '2222' },
+            'OleksandrDenisov': { name: 'Олександр Денисов', pass: '3333' },
+            'ArturEvtushenko': { name: 'Артур Євтушенко', pass: '4444' },
+            'IvanYakushik': { name: 'Іван Якушик', pass: '5555' },
             'manager6': { name: 'Адмін', pass: '6666' }
         };
 
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpQxPrMYCqkGAsmTFtwE3wbRmr-P5GD4TAzwFOMRsxZKSn_cXPuPrgnhY91Nem6kSSqQ/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_Ec8RAjAzfU62x10AyIYazCpoMgbsqJ61J8VQgBrCWSHhw9IpNzK2TPZekSRpyS8Y7A/exec'; 
         
         let loggedInManagerId = null;
-        let currentMonth = 'Грудень';
+        let currentMonth = 'План';
         let currentGoal = 1000000;
         const BASE_SALARY = 40000;
         const MAX_BONUS = 60000;
 
-        // --- Менеджер-специфічні налаштування плану ---
-        function loadManagerConfig(managerId) {
-            const monthKey = `crm_month_${managerId}`;
-            const goalKey = `crm_goal_${managerId}`;
-            currentMonth = localStorage.getItem(monthKey) || localStorage.getItem('crm_month') || 'Грудень';
-            const storedGoal = localStorage.getItem(goalKey) || localStorage.getItem('crm_goal');
-            currentGoal = parseInt(storedGoal) || 1000000;
-        }
+        const MONTH_LABELS = {
+            '01': 'Січень',
+            '02': 'Лютий',
+            '03': 'Березень',
+            '04': 'Квітень',
+            '05': 'Травень',
+            '06': 'Червень',
+            '07': 'Липень',
+            '08': 'Серпень',
+            '09': 'Вересень',
+            '10': 'Жовтень',
+            '11': 'Листопад',
+            '12': 'Грудень'
+        };
 
-        function saveManagerConfig(managerId) {
-            if (!managerId) return;
-            localStorage.setItem(`crm_month_${managerId}`, currentMonth);
-            localStorage.setItem(`crm_goal_${managerId}`, String(currentGoal));
-        }
+        const MONTH_KEYS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 
-        function applyRemoteManagerConfig(managerId, remote) {
-            if (!managerId || !remote) return;
-            const month = typeof remote.month === 'string' ? remote.month.trim() : '';
-            const goal = Number(remote.goal);
-            if (month) currentMonth = month;
-            if (Number.isFinite(goal) && goal > 0) currentGoal = Math.trunc(goal);
-            saveManagerConfig(managerId);
-        }
-
-        async function syncManagerConfigFromServer(managerId) {
-            if (!managerId || SCRIPT_URL.includes('ВАШ_URL')) return;
+        async function postToScript_(payload) {
+            if (!loggedInManagerId) return false;
+            if (!SCRIPT_URL || SCRIPT_URL.includes('ВАШ_URL')) return false;
             try {
-                const url = `${SCRIPT_URL}?action=getConfig&managerId=${encodeURIComponent(managerId)}`;
-                const response = await fetch(url, { cache: 'no-store' });
-                const data = await response.json();
-                // Підтримка різних форматів відповіді (на випадок старого/оновленого скрипта)
-                if (data && typeof data === 'object') {
-                    if (data.config && typeof data.config === 'object') {
-                        applyRemoteManagerConfig(managerId, data.config);
-                    } else {
-                        const hasMonth = Object.prototype.hasOwnProperty.call(data, 'month');
-                        const hasGoal = Object.prototype.hasOwnProperty.call(data, 'goal');
-                        if (hasMonth || hasGoal) {
-                            applyRemoteManagerConfig(managerId, { month: data.month, goal: data.goal });
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Config sync failed', e);
-            }
-        }
-
-        function pushManagerConfigToServer(managerId) {
-            if (!managerId || SCRIPT_URL.includes('ВАШ_URL')) return;
-            try {
-                // no-cors як і для запису продажів: нам не потрібна відповідь
-                fetch(SCRIPT_URL, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: JSON.stringify({
-                        action: 'setConfig',
-                        managerId,
-                        month: currentMonth,
-                        goal: currentGoal
-                    })
+                    body: JSON.stringify(payload || {})
                 });
+                return true;
             } catch (e) {
-                console.error('Config push failed', e);
+                return false;
             }
+        }
+
+        function setLoading_(isLoading) {
+            const status = document.getElementById('connectionStatus');
+            if (status) {
+                if (isLoading) {
+                    status.textContent = 'Завантаження...';
+                    status.className = 'text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded';
+                } else {
+                    status.textContent = "З'єднано";
+                    status.className = 'text-[10px] text-green-500 bg-green-50 px-2 py-1 rounded';
+                }
+            }
+
+            const plansHost = document.getElementById('plansList');
+            if (isLoading && plansHost && !plansHost.children.length) {
+                plansHost.innerHTML = '<div class="text-sm text-slate-400 italic">Завантаження...</div>';
+            }
+
+            const historyBody = document.getElementById('historyBody');
+            if (isLoading && historyBody && !historyBody.dataset.loadingSet) {
+                historyBody.dataset.loadingSet = '1';
+                historyBody.innerHTML = '<tr><td class="p-10 text-center text-slate-400 italic">Завантаження...</td></tr>';
+            }
+            if (!isLoading && historyBody) {
+                delete historyBody.dataset.loadingSet;
+            }
+        }
+
+        function withButtonLoading_(btn, isLoading, idleText, loadingText) {
+            if (!btn) return;
+            if (isLoading) {
+                btn.disabled = true;
+                btn.dataset.idleText = btn.dataset.idleText || (idleText || btn.textContent || '');
+                btn.textContent = loadingText || '...';
+                btn.classList.add('opacity-60');
+            } else {
+                btn.disabled = false;
+                const t = btn.dataset.idleText || idleText;
+                if (t) btn.textContent = t;
+                btn.classList.remove('opacity-60');
+            }
+        }
+
+        function normalizePlanPeriodClient_(v) {
+            if (v instanceof Date && Number.isFinite(v.getTime())) {
+                const yyyy = v.getFullYear();
+                const mm = String(v.getMonth() + 1).padStart(2, '0');
+                return `${yyyy}-${mm}`;
+            }
+            const s = String(v == null ? '' : v).trim();
+            if (!s) return '';
+            if (/^\d{4}-\d{2}$/.test(s)) return s;
+            const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (m) return `${m[1]}-${m[2]}`;
+            const t = Date.parse(s);
+            if (Number.isFinite(t)) {
+                const d = new Date(t);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                return `${yyyy}-${mm}`;
+            }
+            return '';
+        }
+
+        // Plans source of truth: backend (Apps Script). No localStorage for plans.
+        // NOTE: Sheets may coerce "2025-12" into a Date; we normalize to YYYY-MM for UI.
+        function setDbPlans_(plansArr) {
+            const arr = Array.isArray(plansArr) ? plansArr : [];
+            window.__dbPlans = arr;
+
+            // Map: normalizedPeriod -> { goal, label, rawPeriod, updatedAt }
+            const map = {};
+            for (const p of arr) {
+                const rawPeriod = p?.period;
+                const period = normalizePlanPeriodClient_(rawPeriod);
+                if (!/^\d{4}-\d{2}$/.test(period)) continue;
+                const goal = Number(p?.goal);
+                const updatedAt = String(p?.updatedAt || '');
+                const item = {
+                    period,
+                    rawPeriod: String(rawPeriod ?? ''),
+                    label: String(p?.label || ''),
+                    goal: Number.isFinite(goal) ? goal : 0,
+                    updatedAt
+                };
+
+                const existing = map[period];
+                if (!existing) {
+                    map[period] = item;
+                } else {
+                    const a = existing.updatedAt ? Date.parse(existing.updatedAt) : 0;
+                    const b = item.updatedAt ? Date.parse(item.updatedAt) : 0;
+                    if (b >= a) map[period] = item;
+                }
+            }
+            window.__dbPlansMap = map;
+        }
+
+        function getDbPlansMap_() {
+            return window.__dbPlansMap && typeof window.__dbPlansMap === 'object' ? window.__dbPlansMap : {};
+        }
+
+        function getDbPlanGoal_(period) {
+            const map = getDbPlansMap_();
+            const key = String(period || '').trim();
+            const v = Number(map?.[key]?.goal);
+            return Number.isFinite(v) ? v : 0;
+        }
+
+        function optimisticUpsertPlan_(period, label, goal) {
+            const p = normalizePlanPeriodClient_(period);
+            if (!/^\d{4}-\d{2}$/.test(p)) return;
+
+            const nowIso = new Date().toISOString();
+            const safeGoal = Number(goal);
+
+            const map = { ...(getDbPlansMap_() || {}) };
+            map[p] = {
+                period: p,
+                rawPeriod: String(period ?? p),
+                label: String(label || ''),
+                goal: Number.isFinite(safeGoal) ? safeGoal : 0,
+                updatedAt: nowIso
+            };
+            window.__dbPlansMap = map;
+
+            const arr = Array.isArray(window.__dbPlans) ? window.__dbPlans.slice() : [];
+            const idx = arr.findIndex(x => normalizePlanPeriodClient_(x?.period) === p);
+            const item = { period: p, label: String(label || ''), goal: Number.isFinite(safeGoal) ? safeGoal : 0, updatedAt: nowIso };
+            if (idx >= 0) arr[idx] = item; else arr.push(item);
+            window.__dbPlans = arr;
+        }
+
+        function optimisticDeletePlan_(period) {
+            const p = normalizePlanPeriodClient_(period);
+            if (!/^\d{4}-\d{2}$/.test(p)) return;
+
+            const map = { ...(getDbPlansMap_() || {}) };
+            delete map[p];
+            window.__dbPlansMap = map;
+
+            const arr = Array.isArray(window.__dbPlans) ? window.__dbPlans : [];
+            window.__dbPlans = arr.filter(x => normalizePlanPeriodClient_(x?.period) !== p);
+        }
+
+        function refreshGoalFromPlans_() {
+            const allHistory = Array.isArray(window.__lastAllHistory) ? window.__lastAllHistory : [];
+            const view = buildProgressView_(allHistory);
+            currentGoal = Number(view.goal) || currentGoal;
+            currentMonth = view.label || currentMonth;
+            updateUI(view.total || 0, allHistory);
+        }
+
+        function getProgressPeriodsStorageKey_(managerId) {
+            return `crm_progress_periods_${managerId}`;
+        }
+
+        function loadSelectedProgressPeriods_() {
+            if (!loggedInManagerId) return [];
+            try {
+                const raw = localStorage.getItem(getProgressPeriodsStorageKey_(loggedInManagerId));
+                const parsed = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(parsed)) return [];
+                return parsed.map(String);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSelectedProgressPeriods_(periods) {
+            if (!loggedInManagerId) return;
+            const unique = Array.from(new Set((periods || []).map(String))).filter(p => /^\d{4}-\d{2}$/.test(p));
+            localStorage.setItem(getProgressPeriodsStorageKey_(loggedInManagerId), JSON.stringify(unique));
+        }
+
+        function getAvailablePlanPeriods_() {
+            const plans = getDbPlansMap_();
+            return Object.keys(plans || {})
+                .filter(p => /^\d{4}-\d{2}$/.test(p))
+                .sort((a, b) => {
+                    const ma = a.match(/^(\d{4})-(\d{2})$/);
+                    const mb = b.match(/^(\d{4})-(\d{2})$/);
+                    const ya = ma ? Number(ma[1]) : 0;
+                    const yb = mb ? Number(mb[1]) : 0;
+                    if (ya !== yb) return ya - yb;
+                    const mna = ma ? Number(ma[2]) : 0;
+                    const mnb = mb ? Number(mb[2]) : 0;
+                    return mna - mnb;
+                });
+        }
+
+        function normalizeSelectedProgressPeriods_() {
+            if (!loggedInManagerId) return;
+            const available = new Set(getAvailablePlanPeriods_());
+            const selected = loadSelectedProgressPeriods_().filter(p => available.has(p));
+
+            // Default to current month if it exists, otherwise last available
+            if (!selected.length) {
+                const now = new Date();
+                const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                if (available.has(current)) selected.push(current);
+                else {
+                    const all = Array.from(available).sort();
+                    if (all.length) selected.push(all[all.length - 1]);
+                }
+            }
+
+            saveSelectedProgressPeriods_(selected);
+        }
+
+        function updateProgressPeriodBtnLabel_() {
+            const btn = document.getElementById('progressPeriodBtn');
+            if (!btn) return;
+            const selected = loadSelectedProgressPeriods_();
+            if (!selected.length) {
+                btn.textContent = 'Обрати місяці';
+                return;
+            }
+            if (selected.length === 1) {
+                btn.textContent = formatPeriodLabel_(selected[0]);
+                return;
+            }
+            btn.textContent = `${selected.length} місяців`;
+        }
+
+        function renderProgressPeriodPicker_() {
+            const btn = document.getElementById('progressPeriodBtn');
+            const menu = document.getElementById('progressPeriodMenu');
+            if (!btn || !menu) return;
+
+            if (!loggedInManagerId) {
+                menu.innerHTML = '<div class="text-sm text-slate-400">Увійдіть, щоб обрати період.</div>';
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+                btn.textContent = 'Обрати місяці';
+                return;
+            }
+
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+
+            normalizeSelectedProgressPeriods_();
+            const available = getAvailablePlanPeriods_();
+            const selected = new Set(loadSelectedProgressPeriods_());
+
+            if (!available.length) {
+                menu.innerHTML = '<div class="text-sm text-slate-400">Немає планів. Додайте план у «Плани».</div>';
+                btn.textContent = 'Немає планів';
+                return;
+            }
+
+            menu.innerHTML = '';
+            const title = document.createElement('div');
+            title.className = 'text-xs font-bold text-slate-400 uppercase mb-2';
+            title.textContent = 'Оберіть місяці';
+            menu.appendChild(title);
+
+            for (const period of available) {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 py-1 text-sm text-slate-700 cursor-pointer select-none';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = period;
+                cb.checked = selected.has(period);
+                cb.addEventListener('change', () => {
+                    const next = new Set(loadSelectedProgressPeriods_());
+                    if (cb.checked) next.add(period); else next.delete(period);
+                    saveSelectedProgressPeriods_(Array.from(next));
+                    updateProgressPeriodBtnLabel_();
+                    updateStats();
+                });
+
+                const text = document.createElement('span');
+                text.textContent = formatPeriodLabel_(period);
+
+                label.appendChild(cb);
+                label.appendChild(text);
+                menu.appendChild(label);
+            }
+
+            updateProgressPeriodBtnLabel_();
+
+            // Bind toggles once
+            if (!btn.dataset.bound) {
+                btn.dataset.bound = '1';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                });
+                document.addEventListener('click', () => {
+                    menu.classList.add('hidden');
+                });
+                menu.addEventListener('click', (e) => {
+                    // allow clicking inside menu without closing
+                    e.stopPropagation();
+                });
+            }
+        }
+
+        function monthName_(mm) {
+            return MONTH_LABELS[String(mm).padStart(2, '0')] || String(mm);
+        }
+
+        function formatPeriodLabel_(period) {
+            const m = String(period || '').match(/^(\d{4})-(\d{2})$/);
+            if (!m) return String(period || '');
+            const yyyy = m[1];
+            const mm = m[2];
+            return `${monthName_(mm)} ${yyyy}`;
+        }
+
+        function renderLocalPlans_() {
+            const host = document.getElementById('plansList');
+            if (!host) return;
+            host.innerHTML = '';
+
+            if (!loggedInManagerId) {
+                host.innerHTML = '<div class="text-sm text-slate-400">Увійдіть, щоб побачити плани.</div>';
+                return;
+            }
+
+            const plans = getDbPlansMap_();
+            const periods = Object.keys(plans || {})
+                .filter(p => /^\d{4}-\d{2}$/.test(p))
+                .sort((a, b) => {
+                    const ma = a.match(/^(\d{4})-(\d{2})$/);
+                    const mb = b.match(/^(\d{4})-(\d{2})$/);
+                    const ya = ma ? Number(ma[1]) : 0;
+                    const yb = mb ? Number(mb[1]) : 0;
+                    if (ya !== yb) return ya - yb;
+                    const mna = ma ? Number(ma[2]) : 0;
+                    const mnb = mb ? Number(mb[2]) : 0;
+                    return mna - mnb;
+                });
+
+            if (!periods.length) {
+                host.innerHTML = '<div class="text-sm text-slate-400">Планів ще немає. Натисніть «Додати план».</div>';
+                return;
+            }
+
+            for (const period of periods) {
+                const entry = plans?.[period] || {};
+                const rawPeriod = String(entry.rawPeriod || '');
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3';
+
+                const m = String(period).match(/^(\d{4})-(\d{2})$/);
+                const initYear = m ? m[1] : '';
+                const initMonth = m ? m[2] : '';
+
+                const yearInput = document.createElement('input');
+                yearInput.type = 'number';
+                yearInput.min = '2000';
+                yearInput.max = '2100';
+                yearInput.inputMode = 'numeric';
+                yearInput.className = 'w-24 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
+                yearInput.value = initYear;
+
+                const monthSelect = document.createElement('select');
+                monthSelect.className = 'w-40 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
+                MONTH_KEYS.forEach((mm) => {
+                    const opt = document.createElement('option');
+                    opt.value = mm;
+                    opt.textContent = MONTH_LABELS[mm];
+                    monthSelect.appendChild(opt);
+                });
+                monthSelect.value = initMonth;
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = '0';
+                input.inputMode = 'numeric';
+                input.className = 'w-36 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
+                const v = Number(entry?.goal);
+                input.value = Number.isFinite(v) && v > 0 ? String(v) : '';
+
+                const saveBtn = document.createElement('button');
+                saveBtn.type = 'button';
+                saveBtn.className = 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors disabled:cursor-not-allowed';
+                saveBtn.textContent = 'Зберегти';
+                saveBtn.addEventListener('click', async () => {
+                    withButtonLoading_(saveBtn, true, 'Зберегти', 'Збереження...');
+                    const yyyy = String(yearInput.value || '').trim();
+                    const mm = String(monthSelect.value || '').trim();
+                    if (!/^\d{4}$/.test(yyyy) || !/^\d{2}$/.test(mm)) {
+                        withButtonLoading_(saveBtn, false);
+                        alert('Вкажіть коректний рік і місяць');
+                        return;
+                    }
+                    const newPeriod = `${yyyy}-${mm}`;
+                    const newGoal = Number(input.value || 0);
+
+                    // Only delete old record if month changed.
+                    // Backend also enforces uniqueness, but this keeps legacy data clean.
+                    if (String(newPeriod) !== String(period)) {
+                        await postToScript_({
+                            action: 'deletePlan',
+                            managerId: loggedInManagerId,
+                            period: rawPeriod || period
+                        });
+                        optimisticDeletePlan_(period);
+                    }
+
+                    await postToScript_({
+                        action: 'setPlan',
+                        managerId: loggedInManagerId,
+                        period: newPeriod,
+                        label: formatPeriodLabel_(newPeriod),
+                        goal: Number.isFinite(newGoal) && newGoal > 0 ? newGoal : 0
+                    });
+
+                    optimisticUpsertPlan_(newPeriod, formatPeriodLabel_(newPeriod), Number.isFinite(newGoal) && newGoal > 0 ? newGoal : 0);
+                    renderLocalPlans_();
+                    renderProgressPeriodPicker_();
+                    refreshGoalFromPlans_();
+
+                    withButtonLoading_(saveBtn, false);
+
+                    // Refresh from DB in background (gives Apps Script time to write).
+                    setTimeout(updateStats, 600);
+                });
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors disabled:cursor-not-allowed';
+                delBtn.textContent = 'Видалити';
+                delBtn.addEventListener('click', async () => {
+                    withButtonLoading_(delBtn, true, 'Видалити', 'Видалення...');
+                    await postToScript_({
+                        action: 'deletePlan',
+                        managerId: loggedInManagerId,
+                        period: rawPeriod || period
+                    });
+                    optimisticDeletePlan_(period);
+                    renderLocalPlans_();
+                    renderProgressPeriodPicker_();
+                    refreshGoalFromPlans_();
+                    withButtonLoading_(delBtn, false);
+
+                    // Refresh from DB in background
+                    setTimeout(updateStats, 600);
+                });
+
+                const label = document.createElement('div');
+                label.className = 'hidden md:block flex-1 text-xs text-slate-500';
+                label.textContent = formatPeriodLabel_(period);
+
+                row.appendChild(yearInput);
+                row.appendChild(monthSelect);
+                row.appendChild(input);
+                row.appendChild(saveBtn);
+                row.appendChild(delBtn);
+                row.appendChild(label);
+                host.appendChild(row);
+            }
+        }
+
+        function getGoalForMonth_(yyyy, mm) {
+            const period = `${String(yyyy)}-${String(mm).padStart(2, '0')}`;
+            return getDbPlanGoal_(period);
+        }
+
+        function getQuarterInfo_(date) {
+            const d = date instanceof Date ? date : new Date(date);
+            const yyyy = d.getFullYear();
+            const q = Math.floor(d.getMonth() / 3) + 1;
+            const startMonth = (q - 1) * 3 + 1;
+            const months = [startMonth, startMonth + 1, startMonth + 2].map(m => String(m).padStart(2, '0'));
+            return { yyyy: String(yyyy), q, months };
+        }
+
+        function filterHistoryByRange_(history, start, endExclusive) {
+            const out = [];
+            let total = 0;
+            for (const item of (history || [])) {
+                const d = new Date(item.date);
+                if (!Number.isFinite(d.getTime())) continue;
+                if (d >= start && d < endExclusive) {
+                    out.push(item);
+                    total += Number(item.amount) || 0;
+                }
+            }
+            return { total, history: out };
+        }
+
+        function buildProgressView_(allHistory) {
+            const now = new Date();
+
+            const selected = loadSelectedProgressPeriods_();
+            if (selected.length) {
+                const set = new Set(selected);
+                const out = [];
+                let total = 0;
+                for (const item of (allHistory || [])) {
+                    const d = new Date(item.date);
+                    if (!Number.isFinite(d.getTime())) continue;
+                    const p = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (set.has(p)) {
+                        out.push(item);
+                        total += Number(item.amount) || 0;
+                    }
+                }
+
+                let goal = 0;
+                for (const p of selected) goal += getDbPlanGoal_(p) || 0;
+                if (!goal) goal = currentGoal;
+
+                let label = '';
+                if (selected.length === 1) label = formatPeriodLabel_(selected[0]);
+                else if (selected.length === 2) label = `${formatPeriodLabel_(selected[0])}, ${formatPeriodLabel_(selected[1])}`;
+                else label = `${formatPeriodLabel_(selected[0])} +${selected.length - 1}`;
+
+                return { total, history: out, goal, label };
+            }
+
+            // fallback: current month
+            const yyyy = String(now.getFullYear());
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const start = new Date(Number(yyyy), Number(mm) - 1, 1, 0, 0, 0, 0);
+            const end = new Date(Number(yyyy), Number(mm), 1, 0, 0, 0, 0);
+            const filtered = filterHistoryByRange_(allHistory, start, end);
+            let goal = getGoalForMonth_(yyyy, mm) || 0;
+            if (!goal) goal = currentGoal;
+            return { total: filtered.total, history: filtered.history, goal, label: `${monthName_(mm)} ${yyyy}` };
         }
 
         // --- АВТОРИЗАЦІЯ ---
@@ -456,9 +1038,8 @@
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('appContent').classList.remove('hidden');
                 document.getElementById('currentManagerName').innerText = MANAGERS[mId].name;
-                // Спочатку беремо кэш, потім пробуємо підтягнути з сервера
-                loadManagerConfig(loggedInManagerId);
-                await syncManagerConfigFromServer(loggedInManagerId);
+                renderLocalPlans_();
+                renderProgressPeriodPicker_();
                 updateStats();
             } else {
                 error.classList.remove('hidden');
@@ -471,20 +1052,22 @@
             document.getElementById('passInput').value = '';
             document.getElementById('authOverlay').classList.remove('hidden');
             document.getElementById('appContent').classList.add('hidden');
+            renderProgressPeriodPicker_();
         }
 
         // --- ЛОГІКА ТА UI ---
         function calculateSalary(totalSales) {
+            const goal = currentGoal > 0 ? currentGoal : 1;
             let salary = BASE_SALARY;
             let bonus = 0;
             let extra = 0;
-            const progress = totalSales / currentGoal;
+            const progress = totalSales / goal;
             if (progress >= 0.5) {
                 let bonusMultiplier = Math.min((progress - 0.5) / 0.5, 1);
                 bonus = bonusMultiplier * MAX_BONUS;
             }
-            if (totalSales > currentGoal) {
-                extra = (totalSales - currentGoal) * 0.01;
+            if (totalSales > goal) {
+                extra = (totalSales - goal) * 0.01;
             }
             return { total: salary + bonus + extra, bonus, extra, percent: progress * 100 };
         }
@@ -514,64 +1097,222 @@
             // Історія з кнопкою видалення
             const historyBody = document.getElementById('historyBody');
             historyBody.innerHTML = '';
-            history.reverse().forEach(item => {
+
+            const regionOptionsHtml = document.getElementById('regionSelect')?.innerHTML || '';
+            if (!window.__historyState) window.__historyState = { editingOrderId: null, byOrderId: {} };
+            const state = window.__historyState;
+            state.byOrderId = {};
+
+            const toInputDate = (v) => {
+                const d = new Date(v);
+                if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+                const s = String(v || '').slice(0, 10);
+                return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+            };
+
+            const escapeHtml = (v) => String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            history.forEach(item => {
+                const orderId = String(item.id || '');
+                if (orderId) state.byOrderId[orderId] = item;
+
+                const metaParts = [];
+                const region = (item.region || '').toString().trim();
+                const items = (item.items || '').toString().trim();
+                const comment = (item.comment || '').toString().trim();
+                if (region) metaParts.push(region);
+                if (items) metaParts.push(items);
+                if (comment) metaParts.push(comment);
+
+                const metaLine = metaParts.length
+                    ? `<div class="text-[11px] text-slate-400 mt-1">${escapeHtml(metaParts.join(' • '))}</div>`
+                    : '';
+
+                const rowId = String(item.rowId);
+                const orderIdAttr = String(item.id || '');
+                const editKey = orderIdAttr || rowId;
+                const isEditing = String(state.editingOrderId || '') === editKey;
+
+                if (isEditing) {
+                    const dateVal = toInputDate(item.date);
+                    const payerVal = escapeHtml(item.payer);
+                    const itemsVal = escapeHtml(item.items || '');
+                    const commentVal = escapeHtml(item.comment || '');
+                    const amountVal = escapeHtml(item.amount || '');
+
+                    historyBody.innerHTML += `
+                        <tr class="bg-slate-50">
+                            <td class="p-4 text-slate-400 text-xs align-top">
+                                <input type="date" data-field="date" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${dateVal}" class="w-36 p-2 rounded-xl bg-white border border-slate-200">
+                            </td>
+                            <td class="p-4 align-top">
+                                <div class="space-y-2">
+                                    <input type="text" data-field="payer" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${payerVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
+                                    <select data-field="region" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full p-2 rounded-xl bg-white border border-slate-200">${regionOptionsHtml}</select>
+                                    <input type="text" data-field="items" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${itemsVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Додаткові пункти" />
+                                    <input type="text" data-field="comment" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${commentVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Коментар" />
+                                </div>
+                            </td>
+                            <td class="p-4 text-right align-top">
+                                <input type="number" min="0" data-field="amount" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${amountVal}" class="w-36 p-2 rounded-xl bg-white border border-slate-200 text-right font-bold text-slate-800" />
+                            </td>
+                            <td class="p-4 text-right align-top">
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" data-action="save" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">Зберегти</button>
+                                    <button type="button" data-action="cancel" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">Скасувати</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+
+                    // Set region select value after insertion
+                    setTimeout(() => {
+                        const sel = historyBody.querySelector(`select[data-field="region"][data-rowid="${rowId}"]`);
+                        if (sel) sel.value = String(item.region || '');
+                    }, 0);
+                    return;
+                }
+
                 historyBody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition-colors group">
                         <td class="p-4 text-slate-400 text-xs">${new Date(item.date).toLocaleDateString('uk-UA')}</td>
-                        <td class="p-4 font-semibold">${item.payer}</td>
+                        <td class="p-4 font-semibold">${escapeHtml(item.payer)}${metaLine}</td>
                         <td class="p-4 text-right font-bold text-blue-600">
                             ${Number(item.amount).toLocaleString()} ₴
-                            <button onclick="deleteOrder(${item.rowId})" class="ml-2 text-red-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
+                        </td>
+                        <td class="p-4 text-right whitespace-nowrap">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button type="button" data-action="edit" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">Редагувати</button>
+                                <button type="button" data-action="delete" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-red-100 text-red-700 text-xs font-bold">Видалити</button>
+                            </div>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        async function deleteOrder(rowId) {
-            if (!confirm('Видалити цей запис?')) return;
-            try {
+        // History actions (edit/save/cancel/delete)
+        document.getElementById('historyBody')?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('button[data-action][data-rowid]');
+            if (!btn) return;
+            if (!window.__historyState) return;
+            const state = window.__historyState;
+            const action = btn.dataset.action;
+            const rowId = String(btn.dataset.rowid || '');
+            const orderId = String(btn.dataset.orderid || '');
+            if (!rowId) return;
+
+            const editKey = orderId || rowId;
+
+            if (action === 'edit') {
+                state.editingOrderId = editKey;
+                updateStats();
+                return;
+            }
+            if (action === 'cancel') {
+                state.editingOrderId = null;
+                updateStats();
+                return;
+            }
+            if (action === 'delete') {
+                if (!confirm('Видалити це замовлення?')) return;
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ 
-                        action: 'delete',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'deleteOrder',
                         managerId: loggedInManagerId,
-                        rowId: rowId 
+                        id: orderId,
+                        rowId: Number(rowId)
                     })
                 });
-                updateStats();
-            } catch (e) { alert('Помилка видалення'); }
-        }
+                state.editingOrderId = null;
+                setTimeout(updateStats, 600);
+                return;
+            }
+            if (action === 'save') {
+                const date = document.querySelector(`input[data-field="date"][data-rowid="${rowId}"]`)?.value;
+                const payer = document.querySelector(`input[data-field="payer"][data-rowid="${rowId}"]`)?.value?.trim() || '';
+                const region = document.querySelector(`select[data-field="region"][data-rowid="${rowId}"]`)?.value || '';
+                const items = document.querySelector(`input[data-field="items"][data-rowid="${rowId}"]`)?.value?.trim() || '';
+                const comment = document.querySelector(`input[data-field="comment"][data-rowid="${rowId}"]`)?.value?.trim() || '';
+                const amount = document.querySelector(`input[data-field="amount"][data-rowid="${rowId}"]`)?.value;
+
+                if (!date) {
+                    alert('Оберіть дату');
+                    return;
+                }
+                if (!payer) {
+                    alert('Вкажіть платника');
+                    return;
+                }
+
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'updateOrder',
+                        managerId: loggedInManagerId,
+                        id: orderId,
+                        rowId: Number(rowId),
+                        date,
+                        payer,
+                        region,
+                        items,
+                        comment,
+                        amount
+                    })
+                });
+
+                state.editingOrderId = null;
+                setTimeout(updateStats, 600);
+                return;
+            }
+        });
 
         async function updateStats() {
             if (!loggedInManagerId || SCRIPT_URL.includes('ВАШ_URL')) return; 
             try {
-                // Відправляємо ID менеджера, щоб отримати ТІЛЬКИ його дані
-                const response = await fetch(`${SCRIPT_URL}?managerId=${encodeURIComponent(loggedInManagerId)}`, { cache: 'no-store' });
+                setLoading_(true);
+                const url = `${SCRIPT_URL}?managerId=${encodeURIComponent(loggedInManagerId)}&_=${Date.now()}`;
+                const response = await fetch(url, { cache: 'no-store' });
                 const data = await response.json();
-                // Якщо скрипт повертає конфіг разом зі статистикою — застосуємо його
-                if (data && typeof data === 'object') {
-                    if (data.config && typeof data.config === 'object') {
-                        applyRemoteManagerConfig(loggedInManagerId, data.config);
-                    } else {
-                        const hasMonth = Object.prototype.hasOwnProperty.call(data, 'month');
-                        const hasGoal = Object.prototype.hasOwnProperty.call(data, 'goal');
-                        if (hasMonth || hasGoal) {
-                            applyRemoteManagerConfig(loggedInManagerId, { month: data.month, goal: data.goal });
-                        }
-                    }
-                }
-                updateUI(data.total || 0, data.history || []);
+
+                // Plans come from backend
+                setDbPlans_(data.plans);
+                renderLocalPlans_();
+                renderProgressPeriodPicker_();
+
+                const allHistory = Array.isArray(data.history) ? data.history : [];
+                window.__lastAllHistory = allHistory;
+                const view = buildProgressView_(allHistory);
+                currentGoal = Number(view.goal) || currentGoal;
+                currentMonth = view.label || currentMonth;
+                // Progress metrics respect selected plan months, but the orders list should show all saved orders.
+                updateUI(view.total || 0, allHistory);
+                setLoading_(false);
             } catch (e) { console.error(e); }
         }
 
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
-            const payer = document.getElementById('payer').value;
+            const orderDate = document.getElementById('orderDate')?.value;
+            const payer = document.getElementById('payer').value.trim();
+            const region = document.getElementById('regionSelect').value;
             const amount = document.getElementById('amount').value;
+            const items = document.getElementById('orderItems')?.value?.trim() || '';
+            const comment = document.getElementById('orderComment')?.value?.trim() || '';
+
+            if (!orderDate) {
+                alert('Оберіть дату');
+                return;
+            }
 
             btn.disabled = true;
             btn.innerText = 'Зберігаємо...';
@@ -580,14 +1321,21 @@
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: JSON.stringify({ 
-                        managerId: loggedInManagerId, // Додаємо ID менеджера в запис
-                        payer, 
-                        amount 
+                    body: JSON.stringify({
+                        managerId: loggedInManagerId,
+                        date: orderDate,
+                        payer,
+                        region,
+                        items,
+                        comment,
+                        amount
                     })
                 });
                 setTimeout(() => {
                     document.getElementById('orderForm').reset();
+                    const d = new Date();
+                    const el = document.getElementById('orderDate');
+                    if (el) el.value = d.toISOString().slice(0, 10);
                     btn.disabled = false;
                     btn.innerText = 'Додати';
                     updateStats();
@@ -595,25 +1343,106 @@
             } catch (err) { btn.disabled = false; }
         });
 
-        function toggleSettings() {
-            document.getElementById('settingsPanel').classList.toggle('hidden');
-            document.getElementById('configMonth').value = currentMonth;
-            document.getElementById('configGoal').value = currentGoal;
+        function initAddPlanUI_() {
+            const monthSelect = document.getElementById('addPlanMonth');
+            if (!monthSelect || monthSelect.options.length) return;
+
+            const now = new Date();
+            const yyyy = String(now.getFullYear());
+
+            const yearInput = document.getElementById('addPlanYear');
+            if (yearInput && !String(yearInput.value || '').trim()) yearInput.value = yyyy;
+
+            MONTH_KEYS.forEach((mm) => {
+                const opt = document.createElement('option');
+                opt.value = mm;
+                opt.textContent = `${MONTH_LABELS[mm]}`;
+                monthSelect.appendChild(opt);
+            });
+
+            const currentMm = String(now.getMonth() + 1).padStart(2, '0');
+            monthSelect.value = `${currentMm}`;
         }
 
-        function saveSettings() {
-            currentMonth = document.getElementById('configMonth').value || 'Грудень';
-            currentGoal = parseInt(document.getElementById('configGoal').value) || 1000000;
-            // Зберігаємо план ТІЛЬКИ для поточного менеджера
-            saveManagerConfig(loggedInManagerId);
-            // І пушимо в "базу" (Google Apps Script), щоб було однаково на всіх пристроях
-            pushManagerConfigToServer(loggedInManagerId);
-            toggleSettings();
-            updateStats();
+        function getAddPlanPeriod_() {
+            const yearRaw = String(document.getElementById('addPlanYear')?.value || '').trim();
+            const monthRaw = String(document.getElementById('addPlanMonth')?.value || '').trim();
+            const yyyy = yearRaw;
+            const mm = String(monthRaw).padStart(2, '0');
+            if (!/^\d{4}$/.test(yyyy)) return '';
+            if (!/^\d{2}$/.test(mm)) return '';
+            return `${yyyy}-${mm}`;
+        }
+
+        function refreshAddPlanGoal_() {
+            const period = getAddPlanPeriod_();
+            const goalEl = document.getElementById('addPlanGoal');
+            if (!goalEl) return;
+            const existing = period ? getDbPlanGoal_(period) : 0;
+            goalEl.value = existing > 0 ? String(existing) : '';
+        }
+
+        function openAddPlanPanel_() {
+            initAddPlanUI_();
+            document.getElementById('addPlanPanel')?.classList.remove('hidden');
+            refreshAddPlanGoal_();
+        }
+
+        function closeAddPlanPanel_() {
+            document.getElementById('addPlanPanel')?.classList.add('hidden');
+        }
+
+        document.getElementById('addPlanBtn')?.addEventListener('click', openAddPlanPanel_);
+        document.getElementById('addPlanCancelBtn')?.addEventListener('click', closeAddPlanPanel_);
+        document.getElementById('addPlanYear')?.addEventListener('input', refreshAddPlanGoal_);
+        document.getElementById('addPlanMonth')?.addEventListener('change', refreshAddPlanGoal_);
+        document.getElementById('addPlanSaveBtn')?.addEventListener('click', async () => {
+            if (!loggedInManagerId) return;
+            const btn = document.getElementById('addPlanSaveBtn');
+            withButtonLoading_(btn, true, 'Зберегти', 'Збереження...');
+            const period = getAddPlanPeriod_();
+            if (!period) {
+                withButtonLoading_(btn, false);
+                alert('Вкажіть коректний рік і місяць');
+                return;
+            }
+            const goal = Number(document.getElementById('addPlanGoal')?.value || 0);
+
+            await postToScript_({
+                action: 'setPlan',
+                managerId: loggedInManagerId,
+                period: period,
+                label: formatPeriodLabel_(period),
+                goal: Number.isFinite(goal) && goal > 0 ? goal : 0
+            });
+
+            optimisticUpsertPlan_(period, formatPeriodLabel_(period), Number.isFinite(goal) && goal > 0 ? goal : 0);
+            closeAddPlanPanel_();
+            renderLocalPlans_();
+            renderProgressPeriodPicker_();
+            refreshGoalFromPlans_();
+            withButtonLoading_(btn, false);
+
+            setTimeout(updateStats, 600);
+        });
+
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('hidden');
+        }
+
+        function togglePlans() {
+            document.getElementById('plansPanel').classList.toggle('hidden');
         }
 
         // Восстановление сессии при загрузке страницы
         document.addEventListener('DOMContentLoaded', async () => {
+            initAddPlanUI_();
+            renderProgressPeriodPicker_();
+
+            const d = new Date();
+            const dateEl = document.getElementById('orderDate');
+            if (dateEl && !dateEl.value) dateEl.value = d.toISOString().slice(0, 10);
+
             const stored = localStorage.getItem('crm_logged_manager');
             if (stored && MANAGERS[stored]) {
                 loggedInManagerId = stored;
@@ -624,9 +1453,8 @@
                 // Установим селектор менеджера, если он есть
                 const sel = document.getElementById('managerSelect');
                 if (sel) sel.value = stored;
-                // Підтягнути персональні налаштування плану менеджера (кэш -> сервер)
-                loadManagerConfig(stored);
-                await syncManagerConfigFromServer(stored);
+                renderLocalPlans_();
+                renderProgressPeriodPicker_();
                 updateStats();
             }
         });

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+    <link rel="manifest" href="manifest-dov.webmanifest">
+    <meta name="theme-color" content="#F4C430">
+    <title>CRM - Авторизація та Менеджери</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        html, body { overflow-x: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .salary-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .login-bg { background: radial-gradient(circle at top right, #3b82f6, #1e293b); }
+
+        /* Header Styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 0;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+        }
+
+        .logo h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: 800;
+        }
+
+        .nav {
+            display: flex;
+        }
+
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: background 0.3s, color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .bar {
+            width: 25px;
+            height: 3px;
+            background: #333;
+            margin: 3px 0;
+            transition: 0.3s;
+        }
+
+        /* Mobile header */
+        @media (max-width: 768px) {
+            body { padding-top: 60px; }
+
+            .header-container {
+                padding: 10px 15px;
+            }
+
+            .logo h1 {
+                font-size: 20px;
+            }
+
+            .nav {
+                position: fixed;
+                top: 60px;
+                left: -100%;
+                width: 100%;
+                height: calc(100vh - 60px);
+                background: #fff;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                padding-top: 50px;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                z-index: 999;
+            }
+
+            .nav.open {
+                left: 0;
+            }
+
+            .nav-list {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .nav-link {
+                font-size: 18px;
+                padding: 15px 30px;
+                display: flex;
+                align-items: center;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .hamburger.open .bar:nth-child(1) {
+                transform: rotate(-45deg) translate(-5px, 6px);
+            }
+
+            .hamburger.open .bar:nth-child(2) {
+                opacity: 0;
+            }
+
+            .hamburger.open .bar:nth-child(3) {
+                transform: rotate(45deg) translate(-5px, -6px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-12 text-slate-900">
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <h1>General Machines</h1>
+            </div>
+            <nav class="nav">
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="gm-script.html" class="nav-link"><i class="fas fa-file-code mr-2"></i>Скрипти</a></li>
+                    <li class="nav-item"><a href="calc.html" class="nav-link"><i class="fas fa-calculator mr-2"></i>Прайс</a></li>
+                    <li class="nav-item"><a href="dov.html" class="nav-link active"><i class="fas fa-calendar-check mr-2"></i>План</a></li>
+                    <li class="nav-item"><a href="generator-ankety.html" class="nav-link"><i class="fas fa-file-excel mr-2"></i>Анкета</a></li>
+                    <li class="nav-item"><a href="education.html" class="nav-link"><i class="fas fa-graduation-cap mr-2"></i>Навчання</a></li>
+                </ul>
+            </nav>
+            <div class="hamburger" id="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Auth Overlay -->
+    <div id="authOverlay" class="fixed inset-0 z-[100] login-bg flex items-center justify-center px-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800">Вхід у систему</h2>
+                <p class="text-slate-500 text-sm">Оберіть профіль та введіть пароль</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Менеджер</label>
+                    <select id="managerSelect" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="OleksandrNamistnyk">Олександр Намістник</option>
+                        <option value="AndriyPashyk">Андрій Пашик</option>
+                        <option value="OleksandrDenisov">Олександр Денисов</option>
+                        <option value="ArturEvtushenko">Артур Євтушенко</option>
+                        <option value="IvanYakushik">Іван Якушик</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Пароль</label>
+                    <input type="password" id="passInput" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••">
+                </div>
+                <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all">
+                    Увійти
+                </button>
+                <p id="loginError" class="text-red-500 text-xs text-center hidden font-bold">Невірний пароль!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content (Hidden by default) -->
+    <div id="appContent" class="hidden">
+        <!-- Header -->
+        <nav class="bg-slate-900 text-white p-4 shadow-lg mb-8">
+            <div class="container mx-auto flex justify-between items-center flex-wrap gap-2">
+                <div class="flex items-center gap-2 md:gap-4 flex-wrap">
+                    <h1 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-blue-400"></i> <span id="displayMonth">Грудень</span>
+                    </h1>
+                    <div class="hidden md:block h-6 w-px bg-slate-700"></div>
+                    <div class="text-xs md:text-sm font-medium text-blue-300">
+                        <i class="fa-solid fa-user-tie"></i> <span id="currentManagerName">Менеджер</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <button onclick="toggleSettings()" class="text-slate-400 hover:text-white transition-colors text-xs md:text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Налаштування</span>
+                    </button>
+                    <button onclick="logout()" class="text-red-400 hover:text-red-300 text-xs md:text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Вихід</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container mx-auto px-4 max-w-6xl">
+            <!-- Settings Panel -->
+            <div id="settingsPanel" class="hidden mb-8 glass p-6 rounded-2xl border border-blue-200 shadow-xl">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <h3 class="text-lg font-bold">Налаштування планів</h3>
+                    <span class="text-xs text-slate-500">Усі періоди зберігаються на сервері</span>
+                </div>
+                <form id="planForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Тип періоду</label>
+                        <select id="planType" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                            <option value="month">Місяць</option>
+                            <option value="year">Рік</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Рік</label>
+                        <input type="number" id="planYear" min="2020" max="2100" value="2025" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                        <div class="mt-2" id="monthQuarterFields">
+                            <select id="planMonth" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                                <option value="01">Січень</option>
+                                <option value="02">Лютий</option>
+                                <option value="03">Березень</option>
+                                <option value="04">Квітень</option>
+                                <option value="05">Травень</option>
+                                <option value="06">Червень</option>
+                                <option value="07">Липень</option>
+                                <option value="08">Серпень</option>
+                                <option value="09">Вересень</option>
+                                <option value="10">Жовтень</option>
+                                <option value="11">Листопад</option>
+                                <option value="12">Грудень</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">План, ₴</label>
+                        <input type="number" id="planGoal" required placeholder="0" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                    </div>
+                    <div class="md:col-span-3 flex justify-end">
+                        <button type="submit" class="px-4 py-3 rounded-2xl bg-blue-600 text-white font-semibold">Зберегти план</button>
+                    </div>
+                </form>
+
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-sm font-semibold text-slate-700">Активний план</div>
+                    <select id="activePlanSelect" class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm"></select>
+                </div>
+                <div class="text-xs text-slate-500">Вибраний план визначає ліміт для розрахунку зарплати/бонусу.</div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Left Column: Salary & Stats -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="salary-card p-6 rounded-3xl shadow-2xl text-white relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h3 class="opacity-70 text-xs font-bold uppercase mb-1">Особиста Зарплата</h3>
+                            <div id="salaryAmount" class="text-5xl font-black mb-4 text-blue-400 text-shadow-lg">40,000 ₴</div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1 opacity-70">
+                                        <span>Ставка: 40к</span>
+                                        <span>План (50%): <span id="goalMidLabel">500к</span></span>
+                                    </div>
+                                    <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                                        <div id="salaryBar" class="bg-blue-500 h-full transition-all" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 pt-2">
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                                        <div class="text-[10px] uppercase opacity-50">Бонус за план</div>
+                                        <div id="bonusLabel" class="text-lg font-bold text-green-400">+0 ₴</div>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                                        <div class="text-[10px] uppercase opacity-50">Понад план (1%)</div>
+                                        <div id="extraLabel" class="text-lg font-bold text-yellow-400">+0 ₴</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-3xl shadow-sm border border-slate-200 text-center">
+                        <div class="relative inline-flex items-center justify-center">
+                            <svg width="180" height="180">
+                                <circle stroke="#f1f5f9" stroke-width="14" fill="transparent" r="80" cx="90" cy="90"/>
+                                <circle id="progressCircle" stroke="#3b82f6" stroke-width="14" stroke-dasharray="502" stroke-dashoffset="502" stroke-linecap="round" fill="transparent" r="80" cx="90" cy="90" class="progress-ring"/>
+                            </svg>
+                            <div class="absolute">
+                                <div id="percentLabel" class="text-4xl font-black text-slate-800">0%</div>
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">мій план</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between text-sm px-4">
+                            <div class="text-left">
+                                <div class="text-slate-400 text-[10px] uppercase font-bold">Продано мною</div>
+                                <div id="totalSalesLabel" class="font-bold text-slate-800 text-lg">0 ₴</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-slate-400 text-[10px] uppercase font-bold text-red-400">Залишилось</div>
+                                <div id="remainingLabel" class="font-bold text-red-500 text-lg">0 ₴</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Form & History -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass p-8 rounded-3xl shadow-sm border border-slate-200">
+                        <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-plus-circle text-blue-600"></i> Нове замовлення
+                        </h2>
+                        <form id="orderForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Платник</label>
+                                <input type="text" id="payer" required placeholder="Назва клієнта"
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Область</label>
+                                <select id="regionSelect" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">Оберіть область</option>
+                                    <option value="Вінницька">Вінницька</option>
+                                    <option value="Волинська">Волинська</option>
+                                    <option value="Дніпропетровська">Дніпропетровська</option>
+                                    <option value="Донецька">Донецька</option>
+                                    <option value="Житомирська">Житомирська</option>
+                                    <option value="Закарпатська">Закарпатська</option>
+                                    <option value="Запорізька">Запорізька</option>
+                                    <option value="Івано-Франківська">Івано-Франківська</option>
+                                    <option value="Київська">Київська</option>
+                                    <option value="Кіровоградська">Кіровоградська</option>
+                                    <option value="Луганська">Луганська</option>
+                                    <option value="Львівська">Львівська</option>
+                                    <option value="Миколаївська">Миколаївська</option>
+                                    <option value="Одеська">Одеська</option>
+                                    <option value="Полтавська">Полтавська</option>
+                                    <option value="Рівненська">Рівненська</option>
+                                    <option value="Сумська">Сумська</option>
+                                    <option value="Тернопільська">Тернопільська</option>
+                                    <option value="Харківська">Харківська</option>
+                                    <option value="Херсонська">Херсонська</option>
+                                    <option value="Хмельницька">Хмельницька</option>
+                                    <option value="Черкаська">Черкаська</option>
+                                    <option value="Чернівецька">Чернівецька</option>
+                                    <option value="Чернігівська">Чернігівська</option>
+                                    <option value="м. Київ">м. Київ</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Сума (₴)</label>
+                                <input type="number" id="amount" required placeholder="0.00"
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Додаткові пункти / позиції (опціонально)</label>
+                                <input type="text" id="orderItems" placeholder="Напр.: ЛН 2.6; ковш 2.2; доставка"
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Коментар (опціонально)</label>
+                                <input type="text" id="orderComment" placeholder="Будь-які примітки по замовленню"
+                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="md:col-span-2 flex items-end">
+                                <button type="submit" id="submitBtn" 
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all">
+                                    Додати
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 bg-slate-50/50 flex justify-between items-center border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-500">
+                            <span>Мої останні продажі</span>
+                            <div id="connectionStatus" class="text-[10px] text-green-500 bg-green-50 px-2 py-1 rounded">З'єднано</div>
+                        </div>
+                        <div class="max-h-[300px] overflow-y-auto">
+                            <table class="w-full text-left">
+                                <tbody id="historyBody" class="text-sm divide-y divide-slate-100">
+                                    <tr><td class="p-10 text-center text-slate-400 italic">Синхронізація...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- КОНФІГУРАЦІЯ МЕНЕДЖЕРІВ ---
+        const MANAGERS = {
+            'OleksandrNamistnyk': { name: 'Олександр Намістник', pass: '1111' },
+            'AndriyPashyk': { name: 'Андрій Пашик', pass: '2222' },
+            'OleksandrDenisov': { name: 'Олександр Денисов', pass: '3333' },
+            'ArturEvtushenko': { name: 'Артур Євтушенко', pass: '4444' },
+            'IvanYakushik': { name: 'Іван Якушик', pass: '5555' },
+            'manager6': { name: 'Адмін', pass: '6666' }
+        };
+
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_Ec8RAjAzfU62x10AyIYazCpoMgbsqJ61J8VQgBrCWSHhw9IpNzK2TPZekSRpyS8Y7A/exec'; 
+        
+        let loggedInManagerId = null;
+        let currentMonth = 'План';
+        let currentGoal = 1000000;
+        let plans = [];
+        let activePlanKey = null;
+        const BASE_SALARY = 40000;
+        const MAX_BONUS = 60000;
+
+        function formatPlanLabel(plan) {
+            if (!plan) return 'План';
+            if (plan.label) return plan.label;
+            return plan.period || 'План';
+        }
+
+        function loadActivePlanKey(managerId) {
+            return localStorage.getItem(`crm_plan_active_${managerId}`) || '';
+        }
+
+        function saveActivePlanKey(managerId, key) {
+            localStorage.setItem(`crm_plan_active_${managerId}`, key || '');
+        }
+
+        function applyActivePlan() {
+            const select = document.getElementById('activePlanSelect');
+            const key = activePlanKey || (plans[0]?.period || '');
+            activePlanKey = key;
+            if (select) select.value = key;
+
+            const chosen = plans.find(p => p.period === key) || plans[0];
+            if (chosen) {
+                currentGoal = Number(chosen.goal) || 0;
+                currentMonth = formatPlanLabel(chosen);
+            } else {
+                currentGoal = 1000000;
+                currentMonth = 'План';
+            }
+        }
+
+        function renderPlans() {
+            const select = document.getElementById('activePlanSelect');
+            if (!select) return;
+            select.innerHTML = '';
+            plans.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.period;
+                opt.textContent = `${formatPlanLabel(p)} — ${Number(p.goal).toLocaleString()} ₴`;
+                select.appendChild(opt);
+            });
+            if (!plans.length) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'План не задано';
+                select.appendChild(opt);
+            }
+            applyActivePlan();
+        }
+
+        function planTypeChanged() {
+            const type = document.getElementById('planType').value;
+            const monthSelect = document.getElementById('planMonth');
+            monthSelect.classList.toggle('hidden', type !== 'month');
+        }
+
+        function buildPeriodAndLabel() {
+            const type = document.getElementById('planType').value;
+            const year = document.getElementById('planYear').value || '2025';
+            const month = document.getElementById('planMonth').value || '01';
+
+            if (type === 'month') return { period: `${year}-${month}`, label: `${year}-${month}` };
+            if (type === 'year') return { period: `${year}`, label: `${year}` };
+            return { period: `${year}-${month}`, label: `${year}-${month}` };
+        }
+
+        // --- АВТОРИЗАЦІЯ ---
+        async function login() {
+            const mId = document.getElementById('managerSelect').value;
+            const pass = document.getElementById('passInput').value;
+            const error = document.getElementById('loginError');
+
+            if (MANAGERS[mId] && MANAGERS[mId].pass === pass) {
+                loggedInManagerId = mId;
+                localStorage.setItem('crm_logged_manager', mId);
+                error.classList.add('hidden');
+                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('appContent').classList.remove('hidden');
+                document.getElementById('currentManagerName').innerText = MANAGERS[mId].name;
+                activePlanKey = loadActivePlanKey(loggedInManagerId);
+                updateStats();
+            } else {
+                error.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            loggedInManagerId = null;
+            localStorage.removeItem('crm_logged_manager');
+            document.getElementById('passInput').value = '';
+            document.getElementById('authOverlay').classList.remove('hidden');
+            document.getElementById('appContent').classList.add('hidden');
+        }
+
+        // --- ЛОГІКА ТА UI ---
+        function calculateSalary(totalSales) {
+            const goal = currentGoal > 0 ? currentGoal : 1;
+            let salary = BASE_SALARY;
+            let bonus = 0;
+            let extra = 0;
+            const progress = totalSales / goal;
+            if (progress >= 0.5) {
+                let bonusMultiplier = Math.min((progress - 0.5) / 0.5, 1);
+                bonus = bonusMultiplier * MAX_BONUS;
+            }
+            if (totalSales > goal) {
+                extra = (totalSales - goal) * 0.01;
+            }
+            return { total: salary + bonus + extra, bonus, extra, percent: progress * 100 };
+        }
+
+        function updateUI(total, history) {
+            const stats = calculateSalary(total);
+            const remaining = currentGoal - total;
+
+            // Верхні показники (залишаємо як було)
+            document.getElementById('salaryAmount').innerText = Math.round(stats.total).toLocaleString() + ' ₴';
+            document.getElementById('bonusLabel').innerText = '+' + Math.round(stats.bonus).toLocaleString() + ' ₴';
+            document.getElementById('extraLabel').innerText = '+' + Math.round(stats.extra).toLocaleString() + ' ₴';
+            
+            let salaryProgress = stats.percent < 50 ? 0 : (stats.percent - 50) * 2;
+            document.getElementById('salaryBar').style.width = Math.min(salaryProgress, 100) + '%';
+
+            document.getElementById('totalSalesLabel').innerText = total.toLocaleString() + ' ₴';
+            document.getElementById('remainingLabel').innerText = (remaining > 0 ? remaining.toLocaleString() : 'Виконано!') + ' ₴';
+            document.getElementById('percentLabel').innerText = Math.round(stats.percent) + '%';
+            
+            const circumference = 80 * 2 * Math.PI;
+            const offset = circumference - (Math.min(stats.percent, 100) / 100 * circumference);
+            document.getElementById('progressCircle').style.strokeDashoffset = offset;
+            document.getElementById('displayMonth').innerText = currentMonth;
+            document.getElementById('goalMidLabel').innerText = (currentGoal / 2 / 1000) + 'к';
+
+            // Історія з кнопкою видалення
+            const historyBody = document.getElementById('historyBody');
+            historyBody.innerHTML = '';
+
+            const escapeHtml = (v) => String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            history.forEach(item => {
+                const metaParts = [];
+                const region = (item.region || '').toString().trim();
+                const items = (item.items || '').toString().trim();
+                const comment = (item.comment || '').toString().trim();
+                if (region) metaParts.push(region);
+                if (items) metaParts.push(items);
+                if (comment) metaParts.push(comment);
+
+                const metaLine = metaParts.length
+                    ? `<div class="text-[11px] text-slate-400 mt-1">${escapeHtml(metaParts.join(' • '))}</div>`
+                    : '';
+
+                historyBody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors group">
+                        <td class="p-4 text-slate-400 text-xs">${new Date(item.date).toLocaleDateString('uk-UA')}</td>
+                        <td class="p-4 font-semibold">${escapeHtml(item.payer)}${metaLine}</td>
+                        <td class="p-4 text-right font-bold text-blue-600">
+                            ${Number(item.amount).toLocaleString()} ₴
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function updateStats() {
+            if (!loggedInManagerId || SCRIPT_URL.includes('ВАШ_URL')) return; 
+            try {
+                const response = await fetch(`${SCRIPT_URL}?managerId=${encodeURIComponent(loggedInManagerId)}`, { cache: 'no-store' });
+                const data = await response.json();
+
+                plans = Array.isArray(data.plans) ? data.plans : [];
+                renderPlans();
+
+                updateUI(data.total || 0, data.history || []);
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const payer = document.getElementById('payer').value.trim();
+            const region = document.getElementById('regionSelect').value;
+            const amount = document.getElementById('amount').value;
+            const items = document.getElementById('orderItems')?.value?.trim() || '';
+            const comment = document.getElementById('orderComment')?.value?.trim() || '';
+
+            btn.disabled = true;
+            btn.innerText = 'Зберігаємо...';
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        managerId: loggedInManagerId,
+                        payer,
+                        region,
+                        items,
+                        comment,
+                        amount
+                    })
+                });
+                setTimeout(() => {
+                    document.getElementById('orderForm').reset();
+                    btn.disabled = false;
+                    btn.innerText = 'Додати';
+                    updateStats();
+                }, 800);
+            } catch (err) { btn.disabled = false; }
+        });
+
+        document.getElementById('planType').addEventListener('change', planTypeChanged);
+
+        document.getElementById('activePlanSelect').addEventListener('change', (e) => {
+            activePlanKey = e.target.value;
+            saveActivePlanKey(loggedInManagerId, activePlanKey);
+            applyActivePlan();
+            updateStats();
+        });
+
+        document.getElementById('planForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { period, label } = buildPeriodAndLabel();
+            const goal = Number(document.getElementById('planGoal').value || 0);
+
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    action: 'setPlan',
+                    managerId: loggedInManagerId,
+                    period,
+                    label,
+                    goal
+                })
+            });
+
+            activePlanKey = period;
+            saveActivePlanKey(loggedInManagerId, activePlanKey);
+            setTimeout(updateStats, 500);
+        });
+
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('hidden');
+        }
+
+        // Восстановление сессии при загрузке страницы
+        document.addEventListener('DOMContentLoaded', async () => {
+            const stored = localStorage.getItem('crm_logged_manager');
+            if (stored && MANAGERS[stored]) {
+                loggedInManagerId = stored;
+                // Синхронизируем UI
+                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('appContent').classList.remove('hidden');
+                document.getElementById('currentManagerName').innerText = MANAGERS[stored].name;
+                // Установим селектор менеджера, если он есть
+                const sel = document.getElementById('managerSelect');
+                if (sel) sel.value = stored;
+                activePlanKey = loadActivePlanKey(stored);
+                updateStats();
+            }
+        });
+
+        // Hamburger menu toggle
+        const hamburger = document.getElementById('hamburger');
+        const nav = document.querySelector('.nav');
+        hamburger.addEventListener('click', () => {
+            nav.classList.toggle('open');
+            hamburger.classList.toggle('open');
+        });
+
+        setInterval(updateStats, 60000);
+    </script>
+</body>
+</html>
