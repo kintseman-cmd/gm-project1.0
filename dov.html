@@ -535,21 +535,32 @@
             return Number.isFinite(n) ? n : 0;
         }
 
+        function toLocalYmd_(d) {
+            const dt = d instanceof Date ? d : new Date(d);
+            if (!Number.isFinite(dt.getTime())) return '';
+            const yyyy = String(dt.getFullYear());
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
         function toIsoDate_(v) {
-            if (!v) return new Date().toISOString().slice(0, 10);
+            if (!v) return toLocalYmd_(new Date()) || '';
             if (typeof v === 'string') {
                 const s = v.slice(0, 10);
                 if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
                 const t = Date.parse(v);
-                if (Number.isFinite(t)) return new Date(t).toISOString().slice(0, 10);
+                if (Number.isFinite(t)) return toLocalYmd_(new Date(t)) || '';
             }
             if (v?.toDate) {
                 const d = v.toDate();
-                if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+                const s = toLocalYmd_(d);
+                if (s) return s;
             }
             const d = new Date(v);
-            if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
-            return new Date().toISOString().slice(0, 10);
+            const s = toLocalYmd_(d);
+            if (s) return s;
+            return toLocalYmd_(new Date()) || '';
         }
 
         async function loadFirebaseModules_() {
@@ -1652,7 +1663,8 @@
 
             const toInputDate = (v) => {
                 const d = new Date(v);
-                if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+                const s1 = toLocalYmd_(d);
+                if (s1) return s1;
                 const s = String(v || '').slice(0, 10);
                 return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
             };
@@ -1952,7 +1964,7 @@
                     document.getElementById('orderForm').reset();
                     const d = new Date();
                     const el = document.getElementById('orderDate');
-                    if (el) el.value = d.toISOString().slice(0, 10);
+                    if (el) el.value = toLocalYmd_(d);
                     btn.disabled = false;
                     btn.innerText = 'Додати';
                     updateStats();
@@ -2068,7 +2080,7 @@
 
             const d = new Date();
             const dateEl = document.getElementById('orderDate');
-            if (dateEl && !dateEl.value) dateEl.value = d.toISOString().slice(0, 10);
+            if (dateEl && !dateEl.value) dateEl.value = toLocalYmd_(d);
 
             const stored = localStorage.getItem('crm_logged_manager');
             if (stored && MANAGERS[stored]) {
