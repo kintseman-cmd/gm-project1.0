@@ -12,7 +12,16 @@
     <title>Прайс-лист та Калькулятор</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                const params = new URLSearchParams(location.search);
+                if (params.get('embed') === '1') document.documentElement.classList.add('embed');
+            } catch (e) {}
+        })();
+    </script>
     <style>
+        html { overflow-y: scroll; scrollbar-gutter: stable; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
         .price-btn.active {
             background-color: #22c55e; /* green-500 */
@@ -57,6 +66,11 @@
             align-items: center;
             padding: 10px 20px;
         }
+
+        /* Embedded mode (inside index.html) */
+        html.embed .header { display: none !important; }
+        html.embed body { padding-top: 0 !important; }
+        html.embed #delivery-panel { top: 0 !important; }
 
         .logo h1 {
             margin: 0;
@@ -113,9 +127,10 @@
         @media (min-width: 1024px) {
             .sticky-calc {
                 position: sticky;
-                top: 180px; /* adjusted for header */
-                max-height: calc(100vh - 200px);
+                top: var(--sticky-calc-top, 180px); /* auto-set via JS */
+                max-height: var(--sticky-calc-maxh, calc(100vh - 200px));
                 overflow-y: auto;
+                scrollbar-gutter: stable;
             }
         }
 
@@ -227,13 +242,51 @@
         <div class="flex flex-col lg:flex-row gap-6">
             
             <!-- Ліва колонка: Товари (Прайс) -->
-            <div class="w-full lg:w-2/3" id="catalog-container">
+            <div class="w-full lg:w-2/3 min-w-0" id="catalog-container">
                 <!-- Категорії генеруються JS -->
             </div>
 
             <!-- Права колонка: Калькулятор -->
-            <div class="w-full lg:w-1/3">
-                <div class="sticky-calc bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="calculator-section">
+            <div class="w-full lg:w-1/3 lg:flex-none min-w-0">
+                <div class="sticky-calc">
+                    <!-- Міні адмін-панель прайсу (над калькулятором; НЕ в хедері) -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-3 flex flex-col gap-2" id="price-admin-bar">
+                        <div class="hidden text-xs font-bold uppercase tracking-wide text-amber-600" id="priceEditModeLabel">Режим редагування</div>
+                        <div class="flex flex-wrap items-center gap-2 justify-between">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" id="priceEditToggle" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition w-full sm:w-44">
+                                <i class="fas fa-pen"></i>
+                                <span>Редагувати</span>
+                                </button>
+                                <button type="button" id="priceLastChangesBtn" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition w-full sm:w-44">
+                                <i class="fas fa-clock"></i>
+                                <span>Останні зміни</span>
+                                </button>
+                            </div>
+                            <div class="hidden" id="priceAdminControls">
+                                <button type="button" id="priceApplyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap w-full sm:w-44"><i class="fas fa-save"></i>Зберегти</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Панель "Останні зміни" -->
+                    <div class="hidden bg-white p-3 rounded-xl shadow-sm border border-gray-200 mb-3" id="priceChangesPanel">
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm font-bold text-gray-800">Останні зміни цін</div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-xs text-gray-500">(за полем updatedAt)</div>
+                                <button type="button" id="priceClearChangesBtn" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition">
+                                    <i class="fas fa-eraser"></i>
+                                    <span>Очистити</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2 max-h-56 overflow-auto">
+                            <ul class="text-sm divide-y divide-gray-100" id="priceChangesList"></ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="calculator-section">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Калькулятор</h2>
 		 <!-- Кнопка "Калькулятор" (скрол до низу) -->
     <div class="fixed bottom-4 right-4 z-40 md:hidden">
@@ -260,6 +313,13 @@
                     <!-- Чек замовлення -->
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 font-mono text-sm mb-4">
                         <h3 class="font-bold text-center border-b border-dashed border-gray-400 pb-2 mb-2">ЧЕК ЗАМОВЛЕННЯ</h3>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[10px] text-gray-500 uppercase tracking-wide">Ціни</span>
+                            <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden" id="vat-toggle">
+                                <button type="button" id="vatModeNoBtn" class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white">Без ПДВ</button>
+                                <button type="button" id="vatModeYesBtn" class="px-3 py-1.5 text-xs font-bold bg-white text-gray-700">З ПДВ</button>
+                            </div>
+                        </div>
                         <div id="receipt-items" class="space-y-2 mb-4">
                             <div class="text-center text-gray-400 italic">Товари не обрані</div>
                         </div>
@@ -300,6 +360,130 @@
         // --- Дані (незмінні) ---
         const deliveryOptions = [3000, 4000, 5000, 7000, 8000, 10000, 12000, 15000];
         const categoryColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
+
+        // --- Firebase: прайс з бази (Firestore) ---
+        // Колекція: priceItems
+        // Документ: довільний id
+        // Поля: { category, name, price1, price2, sortCategory?, sortItem?, active? }
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+            authDomain: "gm-base.firebaseapp.com",
+            projectId: "gm-base",
+            storageBucket: "gm-base.firebasestorage.app",
+            messagingSenderId: "579626247182",
+            appId: "1:579626247182:web:09324aa5823c564defc85f"
+        };
+
+        let firebasePriceApiPromise_ = null;
+
+        async function initFirebaseForPrice_() {
+            if (firebasePriceApiPromise_) return firebasePriceApiPromise_;
+            firebasePriceApiPromise_ = (async () => {
+                const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+                const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+
+                let app;
+                const appName = 'price-calc';
+                try {
+                    app = appMod.initializeApp(FIREBASE_CONFIG, appName);
+                } catch (e) {
+                    app = appMod.getApp(appName);
+                }
+
+                const db = fsMod.getFirestore(app);
+                let auth = null;
+
+                // Anonymous auth (якщо правила Firestore вимагають auth)
+                try {
+                    auth = authMod.getAuth(app);
+                    if (!auth.currentUser) {
+                        await authMod.signInAnonymously(auth);
+                        console.info('[calc] Firebase auth: anonymous signed in');
+                    }
+                } catch (e) {
+                    // Якщо provider вимкнено або домен не дозволено — все одно спробуємо читати (може бути allow read)
+                    console.warn('[calc] Firebase auth: anonymous sign-in failed', { code: e?.code, message: e?.message });
+                }
+
+                return { db, auth, authMod, ...fsMod };
+            })();
+            return firebasePriceApiPromise_;
+        }
+
+        function buildCatalogFromPriceDocs_(docs) {
+            const byCat = new Map();
+            for (const d of docs) {
+                const data = d.data ? d.data() : d;
+                const docId = d && typeof d.id === 'string' ? d.id : null;
+                if (!data) continue;
+                if (data.active === false) continue;
+                const category = String(data.category || '').trim();
+                const name = String(data.name || '').trim();
+                const price1 = Number(data.price1);
+                const price2 = Number(data.price2);
+                if (!category || !name) continue;
+                if (!Number.isFinite(price1) || !Number.isFinite(price2)) continue;
+
+                const sortCategory = Number.isFinite(Number(data.sortCategory)) ? Number(data.sortCategory) : null;
+                const sortItem = Number.isFinite(Number(data.sortItem)) ? Number(data.sortItem) : null;
+
+                if (!byCat.has(category)) byCat.set(category, { category, sortCategory, items: [] });
+                byCat.get(category).items.push({ id: docId, name, price1, price2, sortItem });
+            }
+
+            const cats = Array.from(byCat.values());
+            cats.sort((a, b) => {
+                const as = a.sortCategory;
+                const bs = b.sortCategory;
+                if (as != null && bs != null && as !== bs) return as - bs;
+                if (as != null && bs == null) return -1;
+                if (as == null && bs != null) return 1;
+                return String(a.category).localeCompare(String(b.category), 'uk');
+            });
+
+            for (const c of cats) {
+                c.items.sort((a, b) => {
+                    const as = a.sortItem;
+                    const bs = b.sortItem;
+                    if (as != null && bs != null && as !== bs) return as - bs;
+                    if (as != null && bs == null) return -1;
+                    if (as == null && bs != null) return 1;
+                    return String(a.name).localeCompare(String(b.name), 'uk');
+                });
+                c.items = c.items.map(({ id, name, price1, price2 }) => ({ id, name, price1, price2 }));
+                delete c.sortCategory;
+            }
+            return cats;
+        }
+
+        async function loadCatalogFromFirestore_() {
+            try {
+                const api = await initFirebaseForPrice_();
+                const snap = await api.getDocs(api.collection(api.db, 'priceItems'));
+                if (!snap || snap.empty) return false;
+
+                updateLastChangesFromPriceDocs_(snap.docs);
+
+                const next = buildCatalogFromPriceDocs_(snap.docs);
+                if (!next.length) return false;
+
+                // Не міняємо посилання на catalogData, щоб не ламати існуючі функції.
+                catalogData.length = 0;
+                catalogData.push(...next);
+                return true;
+            } catch (e) {
+                const code = e?.code;
+                if (code === 'permission-denied' || /insufficient permissions/i.test(String(e?.message || ''))) {
+                    console.warn('[calc] price catalog load failed: permission denied. Fix Firestore Rules for /priceItems.', e);
+                } else if (code === 'auth/unauthorized-domain') {
+                    console.warn('[calc] price catalog load failed: unauthorized domain. Add domain in Firebase Auth -> Settings -> Authorized domains.', e);
+                } else {
+                    console.warn('[calc] price catalog load failed', e);
+                }
+                return false;
+            }
+        }
         
         const catalogData = [
             {
@@ -446,11 +630,177 @@
         // --- Стан ---
         let cart = {}; 
         let selectedDelivery = 0;
+        let vatMode_ = 1; // 1 = Без ПДВ, 2 = З ПДВ
+
+        // --- Міні адмін редагування прайсу ---
+        // ВАЖЛИВО: Firestore Rules не можуть перевіряти цей пароль.
+        // Для запису з цієї сторінки використовується Firebase Auth Email/Password користувач.
+        const PRICE_ADMIN_EMAIL = 'price-admin@gm-base.local';
+        const PRICE_ADMIN_PASSWORD = '123456';
+        let priceEditUnlocked_ = false;
+        let priceEditMode_ = false;
+        const priceEdits_ = new Map(); // docId -> { price1, price2 }
+        const priceDocSnapshot_ = new Map(); // docId -> { price1, price2 } (current values from catalog)
+
+        // --- Останні зміни (updatedAt) ---
+        let priceLastChanges_ = []; // [{ category, name, updatedAt: Date|null, fromPrice1, fromPrice2, toPrice1, toPrice2 }]
+        let priceChangesOpen_ = false;
+
+        function tsToDate_(ts) {
+            try {
+                if (!ts) return null;
+                if (typeof ts.toDate === 'function') return ts.toDate();
+                if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function formatUaDateTime_(d) {
+            if (!d) return '—';
+            try {
+                return d.toLocaleString('uk-UA');
+            } catch (e) {
+                return String(d);
+            }
+        }
+
+        function formatMoney_(n) {
+            const v = Number(n);
+            if (!Number.isFinite(v)) return '—';
+            try {
+                return v.toLocaleString('uk-UA');
+            } catch (e) {
+                return String(v);
+            }
+        }
+
+        function formatDelta_(from, to) {
+            const a = Number(from);
+            const b = Number(to);
+            if (!Number.isFinite(a) || !Number.isFinite(b)) return '';
+            const d = b - a;
+            if (!d) return '';
+            const sign = d > 0 ? '+' : '';
+            return ` (${sign}${formatMoney_(d)})`;
+        }
+
+        function updateLastChangesFromPriceDocs_(docs) {
+            const list = [];
+            for (const d of docs || []) {
+                const data = d?.data ? d.data() : d;
+                if (!data) continue;
+                if (data.active === false) continue;
+                const category = String(data.category || '').trim();
+                const name = String(data.name || '').trim();
+                if (!category || !name) continue;
+                const lastChange = data.lastChange && typeof data.lastChange === 'object' ? data.lastChange : null;
+                const updatedAt = tsToDate_(lastChange?.at || data.updatedAt);
+                // If there is no timestamp, there's no "change" to show.
+                if (!updatedAt) continue;
+                const toPrice1 = Number(data.price1);
+                const toPrice2 = Number(data.price2);
+                const fromPrice1 = Number.isFinite(Number(lastChange?.fromPrice1)) ? Number(lastChange.fromPrice1) : null;
+                const fromPrice2 = Number.isFinite(Number(lastChange?.fromPrice2)) ? Number(lastChange.fromPrice2) : null;
+                const lastToPrice1 = Number.isFinite(Number(lastChange?.toPrice1)) ? Number(lastChange.toPrice1) : (Number.isFinite(toPrice1) ? toPrice1 : null);
+                const lastToPrice2 = Number.isFinite(Number(lastChange?.toPrice2)) ? Number(lastChange.toPrice2) : (Number.isFinite(toPrice2) ? toPrice2 : null);
+                list.push({ category, name, updatedAt, fromPrice1, fromPrice2, toPrice1: lastToPrice1, toPrice2: lastToPrice2 });
+            }
+            list.sort((a, b) => {
+                const at = a.updatedAt ? a.updatedAt.getTime() : 0;
+                const bt = b.updatedAt ? b.updatedAt.getTime() : 0;
+                return bt - at;
+            });
+            priceLastChanges_ = list.slice(0, 20);
+        }
+
+        function setChangesUi_() {
+            const panel = document.getElementById('priceChangesPanel');
+            if (!panel) return;
+            panel.classList.toggle('hidden', !priceChangesOpen_);
+            if (priceChangesOpen_) renderLastChanges_();
+        }
+
+        function renderLastChanges_() {
+            const ul = document.getElementById('priceChangesList');
+            if (!ul) return;
+            ul.innerHTML = '';
+
+            if (!priceLastChanges_.length) {
+                const li = document.createElement('li');
+                li.className = 'py-2 text-gray-500';
+                li.textContent = 'Немає даних. Зміни з\'являться після збереження цін.';
+                ul.appendChild(li);
+                return;
+            }
+
+            for (const it of priceLastChanges_) {
+                const li = document.createElement('li');
+                li.className = 'py-2 flex items-start justify-between gap-3';
+
+                const hasFrom = Number.isFinite(Number(it.fromPrice1)) || Number.isFinite(Number(it.fromPrice2));
+                const p1Line = hasFrom && Number.isFinite(Number(it.fromPrice1))
+                    ? `Без ПДВ: ${formatMoney_(it.fromPrice1)} → ${formatMoney_(it.toPrice1)}${formatDelta_(it.fromPrice1, it.toPrice1)} грн`
+                    : `Без ПДВ: ${formatMoney_(it.toPrice1)} грн`;
+                const p2Line = hasFrom && Number.isFinite(Number(it.fromPrice2))
+                    ? `З ПДВ: ${formatMoney_(it.fromPrice2)} → ${formatMoney_(it.toPrice2)}${formatDelta_(it.fromPrice2, it.toPrice2)} грн`
+                    : `З ПДВ: ${formatMoney_(it.toPrice2)} грн`;
+
+                li.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="text-gray-800 font-medium truncate">${it.name}</div>
+                        <div class="text-xs text-gray-500 truncate">${it.category}</div>
+                        <div class="text-xs text-gray-700 mt-1">${p1Line}</div>
+                        <div class="text-xs text-gray-700">${p2Line}</div>
+                    </div>
+                    <div class="text-xs font-semibold text-gray-700 whitespace-nowrap">${formatUaDateTime_(it.updatedAt)}</div>
+                `;
+                ul.appendChild(li);
+            }
+        }
 
         // --- Ініціалізація ---
         document.addEventListener('DOMContentLoaded', () => {
             renderDeliveryButtons();
             renderCatalog();
+
+            updateStickyCalcOffset_();
+
+            // VAT mode toggle in receipt
+            const vatNo = document.getElementById('vatModeNoBtn');
+            const vatYes = document.getElementById('vatModeYesBtn');
+            if (vatNo) vatNo.addEventListener('click', () => {
+                setVatMode_(1, true);
+                calculateTotal();
+            });
+            if (vatYes) vatYes.addEventListener('click', () => {
+                setVatMode_(2, true);
+                calculateTotal();
+            });
+            updateVatToggleUi_();
+
+            // Спробувати підвантажити прайс з Firestore і перерендерити каталог.
+            loadCatalogFromFirestore_().then((ok) => {
+                if (ok) renderCatalog();
+            });
+
+            // Адмін панель
+            const editBtn = document.getElementById('priceEditToggle');
+            const applyBtn = document.getElementById('priceApplyBtn');
+            const changesBtn = document.getElementById('priceLastChangesBtn');
+            const clearChangesBtn = document.getElementById('priceClearChangesBtn');
+            if (editBtn) editBtn.addEventListener('click', onPriceEditToggle_);
+            if (applyBtn) applyBtn.addEventListener('click', onPriceApply_);
+            setAdminUi_();
+            if (changesBtn) {
+                changesBtn.addEventListener('click', () => {
+                    priceChangesOpen_ = !priceChangesOpen_;
+                    setChangesUi_();
+                });
+            }
+            if (clearChangesBtn) clearChangesBtn.addEventListener('click', onPriceClearChanges_);
+            setChangesUi_();
 
             const reopenBtn = document.getElementById('delivery-reopen');
             if (reopenBtn) {
@@ -460,8 +810,27 @@
             // Якщо вийшли з мобільного режиму — повертаємо панель доставки
             window.addEventListener('resize', () => {
                 if (!isMobileViewport()) setDeliveryMenuCollapsed(false);
+                updateStickyCalcOffset_();
             });
         });
+
+        function updateStickyCalcOffset_() {
+            try {
+                if (!window.matchMedia('(min-width: 1024px)').matches) return;
+                const delivery = document.getElementById('delivery-panel');
+                if (!delivery) return;
+
+                const cs = window.getComputedStyle(delivery);
+                const top = parseFloat(cs.top || '0') || 0;
+                const mb = parseFloat(cs.marginBottom || '0') || 0;
+                const h = delivery.offsetHeight || 0;
+                const stickyTop = Math.max(0, Math.round(top + h + mb));
+                document.documentElement.style.setProperty('--sticky-calc-top', stickyTop + 'px');
+                document.documentElement.style.setProperty('--sticky-calc-maxh', `calc(100vh - ${stickyTop + 20}px)`);
+            } catch (e) {
+                // ignore
+            }
+        }
 
         function isMobileViewport() {
             return window.matchMedia('(max-width: 768px)').matches;
@@ -518,6 +887,8 @@
 
         function renderCatalog() {
             const container = document.getElementById('catalog-container');
+            container.innerHTML = '';
+            priceDocSnapshot_.clear();
             
             catalogData.forEach((cat, catIdx) => {
                 const details = document.createElement('details');
@@ -542,22 +913,53 @@
                     itemRow.className = "flex flex-col md:flex-row md:justify-between md:items-center border-b border-gray-100 last:border-0 pb-3 last:pb-0 gap-2";
                     
                     const id = `${catIdx}_${itemIdx}`;
+
+                    const docId = item.id ? String(item.id) : '';
+                    const pending = docId && priceEdits_.has(docId) ? priceEdits_.get(docId) : null;
+                    const p1 = pending && Number.isFinite(Number(pending.price1)) ? Number(pending.price1) : item.price1;
+                    const p2 = pending && Number.isFinite(Number(pending.price2)) ? Number(pending.price2) : item.price2;
+
+                    if (docId && !priceDocSnapshot_.has(docId)) {
+                        priceDocSnapshot_.set(docId, { price1: item.price1, price2: item.price2 });
+                    }
                     
-                    itemRow.innerHTML = `
-                        <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
-                        <div class="flex gap-2 md:w-1/2 justify-end">
-                            <button onclick="toggleItem('${id}', '${item.name}', ${item.price1}, 1, this)" 
-                                    class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px]">
-                                <span class="text-xs text-gray-500 mb-1">Без ПДВ</span>
-                                <span class="font-bold">${item.price1.toLocaleString()} грн</span>
-                            </button>
-                            <button onclick="toggleItem('${id}', '${item.name}', ${item.price2}, 2, this)" 
-                                    class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px]">
-                                <span class="text-xs text-gray-500 mb-1">З ПДВ</span>
-                                <span class="font-bold">${item.price2.toLocaleString()} грн</span>
-                            </button>
-                        </div>
-                    `;
+                    if (priceEditMode_) {
+                        itemRow.innerHTML = `
+                            <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
+                            <div class="flex gap-2 md:w-1/2 justify-end">
+                                <div class="w-full md:w-auto border border-gray-300 rounded px-3 py-2 bg-white min-w-[120px]">
+                                    <span class="text-xs text-gray-500 mb-1 block">Без ПДВ</span>
+                                    <input data-price-doc="${docId}" data-price-field="price1" type="number" inputmode="numeric" step="1" min="0"
+                                           class="w-full outline-none font-bold text-sm"
+                                           value="${Number.isFinite(Number(p1)) ? Number(p1) : ''}" ${docId ? '' : 'disabled'} />
+                                </div>
+                                <div class="w-full md:w-auto border border-gray-300 rounded px-3 py-2 bg-white min-w-[120px]">
+                                    <span class="text-xs text-gray-500 mb-1 block">З ПДВ</span>
+                                    <input data-price-doc="${docId}" data-price-field="price2" type="number" inputmode="numeric" step="1" min="0"
+                                           class="w-full outline-none font-bold text-sm"
+                                           value="${Number.isFinite(Number(p2)) ? Number(p2) : ''}" ${docId ? '' : 'disabled'} />
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                            const active1 = !!(cart[id] && cart[id].type === 1);
+                            const active2 = !!(cart[id] && cart[id].type === 2);
+                        itemRow.innerHTML = `
+                            <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
+                            <div class="flex gap-2 md:w-1/2 justify-end">
+                                    <button data-item-id="${id}" data-item-type="1" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 1, this)" 
+                                            class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active1 ? 'active' : ''}">
+                                    <span class="text-xs text-gray-500 mb-1">Без ПДВ</span>
+                                    <span class="font-bold">${item.price1.toLocaleString()} грн</span>
+                                </button>
+                                    <button data-item-id="${id}" data-item-type="2" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 2, this)" 
+                                            class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active2 ? 'active' : ''}">
+                                    <span class="text-xs text-gray-500 mb-1">З ПДВ</span>
+                                    <span class="font-bold">${item.price2.toLocaleString()} грн</span>
+                                </button>
+                            </div>
+                        `;
+                    }
                     content.appendChild(itemRow);
                 });
 
@@ -565,22 +967,272 @@
                 details.appendChild(content);
                 container.appendChild(details);
             });
+
+            if (priceEditMode_) {
+                container.querySelectorAll('input[data-price-doc][data-price-field]').forEach((inp) => {
+                    inp.addEventListener('input', (e) => {
+                        const el = e.target;
+                        const docId = String(el.getAttribute('data-price-doc') || '');
+                        const field = String(el.getAttribute('data-price-field') || '');
+                        if (!docId) return;
+
+                        const raw = String(el.value ?? '');
+                        const base = priceDocSnapshot_.get(docId) || { price1: null, price2: null };
+                        const prev = priceEdits_.get(docId) || { price1: base.price1, price2: base.price2 };
+                        const next = { ...prev };
+
+                        // Empty input = don't overwrite; keep fallback to base on save.
+                        if (raw.trim() === '') {
+                            if (field === 'price1') next.price1 = null;
+                            if (field === 'price2') next.price2 = null;
+                            priceEdits_.set(docId, next);
+                            return;
+                        }
+
+                        const v = Number(raw);
+                        if (!Number.isFinite(v) || v < 0) return;
+                        if (field === 'price1') next.price1 = v;
+                        if (field === 'price2') next.price2 = v;
+                        priceEdits_.set(docId, next);
+                    });
+                });
+            }
         }
 
-        function toggleItem(id, name, price, type, btn) {
-            if (cart[id] && cart[id].type === type) {
-                delete cart[id];
-                btn.classList.remove('active');
-            } else {
-                const parent = btn.parentElement;
-                const siblings = parent.getElementsByClassName('price-btn');
-                for (let sib of siblings) {
-                    sib.classList.remove('active');
+        function toggleItem(id, name, price1, price2, type, btn) {
+            const targetType = type === 2 ? 2 : 1;
+            const exists = cart[id];
+
+            if (exists) {
+                // Ensure we have both prices stored for switching.
+                if (!Number.isFinite(Number(exists.price1))) exists.price1 = Number(price1);
+                if (!Number.isFinite(Number(exists.price2))) exists.price2 = Number(price2);
+
+                // Same type click => toggle off (remove)
+                if (Number(exists.type) === targetType) {
+                    delete cart[id];
+                    syncCatalogActiveStates_();
+                    calculateTotal();
+                    return;
                 }
-                cart[id] = { name, price, type };
-                btn.classList.add('active');
+
+                // Different type click => switch VAT mode and keep item selected
+                setVatMode_(targetType, true);
+                calculateTotal();
+                return;
             }
+
+            // New selection: set the global VAT mode and convert existing selected items.
+            if (vatMode_ !== targetType) {
+                setVatMode_(targetType, true);
+            }
+
+            const prevQty = Number.isFinite(Number(cart[id]?.qty)) ? Number(cart[id].qty) : 1;
+            cart[id] = {
+                name,
+                price1,
+                price2,
+                type: targetType,
+                price: targetType === 1 ? price1 : price2,
+                qty: Math.max(1, Math.floor(prevQty)),
+            };
+            syncCatalogActiveStates_();
             calculateTotal();
+        }
+
+        function setVatMode_(mode, applyToCart) {
+            vatMode_ = mode === 2 ? 2 : 1;
+            updateVatToggleUi_();
+            if (applyToCart) {
+                for (const k of Object.keys(cart)) {
+                    const it = cart[k];
+                    it.type = vatMode_;
+                    const p1 = Number(it.price1);
+                    const p2 = Number(it.price2);
+                    it.price = vatMode_ === 1 ? p1 : p2;
+                }
+                syncCatalogActiveStates_();
+            }
+        }
+
+        function updateVatToggleUi_() {
+            const b1 = document.getElementById('vatModeNoBtn');
+            const b2 = document.getElementById('vatModeYesBtn');
+            if (!b1 || !b2) return;
+            const on1 = vatMode_ === 1;
+            b1.classList.toggle('bg-green-600', on1);
+            b1.classList.toggle('text-white', on1);
+            b1.classList.toggle('bg-white', !on1);
+            b1.classList.toggle('text-gray-700', !on1);
+
+            const on2 = vatMode_ === 2;
+            b2.classList.toggle('bg-green-600', on2);
+            b2.classList.toggle('text-white', on2);
+            b2.classList.toggle('bg-white', !on2);
+            b2.classList.toggle('text-gray-700', !on2);
+        }
+
+        function syncCatalogActiveStates_() {
+            document.querySelectorAll('.price-btn[data-item-id][data-item-type]').forEach((b) => {
+                const id = String(b.getAttribute('data-item-id') || '');
+                const t = Number(b.getAttribute('data-item-type'));
+                const isActive = !!(id && cart[id] && cart[id].type === t);
+                b.classList.toggle('active', isActive);
+            });
+        }
+
+        function setAdminUi_() {
+            const controls = document.getElementById('priceAdminControls');
+            const label = document.getElementById('priceEditModeLabel');
+            if (controls) controls.classList.toggle('hidden', !priceEditMode_);
+            if (label) label.classList.toggle('hidden', !priceEditMode_);
+
+            // Clear-history button is admin-only and only in edit mode.
+            const clearBtn = document.getElementById('priceClearChangesBtn');
+            if (clearBtn) clearBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
+        }
+
+        async function onPriceEditToggle_() {
+            const ok = await ensurePriceAdmin_();
+            if (!ok) return;
+
+            priceEditMode_ = !priceEditMode_;
+            setAdminUi_();
+            renderCatalog();
+        }
+
+        async function ensurePriceAdmin_() {
+            if (priceEditUnlocked_) return true;
+
+            const pass = prompt('Пароль для редагування прайсу');
+            if (pass !== PRICE_ADMIN_PASSWORD) {
+                alert('Невірний пароль');
+                return false;
+            }
+
+            // Sign in as price admin (Email/Password) so Firestore Rules can allow write securely.
+            try {
+                const api = await initFirebaseForPrice_();
+                if (!api?.auth || !api?.authMod?.signInWithEmailAndPassword) {
+                    throw new Error('Firebase Auth not available');
+                }
+                await api.authMod.signInWithEmailAndPassword(api.auth, PRICE_ADMIN_EMAIL, pass);
+                console.info('[calc] price admin signed in');
+            } catch (e) {
+                console.warn('[calc] price admin sign-in failed', e);
+                alert('Не вдалося отримати доступ до запису. Створи користувача Email/Password у Firebase Auth з email: ' + PRICE_ADMIN_EMAIL + ' та паролем 123456.');
+                return false;
+            }
+
+            priceEditUnlocked_ = true;
+            setAdminUi_();
+            return true;
+        }
+
+        async function onPriceClearChanges_() {
+            const ok = await ensurePriceAdmin_();
+            if (!ok) return;
+
+            const sure = confirm('Очистити історію змін? Це прибере lastChange/updatedAt у всіх позицій прайсу.');
+            if (!sure) return;
+
+            try {
+                const api = await initFirebaseForPrice_();
+                const snap = await api.getDocs(api.collection(api.db, 'priceItems'));
+                if (!snap || snap.empty) {
+                    alert('Немає даних');
+                    return;
+                }
+
+                const docs = snap.docs;
+                let done = 0;
+                for (let i = 0; i < docs.length; i += 450) {
+                    const chunk = docs.slice(i, i + 450);
+                    const batch = api.writeBatch(api.db);
+                    for (const d of chunk) {
+                        const ref = api.doc(api.db, 'priceItems', String(d.id));
+                        batch.update(ref, {
+                            lastChange: api.deleteField(),
+                            updatedAt: api.deleteField(),
+                        });
+                    }
+                    await batch.commit();
+                    done += chunk.length;
+                    console.info('[calc] cleared price change history', done, '/', docs.length);
+                }
+
+                // Refresh local state
+                priceLastChanges_ = [];
+                if (priceChangesOpen_) renderLastChanges_();
+                await loadCatalogFromFirestore_();
+                renderCatalog();
+                alert('Історію змін очищено');
+            } catch (e) {
+                console.warn('[calc] clear price change history failed', e);
+                alert('Не вдалося очистити. Перевір Firestore Rules для /priceItems (write) та доступ користувача.');
+            }
+        }
+
+        async function onPriceApply_() {
+            if (!priceEditUnlocked_ || !priceEditMode_) return;
+            if (!priceEdits_.size) {
+                alert('Немає змін');
+                return;
+            }
+
+            // UX: after clicking Save, immediately exit edit mode.
+            priceEditMode_ = false;
+            setAdminUi_();
+            renderCatalog();
+
+            try {
+                const api = await initFirebaseForPrice_();
+                const updates = Array.from(priceEdits_.entries());
+                let done = 0;
+
+                for (let i = 0; i < updates.length; i += 450) {
+                    const chunk = updates.slice(i, i + 450);
+                    const batch = api.writeBatch(api.db);
+
+                    for (const [docId, v] of chunk) {
+                        const base = priceDocSnapshot_.get(String(docId)) || { price1: null, price2: null };
+                        const p1 = v?.price1 == null ? Number(base.price1) : Number(v.price1);
+                        const p2 = v?.price2 == null ? Number(base.price2) : Number(v.price2);
+                        if (!Number.isFinite(p1) || !Number.isFinite(p2)) continue;
+                        const ref = api.doc(api.db, 'priceItems', String(docId));
+                        const from1 = Number(base.price1);
+                        const from2 = Number(base.price2);
+                        batch.set(ref, {
+                            price1: p1,
+                            price2: p2,
+                            updatedAt: api.serverTimestamp(),
+                            lastChange: {
+                                at: api.serverTimestamp(),
+                                fromPrice1: Number.isFinite(from1) ? from1 : null,
+                                fromPrice2: Number.isFinite(from2) ? from2 : null,
+                                toPrice1: p1,
+                                toPrice2: p2,
+                            }
+                        }, { merge: true });
+                    }
+
+                    await batch.commit();
+                    done += chunk.length;
+                    console.info('[calc] priceItems updated', done, '/', updates.length);
+                }
+
+                priceEdits_.clear();
+                await loadCatalogFromFirestore_();
+                renderCatalog();
+                alert('Збережено');
+            } catch (e) {
+                console.warn('[calc] apply price edits failed', e);
+                // Restore edit mode so the user can retry without losing inputs.
+                priceEditMode_ = true;
+                setAdminUi_();
+                renderCatalog();
+                alert('Не вдалося зберегти. Перевір Firestore Rules для /priceItems (write) та доступ користувача.');
+            }
         }
 
         function parseInput(val, total) {
@@ -605,16 +1257,67 @@
 
             for (let key in cart) {
                 const item = cart[key];
-                itemsTotal += item.price;
-                
+                const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+                item.qty = qty;
+
+                const lineTotal = item.price * qty;
+                itemsTotal += lineTotal;
+
                 const itemDiv = document.createElement('div');
-                itemDiv.className = "flex justify-between text-gray-700";
+                itemDiv.className = "flex items-start justify-between text-gray-700 gap-2";
                 itemDiv.innerHTML = `
-                    <span class="w-2/3 truncate pr-2">${item.name} <span class="text-[10px] text-gray-400">(${item.type === 1 ? 'Без ПДВ' : 'З ПДВ'})</span></span>
-                    <span class="w-1/3 text-right font-semibold">${item.price.toLocaleString()} грн</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate pr-2">${item.name} <span class="text-[10px] text-gray-400">(${item.type === 1 ? 'Без ПДВ' : 'З ПДВ'})</span></div>
+                        <div class="mt-1 flex items-center gap-2">
+                            <span class="text-[10px] text-gray-500 uppercase tracking-wide">К-сть</span>
+                            <input type="number" min="1" step="1" value="${qty}" data-qty-key="${key}"
+                                   class="w-16 px-2 py-1 border border-gray-200 rounded text-sm text-right outline-none focus:ring-2 focus:ring-gray-300" />
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2 whitespace-nowrap">
+                        <div class="text-right font-semibold">${lineTotal.toLocaleString()} грн</div>
+                        <button type="button" title="Видалити" aria-label="Видалити" data-remove-key="${key}"
+                                class="text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 `;
                 receiptItemsContainer.appendChild(itemDiv);
             }
+
+            // Qty change handlers (avoid recursive re-render on each keystroke)
+            receiptItemsContainer.querySelectorAll('input[data-qty-key]').forEach((inp) => {
+                inp.addEventListener('change', (e) => {
+                    const el = e.target;
+                    const k = String(el.getAttribute('data-qty-key') || '');
+                    if (!k || !cart[k]) return;
+                    const v = Math.max(1, Math.floor(Number(el.value) || 1));
+                    cart[k].qty = v;
+                    calculateTotal();
+                });
+            });
+
+            receiptItemsContainer.querySelectorAll('button[data-remove-key]').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const el = e.currentTarget;
+                    const k = String(el.getAttribute('data-remove-key') || '');
+                    if (!k || !cart[k]) return;
+                    delete cart[k];
+
+                    // Clear active state on catalog buttons for this item id
+                    document.querySelectorAll(`.price-btn[data-item-id="${CSS.escape(k)}"]`).forEach((b) => b.classList.remove('active'));
+
+                    // If cart still has items, keep VAT mode aligned with them; otherwise default to Без ПДВ.
+                    const keys = Object.keys(cart);
+                    if (keys.length) {
+                        const t = Number(cart[keys[0]]?.type) === 2 ? 2 : 1;
+                        setVatMode_(t, true);
+                    } else {
+                        setVatMode_(1, false);
+                    }
+                    calculateTotal();
+                });
+            });
 
             let deliveryCost = selectedDelivery;
             let baseTotal = itemsTotal + deliveryCost;
@@ -652,6 +1355,8 @@
         function clearCart() {
             cart = {};
             selectedDelivery = 0;
+            vatMode_ = 1;
+            updateVatToggleUi_();
             document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('#delivery-buttons button').forEach(btn => {
                 btn.classList.remove('active');

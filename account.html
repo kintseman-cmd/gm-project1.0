@@ -442,7 +442,118 @@
             'manager6': { name: 'Адмін', pass: '6666' }
         };
 
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_Ec8RAjAzfU62x10AyIYazCpoMgbsqJ61J8VQgBrCWSHhw9IpNzK2TPZekSRpyS8Y7A/exec'; 
+        // --- FIREBASE (опційно) ---
+        // 1) У Firebase Console створіть Web App і вставте сюди firebaseConfig.
+        // 2) У Firestore зробіть структуру:
+        //    managers/{managerId}
+        //    managers/{managerId}/plans/{period}
+        //    managers/{managerId}/orders/{orderId}
+        // де managerId = старий ID з MANAGERS (наприклад OleksandrNamistnyk).
+        //
+        // (Опційно) Можна додати окремий тестовий Firebase project у FIREBASE_CONFIGS.test.
+        const FIREBASE_CONFIGS = {
+            prod: {
+                apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+                authDomain: "gm-base.firebaseapp.com",
+                projectId: "gm-base",
+                storageBucket: "gm-base.firebasestorage.app",
+                messagingSenderId: "579626247182",
+                appId: "1:579626247182:web:09324aa5823c564defc85f"
+            },
+            // TODO: вставте firebaseConfig тестового проекту (наприклад gm-base-test)
+            test: null
+        };
+
+        const DEFAULT_FIREBASE_ENV = 'prod';
+        // Зараз: усі менеджери працюють з prod Firebase.
+        const FIREBASE_ENV_BY_MANAGER = {};
+
+        function resolveFirebaseEnvForManager(managerId) {
+            return FIREBASE_ENV_BY_MANAGER[String(managerId || '')] || DEFAULT_FIREBASE_ENV;
+        }
+
+        function getFirebaseConfigForManager(managerId) {
+            const env = resolveFirebaseEnvForManager(managerId);
+            const cfg = FIREBASE_CONFIGS && FIREBASE_CONFIGS[env];
+            if (!cfg && env !== DEFAULT_FIREBASE_ENV) return FIREBASE_CONFIGS[DEFAULT_FIREBASE_ENV] || null;
+            return cfg || null;
+        }
+
+        let firebaseModulesPromise = null;
+        const firebaseEnvState = Object.create(null);
+        window.__crmDataSource = 'unknown';
+
+        function normalizeAmount(value) {
+            if (value == null) return 0;
+            const cleaned = String(value).replace(/\s+/g, '').replace(/,/g, '.');
+            const n = Number(cleaned);
+            return Number.isFinite(n) ? n : 0;
+        }
+
+        async function loadFirebaseModules() {
+            if (firebaseModulesPromise) return firebaseModulesPromise;
+            firebaseModulesPromise = (async () => {
+                const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+                const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                return { appMod, fsMod, authMod };
+            })();
+            return firebaseModulesPromise;
+        }
+
+        async function initFirebaseForManager(managerId) {
+            const env = resolveFirebaseEnvForManager(managerId);
+            const cfg = getFirebaseConfigForManager(managerId);
+            if (!cfg || typeof cfg !== 'object') return null;
+
+            const key = String(env);
+            const state = firebaseEnvState[key] || (firebaseEnvState[key] = { api: null, initPromise: null });
+            if (state.api) return state.api;
+            if (state.initPromise) return state.initPromise;
+
+            state.initPromise = (async () => {
+                try {
+                    const { appMod, fsMod, authMod } = await loadFirebaseModules();
+                    const appName = `crm-${key}`;
+                    let app;
+                    try {
+                        app = appMod.initializeApp(cfg, appName);
+                    } catch (e) {
+                        try {
+                            app = appMod.getApp(appName);
+                        } catch (e2) {
+                            throw e;
+                        }
+                    }
+                    const db = fsMod.getFirestore(app);
+
+                    // Anonymous Auth (потрібно увімкнути в Firebase Console → Authentication → Sign-in method → Anonymous)
+                    let auth = null;
+                    try {
+                        auth = authMod.getAuth(app);
+                        if (!auth.currentUser) {
+                            await authMod.signInAnonymously(auth);
+                            console.info('[CRM] Firebase auth: anonymous signed in');
+                        }
+                    } catch (e) {
+                        console.warn('[CRM] Firebase auth: anonymous sign-in failed (enable Anonymous provider in Firebase Auth).', e);
+                    }
+
+                    state.api = { db, auth, ...fsMod, __env: key, __projectId: cfg.projectId || '' };
+                    console.info(`[CRM] Firebase initialized env=${key} project=${cfg.projectId || ''}`);
+                    return state.api;
+                } catch (err) {
+                    console.warn('[CRM] Firebase init failed (will fallback to Apps Script). If you open via file://, try http://localhost instead.', err);
+                    throw err;
+                }
+            })();
+
+            return state.initPromise;
+        }
+
+        // Google Sheets / Apps Script (ВИМКНЕНО)
+        const ENABLE_GOOGLE_SHEETS_BACKUP = false;
+        const SCRIPT_URL = ''; 
         
         let loggedInManagerId = null;
         let currentMonth = 'План';
@@ -620,15 +731,117 @@
             });
         }
 
+        async function fs_getStats(managerId) {
+            const api = await initFirebaseForManager(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const managerRef = api.doc(api.db, 'managers', managerId);
+            const managerSnap = await api.getDoc(managerRef);
+
+            const plansSnap = await api.getDocs(api.collection(api.db, 'managers', managerId, 'plans'));
+            const plans = [];
+            plansSnap.forEach((d) => {
+                const data = d.data() || {};
+                plans.push({
+                    period: data.period || d.id,
+                    label: data.label || data.period || d.id,
+                    goal: Number(data.goal) || 0,
+                });
+            });
+
+            // Orders: show latest records first
+            const ordersQuery = api.query(
+                api.collection(api.db, 'managers', managerId, 'orders'),
+                api.orderBy('date', 'desc'),
+                api.limit(200)
+            );
+            const ordersSnap = await api.getDocs(ordersQuery);
+            const history = [];
+            ordersSnap.forEach((d) => {
+                const o = d.data() || {};
+                history.push({
+                    date: o.date?.toDate ? o.date.toDate().toISOString() : (o.date || new Date().toISOString()),
+                    payer: o.payer || '',
+                    region: o.region || '',
+                    items: o.items || '',
+                    comment: o.comment || '',
+                    amount: Number(o.amount) || 0,
+                });
+            });
+
+            let total = 0;
+            const manager = managerSnap.exists() ? (managerSnap.data() || {}) : null;
+            if (manager && typeof manager.totalSales === 'number') {
+                total = manager.totalSales;
+            } else {
+                total = history.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+            }
+
+            return { total, history, plans };
+        }
+
+        async function fs_addOrder(managerId, payload) {
+            const api = await initFirebaseForManager(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const amount = normalizeAmount(payload.amount);
+            const order = {
+                managerId,
+                payer: payload.payer || '',
+                region: payload.region || '',
+                items: payload.items || '',
+                comment: payload.comment || '',
+                amount,
+                date: api.serverTimestamp(),
+                createdAt: api.serverTimestamp(),
+            };
+
+            await api.addDoc(api.collection(api.db, 'managers', managerId, 'orders'), order);
+
+            // Update totalSales (optional; if manager doc doesn't exist yet, create it)
+            const managerRef = api.doc(api.db, 'managers', managerId);
+            await api.setDoc(
+                managerRef,
+                { totalSales: api.increment(amount), updatedAt: api.serverTimestamp() },
+                { merge: true }
+            );
+        }
+
+        async function fs_setPlan(managerId, plan) {
+            const api = await initFirebaseForManager(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const period = String(plan.period || '').trim();
+            if (!period) throw new Error('period is required');
+
+            const ref = api.doc(api.db, 'managers', managerId, 'plans', period);
+            await api.setDoc(
+                ref,
+                {
+                    period,
+                    label: plan.label || period,
+                    goal: Number(plan.goal) || 0,
+                    updatedAt: api.serverTimestamp(),
+                },
+                { merge: true }
+            );
+        }
+
         async function updateStats() {
-            if (!loggedInManagerId || SCRIPT_URL.includes('ВАШ_URL')) return; 
+            if (!loggedInManagerId) return;
             try {
-                const response = await fetch(`${SCRIPT_URL}?managerId=${encodeURIComponent(loggedInManagerId)}`, { cache: 'no-store' });
-                const data = await response.json();
+                let data;
+                try {
+                    data = await fs_getStats(loggedInManagerId);
+                    window.__crmDataSource = 'firebase';
+                    console.info('[CRM] updateStats source: firebase');
+                } catch (e) {
+                    console.warn('[CRM] updateStats firebase failed', e);
+                    return;
+                }
 
                 plans = Array.isArray(data.plans) ? data.plans : [];
                 renderPlans();
-
                 updateUI(data.total || 0, data.history || []);
             } catch (e) { console.error(e); }
         }
@@ -646,18 +859,17 @@
             btn.innerText = 'Зберігаємо...';
 
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({
-                        managerId: loggedInManagerId,
-                        payer,
-                        region,
-                        items,
-                        comment,
-                        amount
-                    })
-                });
+                try {
+                    await fs_addOrder(loggedInManagerId, { payer, region, items, comment, amount });
+                    window.__crmDataSource = 'firebase';
+                    console.info('[CRM] addOrder source: firebase');
+                } catch (e) {
+                    console.warn('[CRM] addOrder firebase failed', e);
+                    alert('Помилка збереження в базі. Спробуйте ще раз.');
+                    btn.disabled = false;
+                    btn.innerText = 'Додати';
+                    return;
+                }
                 setTimeout(() => {
                     document.getElementById('orderForm').reset();
                     btn.disabled = false;
@@ -681,17 +893,15 @@
             const { period, label } = buildPeriodAndLabel();
             const goal = Number(document.getElementById('planGoal').value || 0);
 
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({
-                    action: 'setPlan',
-                    managerId: loggedInManagerId,
-                    period,
-                    label,
-                    goal
-                })
-            });
+            try {
+                await fs_setPlan(loggedInManagerId, { period, label, goal });
+                window.__crmDataSource = 'firebase';
+                console.info('[CRM] setPlan source: firebase');
+            } catch (e) {
+                console.warn('[CRM] setPlan firebase failed', e);
+                alert('Помилка збереження плану в базі. Спробуйте ще раз.');
+                return;
+            }
 
             activePlanKey = period;
             saveActivePlanKey(loggedInManagerId, activePlanKey);

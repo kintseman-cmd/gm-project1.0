@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Імпорт прайсу → Firestore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-3xl mx-auto p-6">
+    <h1 class="text-2xl font-bold">Імпорт прайсу в Firestore</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Ця сторінка зчитує <span class="font-mono">catalogData</span> з <span class="font-mono">calc.html</span> і записує позиції в колекцію <span class="font-mono">priceItems</span>.
+    </p>
+
+    <div class="mt-4 p-4 rounded-xl border border-slate-200 bg-white">
+      <div class="flex flex-col gap-3">
+        <div class="text-sm">
+          <div class="font-semibold">Перед запуском</div>
+          <ul class="list-disc pl-5 text-slate-700">
+            <li>Відкрий цю сторінку через <span class="font-mono">http://127.0.0.1</span> або <span class="font-mono">http://localhost</span> (не <span class="font-mono">file://</span>), щоб працював <span class="font-mono">fetch</span>.</li>
+            <li>У Firestore Rules тимчасово дозволи запис для імпорту:<br>
+              <span class="font-mono">match /priceItems/{docId} { allow read: if request.auth != null; allow write: if request.auth != null; }</span>
+              <br>Після імпорту можеш повернути обмеження на <span class="font-mono">google.com</span>.
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="importBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50">Імпортувати з calc.html</button>
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <input id="clearFirst" type="checkbox" class="h-4 w-4" />
+            Очистити <span class="font-mono">priceItems</span> перед імпортом
+          </label>
+        </div>
+
+        <div class="text-sm text-slate-600">
+          Статус: <span id="status" class="font-semibold text-slate-900">—</span>
+        </div>
+
+        <textarea id="log" class="w-full h-56 p-3 rounded-lg border border-slate-200 bg-slate-50 font-mono text-xs" readonly></textarea>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Firebase project (same as dov.html / calc.html)
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+      authDomain: "gm-base.firebaseapp.com",
+      projectId: "gm-base",
+      storageBucket: "gm-base.firebasestorage.app",
+      messagingSenderId: "579626247182",
+      appId: "1:579626247182:web:09324aa5823c564defc85f"
+    };
+
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    const importBtn = document.getElementById('importBtn');
+
+    function setStatus_(t) { statusEl.textContent = t || '—'; }
+    function log_(...args) {
+      const line = args.map((x) => {
+        if (x instanceof Error) return (x.stack || x.message || String(x));
+        if (typeof x === 'object') {
+          try { return JSON.stringify(x); } catch { return String(x); }
+        }
+        return String(x);
+      }).join(' ');
+      logEl.value += line + "\n";
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    let fbPromise_ = null;
+    async function initFirebase_() {
+      if (fbPromise_) return fbPromise_;
+      fbPromise_ = (async () => {
+        const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+        const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+
+        let app;
+        const appName = 'price-import';
+        try {
+          app = appMod.initializeApp(FIREBASE_CONFIG, appName);
+        } catch (e) {
+          app = appMod.getApp(appName);
+        }
+
+        const db = fsMod.getFirestore(app);
+
+        // Anonymous auth
+        try {
+          const auth = authMod.getAuth(app);
+          if (!auth.currentUser) {
+            await authMod.signInAnonymously(auth);
+            log_('[auth] anonymous signed in');
+          }
+        } catch (e) {
+          log_('[auth] anonymous sign-in failed', { code: e?.code, message: e?.message });
+        }
+
+        return { db, ...fsMod };
+      })();
+      return fbPromise_;
+    }
+
+    function extractArrayLiteral_(text, marker) {
+      const idx = text.indexOf(marker);
+      if (idx < 0) throw new Error(`Marker not found: ${marker}`);
+      const start = text.indexOf('[', idx);
+      if (start < 0) throw new Error('Start [ not found after marker');
+
+      let depth = 0;
+      let inStr = null; // ', ", `
+      let esc = false;
+      let inLineComment = false;
+      let inBlockComment = false;
+
+      for (let i = start; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (inLineComment) {
+          if (ch === '\n') inLineComment = false;
+          continue;
+        }
+        if (inBlockComment) {
+          if (ch === '*' && next === '/') {
+            inBlockComment = false;
+            i++;
+          }
+          continue;
+        }
+
+        if (inStr) {
+          if (esc) { esc = false; continue; }
+          if (ch === '\\') { esc = true; continue; }
+          if (ch === inStr) inStr = null;
+          continue;
+        }
+
+        if (ch === '/' && next === '/') { inLineComment = true; i++; continue; }
+        if (ch === '/' && next === '*') { inBlockComment = true; i++; continue; }
+        if (ch === '"' || ch === '\'' || ch === '`') { inStr = ch; continue; }
+
+        if (ch === '[') depth++;
+        if (ch === ']') {
+          depth--;
+          if (depth === 0) return text.slice(start, i + 1);
+        }
+      }
+      throw new Error('Unterminated array literal');
+    }
+
+    async function fetchCalcCatalog_() {
+      const res = await fetch('./calc.html', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`fetch calc.html failed: HTTP ${res.status}`);
+      const html = await res.text();
+      const arr = extractArrayLiteral_(html, 'const catalogData');
+      // Evaluate array literal.
+      const catalogData = (new Function(`"use strict"; return (${arr});`))();
+      if (!Array.isArray(catalogData)) throw new Error('catalogData is not an array');
+      return catalogData;
+    }
+
+    async function sha1Hex_(text) {
+      const data = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest('SHA-1', data);
+      return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function makeDocId_(category, name) {
+      const hex = await sha1Hex_(`${category}\n${name}`);
+      return `p_${hex.slice(0, 16)}`;
+    }
+
+    async function flattenCatalog_(catalogData) {
+      const out = [];
+      for (let catIdx = 0; catIdx < catalogData.length; catIdx++) {
+        const cat = catalogData[catIdx] || {};
+        const category = String(cat.category || '').trim();
+        if (!category || !Array.isArray(cat.items)) continue;
+
+        for (let itemIdx = 0; itemIdx < cat.items.length; itemIdx++) {
+          const it = cat.items[itemIdx] || {};
+          const name = String(it.name || '').trim();
+          const price1 = Number(it.price1);
+          const price2 = Number(it.price2);
+          if (!name) continue;
+          if (!Number.isFinite(price1) || !Number.isFinite(price2)) continue;
+
+          const id = await makeDocId_(category, name);
+          out.push({ id, category, name, price1, price2, sortCategory: catIdx, sortItem: itemIdx, active: true });
+        }
+      }
+      return out;
+    }
+
+    async function clearCollection_(api, colRef) {
+      // Delete in pages
+      while (true) {
+        const q = api.query(colRef, api.limit(300));
+        const snap = await api.getDocs(q);
+        if (snap.empty) break;
+
+        const batch = api.writeBatch(api.db);
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        log_(`[clear] deleted ${snap.docs.length}`);
+      }
+    }
+
+    async function writeItems_(api, colRef, items) {
+      let written = 0;
+      for (let i = 0; i < items.length; i += 450) {
+        const chunk = items.slice(i, i + 450);
+        const batch = api.writeBatch(api.db);
+        for (const it of chunk) {
+          const ref = api.doc(colRef, it.id);
+          batch.set(ref, {
+            category: it.category,
+            name: it.name,
+            price1: it.price1,
+            price2: it.price2,
+            sortCategory: it.sortCategory,
+            sortItem: it.sortItem,
+            active: it.active,
+            updatedAt: api.serverTimestamp()
+          }, { merge: true });
+        }
+        await batch.commit();
+        written += chunk.length;
+        setStatus_(`Записано ${written}/${items.length}`);
+        log_(`[write] wrote ${written}/${items.length}`);
+      }
+    }
+
+    async function runImport_() {
+      importBtn.disabled = true;
+      logEl.value = '';
+      try {
+        setStatus_('Ініціалізація Firebase...');
+        const api = await initFirebase_();
+
+        setStatus_('Читаю calc.html...');
+        const catalogData = await fetchCalcCatalog_();
+        log_('[calc] categories:', catalogData.length);
+
+        setStatus_('Готую позиції...');
+        const items = await flattenCatalog_(catalogData);
+        log_('[import] items:', items.length);
+        if (!items.length) throw new Error('No items parsed from calc.html');
+
+        const colRef = api.collection(api.db, 'priceItems');
+
+        if (document.getElementById('clearFirst').checked) {
+          setStatus_('Очищаю priceItems...');
+          await clearCollection_(api, colRef);
+        }
+
+        setStatus_('Записую в Firestore...');
+        await writeItems_(api, colRef, items);
+
+        setStatus_('Готово');
+        log_('[done] import finished');
+      } catch (e) {
+        setStatus_('Помилка');
+        log_('[FAILED]', e);
+        if (String(e?.message || '').includes('permission')) {
+          log_('Hint: Fix Firestore Rules for /priceItems (allow write for request.auth != null during import).');
+        }
+        if (String(e?.message || '').includes('fetch')) {
+          log_('Hint: Open this page via http://127.0.0.1 or http://localhost (not file://).');
+        }
+      } finally {
+        importBtn.disabled = false;
+      }
+    }
+
+    importBtn.addEventListener('click', () => { runImport_(); });
+    setStatus_('Готово до імпорту');
+  </script>
+</body>
+</html>

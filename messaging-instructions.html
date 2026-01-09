@@ -41,7 +41,7 @@
         <i class="fas fa-comments" style="color:#4f46e5;"></i>
         <span>Інструкції: Viber + Telegram</span>
       </div>
-      <a class="back-link" href="education.html"><i class="fas fa-arrow-left"></i> Назад до Навчання</a>
+      <a id="backToEducation" class="back-link" href="education.html"><i class="fas fa-arrow-left"></i> Назад до Навчання</a>
     </div>
   </header>
 
@@ -89,5 +89,16 @@
       </div>
     </div>
   </main>
+
+  <script>
+    (function () {
+      try {
+        if (window.parent && window.parent !== window) {
+          const back = document.getElementById('backToEducation');
+          if (back) back.setAttribute('href', 'education.html?embed=1');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>

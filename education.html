@@ -12,6 +12,14 @@
     <title>Навчання - General Machines</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                const params = new URLSearchParams(location.search);
+                if (params.get('embed') === '1') document.documentElement.classList.add('embed');
+            } catch (e) {}
+        })();
+    </script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
         /* Header Styles */
@@ -71,6 +79,10 @@
             background: #4CAF50;
             color: #fff;
         }
+
+        /* Embedded mode (inside index.html) */
+        html.embed .header { display: none !important; }
+        html.embed body { padding-top: 0 !important; }
 
         .hamburger {
             display: none;
@@ -195,7 +207,7 @@
                     <h2 class="text-xl font-semibold text-gray-800">Анкета для бухгалтерії</h2>
                 </div>
                 <p class="text-gray-600 mb-4">Необхідні дані та анкета для бухгалтерського відділу.</p>
-                <a href="generator-ankety.html" class="text-green-500 hover:text-green-700 font-medium">Завантажити →</a>
+                <a href="generator-ankety.html" class="text-green-500 hover:text-green-700 font-medium" data-route-to-anketa="1">Завантажити →</a>
             </div>
 
             <!-- Об'єднана карточка: Viber + Telegram -->
@@ -218,6 +230,25 @@
             nav.classList.toggle('open');
             hamburger.classList.toggle('open');
         });
+
+        // In embed mode (inside index.html), route to the SPA section instead of navigating away.
+        (function () {
+            try {
+                const params = new URLSearchParams(location.search);
+                if (params.get('embed') !== '1') return;
+
+                const link = document.querySelector('a[data-route-to-anketa="1"]');
+                if (!link) return;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.parent && window.parent !== window) {
+                        window.parent.location.hash = '#anketa';
+                    } else {
+                        location.href = 'index.html#anketa';
+                    }
+                });
+            } catch (e) {}
+        })();
     </script>
 </body>
 </html>

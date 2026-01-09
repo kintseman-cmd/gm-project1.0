@@ -5,27 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <title>Форма Замовлення GM</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: { fontFamily: { sans: ['Inter', 'Arial', 'sans-serif'] } }
-            }
-        }
-    </script>
 
     <style>
+        /* Light card UI (aligned with generator-ankety "Повідомлення") */
         :root {
-            --bg-body: #1c1c1e; --card-bg: #2c2c2e; --text-main: #ffffff;
-            --text-muted: #9CA3AF; --accent: #FFC107; --accent-hover: #ffcf45;
-            --border: #444444; --input-bg: #38383a; --success: #32D74B; --telegram: #2AABEE;
+            --bg-body: #eceff1;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #546e7a;
+            --accent: #1565c0;
+            --accent-hover: #0f4f99;
+            --border: #cfd8dc;
+            --input-bg: #ffffff;
+            --success: #2e7d32;
+            --telegram: #2AABEE;
         }
         .light-theme {
-            --bg-body: #F2F2F7; --card-bg: #FFFFFF; --text-main: #000000;
-            --text-muted: #666666; --accent: #FFC107; --accent-hover: #ffdb68;
-            --border: #C6C6C8; --input-bg: #E5E5EA; --success: #34C759;
+            --bg-body: #eceff1;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #546e7a;
+            --accent: #1565c0;
+            --accent-hover: #0f4f99;
+            --border: #cfd8dc;
+            --input-bg: #ffffff;
+            --success: #2e7d32;
+            --telegram: #2AABEE;
         }
         * {
           box-sizing: border-box;
@@ -33,52 +39,40 @@
           transition: background-color 0.3s, color 0.3s;
         }
 
-        body {
-          font-family: 'Inter', sans-serif;
-          background-color: var(--bg-body);
-          color: var(--text-main);
-          margin: 0;
-          padding: 0;
-          display: flex; /* Flexbox для центрування */
-          justify-content: center; /* Центр по горизонталі */
-          align-items: flex-start; /* Верхній край (щоб не було проблем при скролі на мобільному) */
-          min-height: 100vh;
-        }
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: transparent;
+                    color: var(--text-main);
+                    margin: 0;
+                    padding: 0;
+                }
 
         /* Стилі контейнера */
-        .gm-container {
-          background-color: var(--card-bg);
-          width: 100%;
-          max-width: 480px; 
-          padding: 20px 20px 50px 20px;
-          padding-top: 30px;
-          position: relative;
-          z-index: 10;
-        }
+                .gm-container {
+                    background: transparent;
+                    width: 100%;
+                    max-width: none;
+                    padding: 0;
+                    margin: 0;
+                    border-radius: 0;
+                    box-shadow: none;
+                    position: relative;
+                    z-index: 10;
+                }
 
         /* --- ВИПРАВЛЕНИЙ БЛОК ДЛЯ ПК/ПЛАНШЕТІВ --- */
-        @media (min-width: 500px) {
-          body {
-            padding: 20px;
-            align-items: flex-start; /* Можна змінити на center, якщо хочете по центру висоти */
-            padding-top: 40px;
-          }
-
-          .gm-container {
-            max-width: 500px; 
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            /* margin: 0 auto; - не обов'язково при justify-content: center у body, але не завадить */
-          }
-        }
+                @media (min-width: 500px) {
+                    body { padding: 0; }
+                    .gm-container { max-width: none; }
+                }
         /* ------------------------------------------ */
         
-        /* Progress Bar */
-        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 6px; background-color: var(--input-bg); z-index: 50; }
+        /* Progress Bar (hidden for "Повідомлення"-style UI) */
+        .progress-container { display: none; }
         .progress-bar { height: 100%; width: 0%; background-color: var(--accent); transition: width 0.4s ease; }
         
-        /* Theme Switch */
-        .theme-switch-wrapper { position: absolute; top: 15px; right: 15px; z-index: 20; }
+        /* Theme Switch (not used in this style) */
+        .theme-switch-wrapper { display: none; }
         .theme-checkbox { display: none; }
         .theme-label { cursor: pointer; background-color: var(--input-bg); width: 50px; height: 26px; border-radius: 50px; position: relative; display: block; border: 1px solid var(--border); }
         .theme-label::after { content: '🌙'; font-size: 14px; position: absolute; top: 2px; left: 3px; width: 20px; height: 20px; background-color: var(--card-bg); border-radius: 50%; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
@@ -86,35 +80,31 @@
         .theme-checkbox:checked + .theme-label { background-color: var(--accent); }
         
         /* Elements */
-        h2 { text-align: center; color: var(--accent); margin-bottom: 25px; font-weight: 800; font-size: 1.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 15px; margin-top: 10px; }
-        .form-group { margin-bottom: 18px; margin-top: 18px }
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
-        input, select, textarea { width: 100%; padding: 14px; background-color: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; font-size: 16px; color: var(--text-main); outline: none; }
+        h2 { text-align: left; color: var(--accent); margin-bottom: 20px; font-weight: 800; font-size: 22px; }
+        .form-group { margin-bottom: 15px; margin-top: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: var(--text-muted); }
+        input, select, textarea { width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; font-size: 14px; color: var(--text-main); outline: none; }
         input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         optgroup { font-weight: bold; background-color: var(--card-bg); }
-        hr { border: none; height: 1px; background-color: var(--border); margin: 25px 0; opacity: 0.5; }
+        hr { border: none; height: 1px; background-color: var(--border); margin: 20px 0; opacity: 0.7; }
         
         /* Radio/Check */
-        .radio-group, .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
-        .radio-group label, .checkbox-group label { font-weight: normal; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); margin: 0; }
-        input[type="radio"], input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border: 2px solid var(--border); background-color: var(--input-bg); border-radius: 6px; position: relative; flex-shrink: 0; }
-        input[type="radio"] { border-radius: 50%; }
-        input:checked { background-color: var(--accent); border-color: var(--accent); }
-        input[type="checkbox"]:checked:after { content: '✓'; font-size: 16px; color: #1c1c1e; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; }
-        input[type="radio"]:checked:after { content: ''; width: 10px; height: 10px; background: #1c1c1e; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .radio-group, .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+        .radio-group label, .checkbox-group label { font-weight: 500; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); margin: 0; }
+        input[type="radio"], input[type="checkbox"] { width: 18px; height: 18px; }
 
         /* Info button */
-        .info-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-left: 8px; cursor: pointer; }
-        .info-btn:hover { background: var(--accent); color: #1c1c1e; border-color: var(--accent); }
+        .info-btn { background: #1565c0; border: none; color: #fff; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-left: 8px; cursor: pointer; }
+        .info-btn:hover { background: #0f4f99; }
 
         /* Modal */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9998; padding: 15px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 9998; padding: 15px; }
         .modal-overlay.visible { display: flex; }
-        .modal-card { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 14px; max-width: 520px; width: 100%; box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+        .modal-card { background: var(--card-bg); color: var(--text-main); border: 1px solid #e5e7eb; border-radius: 12px; max-width: 820px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
         .modal-title { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--accent); }
         .modal-close { background: none; border: none; color: var(--text-main); font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 4px 8px; border-radius: 8px; }
-        .modal-close:hover { background: var(--input-bg); }
+        .modal-close:hover { background: #f3f4f6; }
         .modal-body { padding: 16px 18px 20px; max-height: 70vh; overflow-y: auto; }
         .gift-section { margin-bottom: 18px; }
         .gift-section h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-main); }
@@ -122,59 +112,43 @@
         .gift-list li { margin-bottom: 6px; line-height: 1.35; }
         .gift-note { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
         
-        /* Buttons */
-        .btn { width: 100%; padding: 16px; background-color: var(--accent); color: #1c1c1e; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
-        .btn:active { transform: scale(0.98); }
-        .btn-secondary { background-color: var(--border); color: var(--text-main); text-transform: none; font-weight: 600; font-size: 1rem; }
+        /* Buttons (aligned with generator-ankety) */
+        .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: background 0.3s; }
+        .btn:hover { opacity: 0.95; }
+        .btn-add { background-color: #27ae60; color: #fff; }
+        .btn-gen { background-color: #2980b9; color: #fff; }
+        .btn-copy { background-color: #8e44ad; color: #fff; }
+        .btn-state-success { background-color: var(--success) !important; color: #fff !important; }
+        .btn:disabled { cursor: not-allowed; opacity: 0.9; }
         .btn-telegram { background-color: var(--telegram); color: #fff; }
+        .btn-secondary { background-color: #1565c0; color: #fff; }
         
         /* Lists & Result */
-        .product-adder { background: rgba(125,125,125,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        .product-adder { background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #eee; }
         #added-products-list { list-style: none; padding: 0; margin-top: 15px; }
-        #added-products-list li { padding: 12px; margin-bottom: 8px; background-color: var(--input-bg); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-main); }
+        #added-products-list li { padding: 10px; margin-bottom: 10px; background-color: #fff; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; color: var(--text-main); border: 1px solid #ddd; }
         .remove-item { color: #ff6666; font-weight: bold; font-size: 1.5rem; padding: 0 10px; }
-        .edit-item { background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; }
+        .edit-item { background: transparent; border: 1px solid #ccc; color: var(--text-main); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
         .edit-item:hover { border-color: var(--accent); color: var(--accent); }
-        #result-area { display: none; margin-top: 30px; padding: 20px; background-color: var(--input-bg); border-top: 5px solid var(--accent); border-radius: 12px; }
-        #final-text { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: var(--text-main); background-color: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+        #result-area { display: block; margin-top: 20px; padding: 0; background: transparent; border: none; }
+        #final-text { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: #111827; background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #333; overflow-x: auto; width: 100%; height: 300px; resize: vertical; }
+
         
         /* Address Grid */
         .address-grid { display: flex; flex-direction: column; gap: 15px; }
         @media (min-width: 500px) { .address-grid { display: grid; grid-template-columns: 1fr 1fr; } .address-grid > .form-group:last-child { grid-column: 1 / -1; } }
         
-        /* Animation */
-        #celebration-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(28,28,30,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; overflow: hidden; }
-        #celebration-overlay.visible { opacity: 1; pointer-events: all; }
-        #fireworks-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
-        .celebration-content { position: relative; z-index: 10; text-align: center; padding: 20px; }
-        .salute-text { font-size: 2.5rem; font-weight: 800; color: var(--accent); margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,193,7,0.5); animation: popIn 0.5s; }
-        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+        /* Animation (removed to match "Повідомлення" style) */
         
         /* Alert */
-        #status-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; border-radius: 10px; text-align: center; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 10000; display: none; }
+        #status-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 520px; padding: 12px; border-radius: 10px; text-align: center; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.15); z-index: 10000; display: none; }
     </style>
 </head>
 <body>
 
 <div id="status-message"></div>
 
-<div id="celebration-overlay">
-    <canvas id="fireworks-canvas"></canvas>
-    <div class="celebration-content">
-        <div id="celebration-text" class="salute-text"></div>
-    </div>
-</div>
-
-<div class="progress-container">
-    <div class="progress-bar" id="progress-bar"></div>
-</div>
-
 <div class="gm-container">
-    <div class="theme-switch-wrapper">
-        <input type="checkbox" class="theme-checkbox" id="theme-toggle">
-        <label class="theme-label" for="theme-toggle"></label>
-    </div>
-    
     <div id="order-form">
         <h2>Формування Замовлення (GM)</h2>
         
@@ -296,13 +270,18 @@
                     </optgroup>
                 </select>
             </div>
+
+            <div class="form-group !mb-0 pt-3">
+                <label for="product-qty">Кількість (шт):</label>
+                <input type="number" id="product-qty" min="1" step="1" value="1" inputmode="numeric">
+            </div>
             
             <div class="form-group !mb-0 pt-3">
                 <label for="item-comment">Коментар до цієї позиції (опціонально):</label>
                 <input type="text" id="item-comment" placeholder="напр. вуха та крючки не приварювати">
             </div>
 
-            <button type="button" class="btn btn-secondary" onclick="addItem()">+ Додати позицію</button>
+            <button type="button" class="btn btn-add" onclick="addItem()">+ Додати позицію</button>
             <ul id="added-products-list"></ul>
         </div>
 
@@ -403,15 +382,18 @@
         
         <hr>
 
-        <button type="button" class="btn" onclick="generateOrder()">Сформувати замовлення</button>
+        <button type="button" id="generateButton" class="btn btn-gen" onclick="generateOrder(this)">
+            <span id="generateButtonText">Сформувати замовлення</span>
+        </button>
 
         <div id="result-area">
-            <h3 class="text-xl font-semibold mt-0 mb-3" style="color: var(--accent);">Готовий текст:</h3>
-            <div id="final-text"></div>
-            
-            <button type="button" class="btn btn-secondary" onclick="copyText()">Скопіювати текст</button>
-            <button type="button" class="btn btn-telegram" onclick="shareTelegram()">
-                <span class="mr-2">✈️</span> Відправити в Telegram
+            <div class="form-group" style="margin-top: 0;">
+                <label for="final-text">Результат:</label>
+                <textarea id="final-text" readonly></textarea>
+            </div>
+
+            <button type="button" id="copyButton" class="btn btn-copy" onclick="copyText(this)">
+                <span id="copyButtonText">Скопіювати текст</span>
             </button>
         </div>
     </div>
@@ -475,12 +457,9 @@
 </div>
 
 <script>
-    try { const tg = window.Telegram.WebApp; tg.ready(); tg.expand(); } catch(e) {}
-
     let addedItems = [];
     const statusMessageEl = document.getElementById('status-message');
     let lastFormattedAmount = '0'; 
-    let fireworksInterval;
     
     // ПОВНА БАЗА НОВИХ І СТАРИХ РАЙОНІВ
     const ukrRegions = {
@@ -588,10 +567,12 @@
 
     // Перемикач теми
     const themeToggle = document.getElementById('theme-toggle');
-    themeToggle.addEventListener('change', function() {
-        if(this.checked) document.body.classList.add('light-theme');
-        else document.body.classList.remove('light-theme');
-    });
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) document.body.classList.add('light-theme');
+            else document.body.classList.remove('light-theme');
+        });
+    }
 
     // Gift info modal
     const giftInfoBtn = document.getElementById('gift-info-btn');
@@ -620,6 +601,7 @@
         const percent = (filled / total) * 100;
         
         const bar = document.getElementById('progress-bar');
+        if (!bar) return;
         bar.style.width = percent + '%';
         bar.style.backgroundColor = (percent === 100) ? 'var(--success)' : 'var(--accent)';
     }
@@ -634,6 +616,7 @@
         statusMessageEl.style.display = 'block';
         setTimeout(() => { statusMessageEl.style.display = 'none'; }, 3000);
     }
+
 
     function populateOblasts() {
         const oblastSelect = document.getElementById('delivery-oblast');
@@ -688,15 +671,20 @@
 
     function addItem() {
         const select = document.getElementById('product-select');
+        const qtyEl = document.getElementById('product-qty');
         const itemCommentEl = document.getElementById('item-comment');
         const itemText = select.value;
         const itemComment = itemCommentEl.value.trim();
 
+        let qty = parseInt(qtyEl?.value || '1', 10);
+        if (!Number.isFinite(qty) || qty < 1) qty = 1;
+
         if (itemText === "") { showStatus("Оберіть позицію!", true); return; }
 
-        addedItems.push({ name: itemText, comment: itemComment });
+        addedItems.push({ name: itemText, qty, comment: itemComment });
         renderList(); updateProgress();
         select.value = ""; itemCommentEl.value = "";
+        if (qtyEl) qtyEl.value = '1';
         showStatus(`Додано`);
     }
 
@@ -710,7 +698,16 @@
         if (newName === null) return; // скасовано
         const trimmed = newName.trim();
         if (!trimmed) { showStatus("Назва не може бути порожньою", true); return; }
-        addedItems[index] = { ...current, name: trimmed };
+
+        const newQtyRaw = prompt("Змінити кількість (шт)", String(current.qty || 1));
+        if (newQtyRaw === null) return; // скасовано
+        let newQty = parseInt(String(newQtyRaw).trim(), 10);
+        if (!Number.isFinite(newQty) || newQty < 1) {
+            showStatus("Кількість має бути 1 або більше", true);
+            return;
+        }
+
+        addedItems[index] = { ...current, name: trimmed, qty: newQty };
         renderList(); showStatus("Оновлено");
     }
 
@@ -720,7 +717,8 @@
         addedItems.forEach((item, index) => {
             const li = document.createElement('li');
             const commentStr = item.comment ? ` (i)` : '';
-            li.innerHTML = `<span class="truncate pr-4">${item.name}<small style="color:var(--accent)">${commentStr}</small></span>
+            const qty = Number.isFinite(item.qty) && item.qty > 0 ? item.qty : 1;
+            li.innerHTML = `<span class="truncate pr-4">${item.name} <small style="color:var(--text-muted)">(${qty} шт.)</small><small style="color:var(--accent)">${commentStr}</small></span>
                 <div class="flex items-center gap-2">
                     <button type="button" class="edit-item" onclick="editItem(${index})">✏️</button>
                     <span class="remove-item" onclick="removeItem(${index})">&times;</span>
@@ -734,8 +732,40 @@
         return str.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, "'");
     }
 
+    let generateBtnTimer = null;
+    let copyBtnTimer = null;
+
+    function setTempButtonState(btn, successText, originalText, timerKey) {
+        if (!btn) return;
+
+        const textSpan = btn.querySelector('span') || btn;
+        const timerRef = timerKey === 'generate' ? generateBtnTimer : copyBtnTimer;
+        if (timerRef) clearTimeout(timerRef);
+
+        btn.disabled = true;
+        btn.classList.add('btn-state-success');
+        textSpan.innerText = successText;
+
+        const newTimer = setTimeout(() => {
+            textSpan.innerText = originalText;
+            btn.classList.remove('btn-state-success');
+            btn.disabled = false;
+        }, 2000);
+
+        if (timerKey === 'generate') generateBtnTimer = newTimer;
+        else copyBtnTimer = newTimer;
+    }
+
+    function setGeneratedButtonState(btn) {
+        setTempButtonState(btn, 'Сформовано! ✓', 'Сформувати замовлення', 'generate');
+    }
+
+    function setCopiedButtonState(btn) {
+        setTempButtonState(btn, 'Скопійовано! ✓', 'Скопіювати текст', 'copy');
+    }
+
     // Генерація замовлення
-    function generateOrder() {
+    function generateOrder(btn) {
         try {
             const manager = document.getElementById('manager').value;
             const isPreorder = document.getElementById('is-preorder').checked;
@@ -782,18 +812,23 @@
 
             // Товари
             let prods = addedItems.length > 0 
-                ? addedItems.map((it, i) => `${i+1}. ${it.name}` + (it.comment ? `\n     -${it.comment}` : '')).join('\n')
+                ? addedItems.map((it, i) => {
+                    const qty = Number.isFinite(it.qty) && it.qty > 0 ? it.qty : 1;
+                    return `${i+1}. ${it.name} - ${qty} шт.` + (it.comment ? `\n     -${it.comment}` : '');
+                }).join('\n')
                 : "⚠️ Товари не додано";
 
             // Оплата
-            let pay = `${lastFormattedAmount || rawAmount} грн. ${vat}`;
-            if (prepayment) pay += ` (Передплата: ${prepayment})`;
+            const payLines = [];
+            payLines.push(`${lastFormattedAmount || rawAmount} грн. ${vat}`);
+            if (prepayment) payLines.push(`(Передплата: ${prepayment})`);
 
             // Доставка
             let del = "";
             if (rawDelCost) {
                 del = `(${formatNumber(rawDelCost)} доставка)` + (delIncluded ? " - врахована" : " - оплата при отриманні");
             } else if (delIncluded) { del = "(Доставка включена)"; }
+            if (del) payLines.push(del);
 
             // Фінальний текст
             const finalText = `${prefix}Замовлення - Менеджера ${manager || '...'}:
@@ -802,11 +837,9 @@ ${addr.join('\n')}
 
 ${prods}
 
-Подарунок:
-${gift || 'Не вказано'}
+Подарунок: ${gift || 'Не вказано'}
 
-${pay}
-${del}
+${payLines.join('\n')}
 
 ${company || '⚠️ Фірма не вказана'}
 
@@ -818,12 +851,10 @@ ${tractor || '⚠️ Трактор не вказано'}
 Додаткова інформація:
 ${info || 'Коментар відсутній'}`;
 
-            const resDiv = document.getElementById('final-text');
-            resDiv.textContent = finalText;
-            document.getElementById('result-area').style.display = 'block';
-            resDiv.scrollIntoView({behavior: "smooth"});
+            const resEl = document.getElementById('final-text');
+            if (resEl) resEl.value = finalText;
             updateProgress();
-            showStatus('Замовлення сформовано!');
+            setGeneratedButtonState(btn);
 
         } catch (error) {
             alert("Помилка при формуванні: " + error.message);
@@ -831,67 +862,19 @@ ${info || 'Коментар відсутній'}`;
     }
 
     // Копіювання
-    function copyText() {
-        const text = document.getElementById('final-text').textContent;
+    function copyText(btn) {
+        const text = document.getElementById('final-text')?.value || '';
+        if (!text.trim()) return showStatus('Спочатку сформуйте!', true);
         navigator.clipboard.writeText(text).then(() => {
-            animateSuccess(lastFormattedAmount);
+            setCopiedButtonState(btn);
         }).catch(() => {
             const ta = document.createElement('textarea');
             ta.value = text; document.body.appendChild(ta); ta.select();
-            document.execCommand('copy'); document.body.removeChild(ta);
-            animateSuccess(lastFormattedAmount);
+            try { document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            setCopiedButtonState(btn);
         });
     }
-
-    function shareTelegram() {
-        const text = document.getElementById('final-text').textContent;
-        if(!text) return showStatus("Спочатку сформуйте!", true);
-        window.location.href = `tg://msg?text=${encodeURIComponent(text)}`;
-    }
-
-    // Анімація
-    function animateSuccess(amount) {
-        const overlay = document.getElementById('celebration-overlay');
-        document.getElementById('celebration-text').innerHTML = `${amount || '0'} <br>грн. в план!<br>ВІТАЮ!`;
-        overlay.classList.add('visible');
-        startFireworks();
-        setTimeout(() => { overlay.classList.remove('visible'); stopFireworks(); }, 3500);
-    }
-
-    function startFireworks() {
-        const canvas = document.getElementById('fireworks-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const particles = [];
-        const colors = ['#FFC107', '#FF453A', '#32D74B', '#0A84FF'];
-
-        function create(x, y) {
-            for(let i=0; i<30; i++) {
-                particles.push({
-                    x, y, color: colors[Math.floor(Math.random()*colors.length)],
-                    vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
-                    alpha: 1, life: 60
-                });
-            }
-        }
-        function loop() {
-            ctx.fillStyle = 'rgba(28,28,30,0.2)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            particles.forEach((p, i) => {
-                if(p.life > 0) {
-                    ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
-                    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
-                    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.alpha -= 0.02; p.life--;
-                } else particles.splice(i, 1);
-            });
-            fireworksInterval = requestAnimationFrame(loop);
-        }
-        loop();
-        let autoFire = setInterval(() => create(Math.random()*canvas.width, Math.random()*canvas.height/2), 600);
-        create(canvas.width/2, canvas.height/3);
-        
-        setTimeout(() => { cancelAnimationFrame(fireworksInterval); clearInterval(autoFire); }, 3500);
-    }
-    function stopFireworks() { /* handled by timeout */ }
 
     window.onload = () => { populateOblasts(); updateProgress(); };
 </script>

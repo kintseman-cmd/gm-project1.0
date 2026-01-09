@@ -144,8 +144,8 @@
     <header>
         <div class="title">Комmo • Як оформити угоду</div>
         <div class="actions">
-            <a href="generator-ankety.html"><i class="fas fa-file-excel"></i> Анкета</a>
-            <a href="education.html"><i class="fas fa-arrow-left"></i> Назад до навчання</a>
+            <a id="openAnketa" href="generator-ankety.html"><i class="fas fa-file-excel"></i> Анкета</a>
+            <a id="backToEducation" href="education.html"><i class="fas fa-arrow-left"></i> Назад до навчання</a>
         </div>
     </header>
 
@@ -197,5 +197,39 @@
             </article>
         </section>
     </main>
+
+    <script>
+        (function () {
+            try {
+                // When opened inside index.html iframe, navigate by changing the parent hash.
+                // This keeps the top menu state correct and avoids duplicate headers.
+                if (window.parent && window.parent !== window) {
+                    const back = document.getElementById('backToEducation');
+                    if (back) {
+                        back.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            try {
+                                const frame = window.parent.document && window.parent.document.getElementById('pageFrame');
+                                if (frame) frame.setAttribute('src', 'education.html?embed=1');
+                            } catch (err) {}
+
+                            // Keep hash in sync (if it changes, index.html will handle it).
+                            if (window.parent.location.hash !== '#education') {
+                                window.parent.location.hash = '#education';
+                            }
+                        });
+                    }
+
+                    const anketa = document.getElementById('openAnketa');
+                    if (anketa) {
+                        anketa.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            window.parent.location.hash = '#anketa';
+                        });
+                    }
+                }
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>

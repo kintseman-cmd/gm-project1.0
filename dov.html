@@ -12,6 +12,14 @@
     <title>CRM - Авторизація та Менеджери</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        (function () {
+            try {
+                const params = new URLSearchParams(location.search);
+                if (params.get('embed') === '1') document.documentElement.classList.add('embed');
+            } catch (e) {}
+        })();
+    </script>
     <style>
         html, body { overflow-x: hidden; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
@@ -152,6 +160,10 @@
                 transform: rotate(45deg) translate(-5px, -6px);
             }
         }
+
+        /* Embedded mode (inside index.html) */
+        html.embed .header { display: none !important; }
+        html.embed body { padding-top: 0 !important; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen pb-12 text-slate-900">
@@ -302,9 +314,9 @@
                             
                             <div class="space-y-4">
                                 <div>
-                                    <div class="flex justify-between text-xs mb-1 opacity-70">
-                                        <span>Ставка: 40к</span>
-                                        <span>План (50%): <span id="goalMidLabel">500к</span></span>
+                                    <div class="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs mb-1 opacity-70 min-w-0">
+                                        <span class="whitespace-nowrap">Ставка: 40к</span>
+                                        <span class="sm:text-right">План (50%): <span id="goalMidLabel">500к</span></span>
                                     </div>
                                     <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
                                         <div id="salaryBar" class="bg-blue-500 h-full transition-all" style="width: 0%"></div>
@@ -344,14 +356,22 @@
                                 <div class="text-[10px] text-slate-400 uppercase font-bold">мій план</div>
                             </div>
                         </div>
-                        <div class="mt-4 flex justify-between text-sm px-4">
+
+                        <div class="mt-3 flex justify-center">
+                            <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 select-none cursor-pointer">
+                                <input id="conversionToggle" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
+                                <span>Конверсія</span>
+                            </label>
+                        </div>
+
+                        <div class="mt-4 flex flex-col sm:flex-row sm:justify-between gap-3 text-sm px-4">
                             <div class="text-left">
                                 <div class="text-slate-400 text-[10px] uppercase font-bold">Продано мною</div>
-                                <div id="totalSalesLabel" class="font-bold text-slate-800 text-lg">0 ₴</div>
+                                <div id="totalSalesLabel" class="font-bold text-slate-800 text-lg break-words">0 ₴</div>
                             </div>
                             <div class="text-right">
                                 <div class="text-slate-400 text-[10px] uppercase font-bold text-red-400">Залишилось</div>
-                                <div id="remainingLabel" class="font-bold text-red-500 text-lg">0 ₴</div>
+                                <div id="remainingLabel" class="font-bold text-red-500 text-lg break-words">0 ₴</div>
                             </div>
                         </div>
                     </div>
@@ -432,7 +452,14 @@
                     <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-5 bg-slate-50/50 flex justify-between items-center border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-500">
                             <span>Мої продажі</span>
-                            <div id="connectionStatus" class="text-[10px] text-green-500 bg-green-50 px-2 py-1 rounded">З'єднано</div>
+                            <div class="flex items-center gap-2">
+                                <input type="date" id="exportFromDate" aria-label="Дата з" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-white border border-slate-200 text-slate-700" />
+                                <input type="date" id="exportToDate" aria-label="Дата по" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-white border border-slate-200 text-slate-700" />
+                                <button type="button" id="exportOrdersBtn" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+                                    Експорт
+                                </button>
+                                <div id="connectionStatus" class="text-[10px] text-green-500 bg-green-50 px-2 py-1 rounded">З'єднано</div>
+                            </div>
                         </div>
                         <div class="max-h-[300px] overflow-y-auto">
                             <table class="w-full text-left">
@@ -458,13 +485,448 @@
             'manager6': { name: 'Адмін', pass: '6666' }
         };
 
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_Ec8RAjAzfU62x10AyIYazCpoMgbsqJ61J8VQgBrCWSHhw9IpNzK2TPZekSRpyS8Y7A/exec'; 
+        // --- FIREBASE (основна БД для UI) ---
+        // Структура Firestore:
+        // managers/{managerId}
+        // managers/{managerId}/plans/{period}
+        // managers/{managerId}/orders/{orderId}
+        // де managerId = "старий" id (OleksandrNamistnyk, ...)
+        // Google Sheets backup зараз вимкнено.
+        //
+        // (Опційно) Можна додати окремий тестовий Firebase project у FIREBASE_CONFIGS.test.
+        const FIREBASE_CONFIGS = {
+            prod: {
+                apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+                authDomain: "gm-base.firebaseapp.com",
+                projectId: "gm-base",
+                storageBucket: "gm-base.firebasestorage.app",
+                messagingSenderId: "579626247182",
+                appId: "1:579626247182:web:09324aa5823c564defc85f"
+            },
+            // TODO: вставте firebaseConfig тестового проекту (наприклад gm-base-test)
+            test: null
+        };
+
+        const DEFAULT_FIREBASE_ENV = 'prod';
+        // Зараз: усі менеджери працюють з prod Firebase.
+        const FIREBASE_ENV_BY_MANAGER = {};
+
+        function resolveFirebaseEnvForManager_(managerId) {
+            return FIREBASE_ENV_BY_MANAGER[String(managerId || '')] || DEFAULT_FIREBASE_ENV;
+        }
+
+        function getFirebaseConfigForManager_(managerId) {
+            const env = resolveFirebaseEnvForManager_(managerId);
+            const cfg = FIREBASE_CONFIGS && FIREBASE_CONFIGS[env];
+            // Якщо тестовий конфіг ще не вставили — акуратно повертаємось на prod,
+            // щоб сторінка не ламалась.
+            if (!cfg && env !== DEFAULT_FIREBASE_ENV) return FIREBASE_CONFIGS[DEFAULT_FIREBASE_ENV] || null;
+            return cfg || null;
+        }
+
+        let firebaseModulesPromise_ = null;
+        const firebaseEnvState_ = Object.create(null);
+        window.__crmDataSource = 'unknown';
+
+        function normalizeAmount_(value) {
+            if (value == null) return 0;
+            const cleaned = String(value).replace(/\s+/g, '').replace(/,/g, '.');
+            const n = Number(cleaned);
+            return Number.isFinite(n) ? n : 0;
+        }
+
+        function toIsoDate_(v) {
+            if (!v) return new Date().toISOString().slice(0, 10);
+            if (typeof v === 'string') {
+                const s = v.slice(0, 10);
+                if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+                const t = Date.parse(v);
+                if (Number.isFinite(t)) return new Date(t).toISOString().slice(0, 10);
+            }
+            if (v?.toDate) {
+                const d = v.toDate();
+                if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+            }
+            const d = new Date(v);
+            if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        async function loadFirebaseModules_() {
+            if (firebaseModulesPromise_) return firebaseModulesPromise_;
+            firebaseModulesPromise_ = (async () => {
+                const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+                const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+                return { appMod, fsMod, authMod };
+            })();
+            return firebaseModulesPromise_;
+        }
+
+        async function initFirebaseForManager_(managerId) {
+            const env = resolveFirebaseEnvForManager_(managerId);
+            const cfg = getFirebaseConfigForManager_(managerId);
+            if (!cfg || typeof cfg !== 'object') return null;
+
+            const key = String(env);
+            const state = firebaseEnvState_[key] || (firebaseEnvState_[key] = { api: null, initPromise: null });
+            if (state.api) return state.api;
+            if (state.initPromise) return state.initPromise;
+
+            state.initPromise = (async () => {
+                const { appMod, fsMod, authMod } = await loadFirebaseModules_();
+                const appName = `crm-${key}`;
+                let app;
+                try {
+                    app = appMod.initializeApp(cfg, appName);
+                } catch (e) {
+                    try {
+                        app = appMod.getApp(appName);
+                    } catch (e2) {
+                        throw e;
+                    }
+                }
+                const db = fsMod.getFirestore(app);
+
+                // Anonymous Auth (потрібно увімкнути в Firebase Console → Authentication → Sign-in method → Anonymous)
+                let auth = null;
+                try {
+                    auth = authMod.getAuth(app);
+                    if (!auth.currentUser) {
+                        await authMod.signInAnonymously(auth);
+                        console.info('[CRM] Firebase auth: anonymous signed in');
+                    }
+                } catch (e) {
+                    // Якщо Anonymous provider вимкнено або домен не дозволено — Firestore може впасти з permissions.
+                    // Тоді UI покаже помилку доступу до бази.
+                    console.warn('[CRM] Firebase auth: anonymous sign-in failed (enable Anonymous provider in Firebase Auth).', e);
+                }
+
+                state.api = { db, auth, ...fsMod, __env: key, __projectId: cfg.projectId || '' };
+                console.info(`[CRM] Firebase initialized env=${key} project=${cfg.projectId || ''}`);
+                return state.api;
+            })();
+
+            return state.initPromise;
+        }
+
+        async function fs_getStats_(managerId) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const managerRef = api.doc(api.db, 'managers', managerId);
+            const managerSnap = await api.getDoc(managerRef);
+
+            const plansSnap = await api.getDocs(api.collection(api.db, 'managers', managerId, 'plans'));
+            const plans = [];
+            plansSnap.forEach((d) => {
+                const data = d.data() || {};
+                const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt || null);
+                plans.push({
+                    period: data.period || d.id,
+                    label: data.label || data.period || d.id,
+                    goal: Number(data.goal) || 0,
+                    updatedAt
+                });
+            });
+
+            const ordersQuery = api.query(
+                api.collection(api.db, 'managers', managerId, 'orders'),
+                api.orderBy('date', 'desc'),
+                api.limit(500)
+            );
+            const ordersSnap = await api.getDocs(ordersQuery);
+            const history = [];
+            ordersSnap.forEach((d) => {
+                const o = d.data() || {};
+                const id = d.id;
+                history.push({
+                    id,
+                    rowId: id,
+                    date: toIsoDate_(o.date),
+                    payer: o.payer || '',
+                    region: o.region || '',
+                    items: o.items || '',
+                    comment: o.comment || '',
+                    amount: Number(o.amount) || 0
+                });
+            });
+
+            let total = 0;
+            const manager = managerSnap.exists() ? (managerSnap.data() || {}) : null;
+            if (manager && typeof manager.totalSales === 'number') {
+                total = manager.totalSales;
+            } else {
+                total = history.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+            }
+
+            return { total, history, plans };
+        }
+
+        async function fs_addOrder_(managerId, payload) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const amount = normalizeAmount_(payload.amount);
+            const dateStr = String(payload.date || '').trim();
+            const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T00:00:00') : new Date();
+
+            const docRef = await api.addDoc(api.collection(api.db, 'managers', managerId, 'orders'), {
+                managerId,
+                payer: payload.payer || '',
+                region: payload.region || '',
+                items: payload.items || '',
+                comment: payload.comment || '',
+                amount,
+                date,
+                createdAt: api.serverTimestamp(),
+                updatedAt: api.serverTimestamp()
+            });
+
+            await api.setDoc(
+                api.doc(api.db, 'managers', managerId),
+                { totalSales: api.increment(amount), updatedAt: api.serverTimestamp() },
+                { merge: true }
+            );
+
+            return docRef.id;
+        }
+
+        async function fs_updateOrder_(managerId, orderId, payload, prevAmount) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const amount = normalizeAmount_(payload.amount);
+            const dateStr = String(payload.date || '').trim();
+            const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T00:00:00') : new Date();
+
+            await api.setDoc(
+                api.doc(api.db, 'managers', managerId, 'orders', orderId),
+                {
+                    payer: payload.payer || '',
+                    region: payload.region || '',
+                    items: payload.items || '',
+                    comment: payload.comment || '',
+                    amount,
+                    date,
+                    updatedAt: api.serverTimestamp()
+                },
+                { merge: true }
+            );
+
+            const oldAmount = Number(prevAmount);
+            if (Number.isFinite(oldAmount)) {
+                const delta = amount - oldAmount;
+                if (delta) {
+                    await api.setDoc(
+                        api.doc(api.db, 'managers', managerId),
+                        { totalSales: api.increment(delta), updatedAt: api.serverTimestamp() },
+                        { merge: true }
+                    );
+                }
+            }
+        }
+
+        async function fs_deleteOrder_(managerId, orderId, prevAmount) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            await api.deleteDoc(api.doc(api.db, 'managers', managerId, 'orders', orderId));
+
+            const oldAmount = Number(prevAmount);
+            if (Number.isFinite(oldAmount) && oldAmount) {
+                await api.setDoc(
+                    api.doc(api.db, 'managers', managerId),
+                    { totalSales: api.increment(-oldAmount), updatedAt: api.serverTimestamp() },
+                    { merge: true }
+                );
+            }
+        }
+
+        async function fs_setPlan_(managerId, plan) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const period = String(plan.period || '').trim();
+            if (!period) throw new Error('period is required');
+
+            await api.setDoc(
+                api.doc(api.db, 'managers', managerId, 'plans', period),
+                {
+                    period,
+                    label: plan.label || period,
+                    goal: Number(plan.goal) || 0,
+                    updatedAt: api.serverTimestamp()
+                },
+                { merge: true }
+            );
+        }
+
+        async function fs_deletePlan_(managerId, period) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const p = String(period || '').trim();
+            if (!p) throw new Error('period is required');
+
+            await api.deleteDoc(api.doc(api.db, 'managers', managerId, 'plans', p));
+        }
+
+        // --- EXPORT (Excel) ---
+        let xlsxLoadPromise_ = null;
+
+        async function loadXlsx_() {
+            if (window.XLSX) return window.XLSX;
+            if (xlsxLoadPromise_) return xlsxLoadPromise_;
+            xlsxLoadPromise_ = (async () => {
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+                    s.async = true;
+                    s.onload = resolve;
+                    s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+                if (!window.XLSX) throw new Error('XLSX failed to load');
+                return window.XLSX;
+            })();
+            return xlsxLoadPromise_;
+        }
+
+        async function fs_listAllOrders_(managerId, range) {
+            const api = await initFirebaseForManager_(managerId);
+            if (!api) throw new Error('Firebase not configured');
+
+            const from = range?.from ? String(range.from) : '';
+            const to = range?.to ? String(range.to) : '';
+            const hasFrom = /^\d{4}-\d{2}-\d{2}$/.test(from);
+            const hasTo = /^\d{4}-\d{2}-\d{2}$/.test(to);
+            const fromDate = hasFrom ? new Date(from + 'T00:00:00') : null;
+            const toDate = hasTo ? new Date(to + 'T23:59:59') : null;
+
+            const out = [];
+            let lastDoc = null;
+            // Safety cap to avoid infinite loops; practically "all" for typical usage.
+            for (let page = 0; page < 500; page++) {
+                const constraints = [
+                    api.orderBy('date', 'desc')
+                ];
+                if (fromDate && Number.isFinite(fromDate.getTime())) constraints.push(api.where('date', '>=', fromDate));
+                if (toDate && Number.isFinite(toDate.getTime())) constraints.push(api.where('date', '<=', toDate));
+                if (lastDoc) constraints.push(api.startAfter(lastDoc));
+                constraints.push(api.limit(1000));
+
+                const q = api.query(
+                    api.collection(api.db, 'managers', managerId, 'orders'),
+                    ...constraints
+                );
+
+                const snap = await api.getDocs(q);
+                if (snap.empty) break;
+
+                snap.forEach((d) => {
+                    const o = d.data() || {};
+                    out.push({
+                        id: d.id,
+                        date: toIsoDate_(o.date),
+                        managerId: String(o.managerId || managerId),
+                        payer: String(o.payer || ''),
+                        region: String(o.region || ''),
+                        items: String(o.items || ''),
+                        comment: String(o.comment || ''),
+                        amount: Number(o.amount) || 0
+                    });
+                });
+
+                lastDoc = snap.docs[snap.docs.length - 1];
+                if (snap.docs.length < 1000) break;
+            }
+            return out;
+        }
+
+        function downloadBlob_(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
+        async function exportOrdersToExcel_() {
+            if (!loggedInManagerId) return;
+            const btn = document.getElementById('exportOrdersBtn');
+            withButtonLoading_(btn, true, 'Експорт', 'Експорт...');
+            try {
+                const XLSX = await loadXlsx_();
+
+                const from = document.getElementById('exportFromDate')?.value || '';
+                const to = document.getElementById('exportToDate')?.value || '';
+                if (from && to && from > to) {
+                    alert('Невірний діапазон дат: "з" не може бути пізніше ніж "по".');
+                    return;
+                }
+
+                // Fetch all orders for current manager from Firebase
+                const orders = await fs_listAllOrders_(loggedInManagerId, { from, to });
+
+                const rows = orders.map((o) => ({
+                    'Дата': o.date,
+                    'Менеджер': o.managerId,
+                    'Платник': o.payer,
+                    'Область': o.region,
+                    'Додаткові пункти': o.items,
+                    'Коментар': o.comment,
+                    'Сума': o.amount,
+                    'ID': o.id
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false });
+                ws['!cols'] = [
+                    { wch: 12 },
+                    { wch: 20 },
+                    { wch: 28 },
+                    { wch: 16 },
+                    { wch: 30 },
+                    { wch: 30 },
+                    { wch: 12 },
+                    { wch: 26 }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                const filename = `GM-orders-${loggedInManagerId}-${yyyy}-${mm}-${dd}.xlsx`;
+
+                const arr = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                downloadBlob_(blob, filename);
+            } catch (e) {
+                console.warn('[CRM] export failed', e);
+                alert('Не вдалося зробити експорт. Спробуйте ще раз.');
+            } finally {
+                withButtonLoading_(btn, false, 'Експорт');
+            }
+        }
+
+        // Google Sheets / Apps Script (ВИМКНЕНО)
+        const ENABLE_GOOGLE_SHEETS_BACKUP = false;
+        const SCRIPT_URL = ''; 
         
         let loggedInManagerId = null;
         let currentMonth = 'План';
         let currentGoal = 1000000;
         const BASE_SALARY = 40000;
         const MAX_BONUS = 60000;
+        const CONVERSION_PENALTY = 20000;
+        const CONVERSION_FLOOR = 80000;
+        let conversionMet = true;
 
         const MONTH_LABELS = {
             '01': 'Січень',
@@ -484,6 +946,7 @@
         const MONTH_KEYS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 
         async function postToScript_(payload) {
+            if (!ENABLE_GOOGLE_SHEETS_BACKUP) return false;
             if (!loggedInManagerId) return false;
             if (!SCRIPT_URL || SCRIPT_URL.includes('ВАШ_URL')) return false;
             try {
@@ -495,6 +958,53 @@
                 return true;
             } catch (e) {
                 return false;
+            }
+        }
+
+        const SHEETS_QUEUE_KEY_ = '__gm_sheets_queue_v1';
+
+        function enqueueSheetsOp_(op) {
+            if (!ENABLE_GOOGLE_SHEETS_BACKUP) return;
+            try {
+                const raw = localStorage.getItem(SHEETS_QUEUE_KEY_);
+                const arr = raw ? JSON.parse(raw) : [];
+                arr.push({ t: Date.now(), op: op || {} });
+                // Keep queue bounded
+                if (arr.length > 200) arr.splice(0, arr.length - 200);
+                localStorage.setItem(SHEETS_QUEUE_KEY_, JSON.stringify(arr));
+            } catch (e) {}
+        }
+
+        async function flushSheetsQueue_() {
+            if (!ENABLE_GOOGLE_SHEETS_BACKUP) {
+                try { localStorage.removeItem(SHEETS_QUEUE_KEY_); } catch (e) {}
+                return;
+            }
+            if (!loggedInManagerId) return;
+            if (flushSheetsQueue_.inFlight) return;
+            flushSheetsQueue_.inFlight = true;
+            try {
+                const raw = localStorage.getItem(SHEETS_QUEUE_KEY_);
+                const arr = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(arr) || !arr.length) return;
+
+                const remaining = [];
+                for (const item of arr) {
+                    const op = item?.op || {};
+                    const payload = op.payload || {};
+                    const ok = await postToScript_(payload);
+                    if (!ok) {
+                        remaining.push(item);
+                        // Stop early; keep the rest for later.
+                        break;
+                    }
+                }
+
+                localStorage.setItem(SHEETS_QUEUE_KEY_, JSON.stringify(remaining));
+            } catch (e) {
+                // Keep queue as-is on unexpected errors.
+            } finally {
+                flushSheetsQueue_.inFlight = false;
             }
         }
 
@@ -561,7 +1071,7 @@
             return '';
         }
 
-        // Plans source of truth: backend (Apps Script). No localStorage for plans.
+        // Plans source of truth: Firebase (Firestore). No localStorage for plans.
         // NOTE: Sheets may coerce "2025-12" into a Date; we normalize to YYYY-MM for UI.
         function setDbPlans_(plansArr) {
             const arr = Array.isArray(plansArr) ? plansArr : [];
@@ -843,7 +1353,7 @@
                 const rawPeriod = String(entry.rawPeriod || '');
 
                 const row = document.createElement('div');
-                row.className = 'flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3';
+                row.className = 'flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3';
 
                 const m = String(period).match(/^(\d{4})-(\d{2})$/);
                 const initYear = m ? m[1] : '';
@@ -854,11 +1364,11 @@
                 yearInput.min = '2000';
                 yearInput.max = '2100';
                 yearInput.inputMode = 'numeric';
-                yearInput.className = 'w-24 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
+                yearInput.className = 'w-full sm:w-24 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
                 yearInput.value = initYear;
 
                 const monthSelect = document.createElement('select');
-                monthSelect.className = 'w-40 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
+                monthSelect.className = 'w-full sm:w-40 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
                 MONTH_KEYS.forEach((mm) => {
                     const opt = document.createElement('option');
                     opt.value = mm;
@@ -871,13 +1381,13 @@
                 input.type = 'number';
                 input.min = '0';
                 input.inputMode = 'numeric';
-                input.className = 'w-36 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
+                input.className = 'w-full sm:w-36 p-2 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800';
                 const v = Number(entry?.goal);
                 input.value = Number.isFinite(v) && v > 0 ? String(v) : '';
 
                 const saveBtn = document.createElement('button');
                 saveBtn.type = 'button';
-                saveBtn.className = 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors disabled:cursor-not-allowed';
+                saveBtn.className = 'w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors disabled:cursor-not-allowed';
                 saveBtn.textContent = 'Зберегти';
                 saveBtn.addEventListener('click', async () => {
                     withButtonLoading_(saveBtn, true, 'Зберегти', 'Збереження...');
@@ -890,49 +1400,67 @@
                     }
                     const newPeriod = `${yyyy}-${mm}`;
                     const newGoal = Number(input.value || 0);
+                    const safeGoal = Number.isFinite(newGoal) && newGoal > 0 ? newGoal : 0;
 
-                    // Only delete old record if month changed.
-                    // Backend also enforces uniqueness, but this keeps legacy data clean.
-                    if (String(newPeriod) !== String(period)) {
-                        await postToScript_({
-                            action: 'deletePlan',
-                            managerId: loggedInManagerId,
-                            period: rawPeriod || period
-                        });
-                        optimisticDeletePlan_(period);
+                    try {
+                        // If month changed, delete old Firebase doc to keep uniqueness.
+                        if (String(newPeriod) !== String(period)) {
+                            await fs_deletePlan_(loggedInManagerId, period);
+
+                            // Sheets backup (best-effort)
+                            const delPayload = { action: 'deletePlan', managerId: loggedInManagerId, period: rawPeriod || period };
+                            const delOk = await postToScript_(delPayload);
+                            if (!delOk) enqueueSheetsOp_({ type: 'deletePlan', payload: delPayload });
+
+                            optimisticDeletePlan_(period);
+                        }
+
+                        await fs_setPlan_(loggedInManagerId, { period: newPeriod, label: formatPeriodLabel_(newPeriod), goal: safeGoal });
+
+                        // Sheets backup (best-effort)
+                        const setPayload = { action: 'setPlan', managerId: loggedInManagerId, period: newPeriod, label: formatPeriodLabel_(newPeriod), goal: safeGoal };
+                        const setOk = await postToScript_(setPayload);
+                        if (!setOk) enqueueSheetsOp_({ type: 'setPlan', payload: setPayload });
+
+                        optimisticUpsertPlan_(newPeriod, formatPeriodLabel_(newPeriod), safeGoal);
+                    } catch (e) {
+                        console.warn('[CRM] setPlan firebase failed', e);
+                        withButtonLoading_(saveBtn, false);
+                        alert('Помилка збереження плану в базі. Спробуйте ще раз.');
+                        return;
                     }
 
-                    await postToScript_({
-                        action: 'setPlan',
-                        managerId: loggedInManagerId,
-                        period: newPeriod,
-                        label: formatPeriodLabel_(newPeriod),
-                        goal: Number.isFinite(newGoal) && newGoal > 0 ? newGoal : 0
-                    });
-
-                    optimisticUpsertPlan_(newPeriod, formatPeriodLabel_(newPeriod), Number.isFinite(newGoal) && newGoal > 0 ? newGoal : 0);
                     renderLocalPlans_();
                     renderProgressPeriodPicker_();
                     refreshGoalFromPlans_();
 
                     withButtonLoading_(saveBtn, false);
 
-                    // Refresh from DB in background (gives Apps Script time to write).
+                    // Refresh from DB in background
                     setTimeout(updateStats, 600);
                 });
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
-                delBtn.className = 'px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors disabled:cursor-not-allowed';
+                delBtn.className = 'w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors disabled:cursor-not-allowed';
                 delBtn.textContent = 'Видалити';
                 delBtn.addEventListener('click', async () => {
                     withButtonLoading_(delBtn, true, 'Видалити', 'Видалення...');
-                    await postToScript_({
-                        action: 'deletePlan',
-                        managerId: loggedInManagerId,
-                        period: rawPeriod || period
-                    });
-                    optimisticDeletePlan_(period);
+                    try {
+                        await fs_deletePlan_(loggedInManagerId, period);
+
+                        // Sheets backup (best-effort)
+                        const payload = { action: 'deletePlan', managerId: loggedInManagerId, period: rawPeriod || period };
+                        const ok = await postToScript_(payload);
+                        if (!ok) enqueueSheetsOp_({ type: 'deletePlan', payload });
+
+                        optimisticDeletePlan_(period);
+                    } catch (e) {
+                        console.warn('[CRM] deletePlan firebase failed', e);
+                        withButtonLoading_(delBtn, false);
+                        alert('Помилка видалення плану в базі. Спробуйте ще раз.');
+                        return;
+                    }
                     renderLocalPlans_();
                     renderProgressPeriodPicker_();
                     refreshGoalFromPlans_();
@@ -1055,6 +1583,8 @@
             renderProgressPeriodPicker_();
         }
 
+        document.getElementById('exportOrdersBtn')?.addEventListener('click', exportOrdersToExcel_);
+
         // --- ЛОГІКА ТА UI ---
         function calculateSalary(totalSales) {
             const goal = currentGoal > 0 ? currentGoal : 1;
@@ -1062,12 +1592,26 @@
             let bonus = 0;
             let extra = 0;
             const progress = totalSales / goal;
-            if (progress >= 0.5) {
-                let bonusMultiplier = Math.min((progress - 0.5) / 0.5, 1);
-                bonus = bonusMultiplier * MAX_BONUS;
-            }
-            if (totalSales > goal) {
+            // Excel logic:
+            // salary = BASE_SALARY + IF(sales < 0.5*goal, 0,
+            //                         IF(sales < goal, MAX_BONUS*(sales/goal), MAX_BONUS + (sales-goal)*0.01))
+            if (totalSales < 0.5 * goal) {
+                bonus = 0;
+            } else if (totalSales < goal) {
+                bonus = MAX_BONUS * progress;
+            } else {
+                bonus = MAX_BONUS;
                 extra = (totalSales - goal) * 0.01;
+            }
+
+            // Conversion rule: if conversion is NOT met, reduce the plan bonus by 20k,
+            // but only once the plan is reached (sales >= goal). Total salary can't go below 80k.
+            if (!conversionMet && totalSales >= goal) {
+                bonus = Math.max(0, bonus - CONVERSION_PENALTY);
+                const totalAfterPenalty = salary + bonus + extra;
+                if (totalAfterPenalty < CONVERSION_FLOOR) {
+                    bonus = Math.max(0, CONVERSION_FLOOR - salary - extra);
+                }
             }
             return { total: salary + bonus + extra, bonus, extra, percent: progress * 100 };
         }
@@ -1093,6 +1637,9 @@
             document.getElementById('progressCircle').style.strokeDashoffset = offset;
             document.getElementById('displayMonth').innerText = currentMonth;
             document.getElementById('goalMidLabel').innerText = (currentGoal / 2 / 1000) + 'к';
+
+            const conv = document.getElementById('conversionToggle');
+            if (conv) conv.checked = !!conversionMet;
 
             // Історія з кнопкою видалення
             const historyBody = document.getElementById('historyBody');
@@ -1147,24 +1694,41 @@
 
                     historyBody.innerHTML += `
                         <tr class="bg-slate-50">
-                            <td class="p-4 text-slate-400 text-xs align-top">
-                                <input type="date" data-field="date" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${dateVal}" class="w-36 p-2 rounded-xl bg-white border border-slate-200">
-                            </td>
-                            <td class="p-4 align-top">
-                                <div class="space-y-2">
-                                    <input type="text" data-field="payer" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${payerVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
-                                    <select data-field="region" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full p-2 rounded-xl bg-white border border-slate-200">${regionOptionsHtml}</select>
-                                    <input type="text" data-field="items" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${itemsVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Додаткові пункти" />
-                                    <input type="text" data-field="comment" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${commentVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Коментар" />
-                                </div>
-                            </td>
-                            <td class="p-4 text-right align-top">
-                                <input type="number" min="0" data-field="amount" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${amountVal}" class="w-36 p-2 rounded-xl bg-white border border-slate-200 text-right font-bold text-slate-800" />
-                            </td>
-                            <td class="p-4 text-right align-top">
-                                <div class="flex justify-end gap-2">
-                                    <button type="button" data-action="save" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">Зберегти</button>
-                                    <button type="button" data-action="cancel" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">Скасувати</button>
+                            <td class="p-4 align-top" colspan="4">
+                                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                                    <div class="sm:col-span-4">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Дата</label>
+                                        <input type="date" data-field="date" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${dateVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
+                                    </div>
+                                    <div class="sm:col-span-8">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Платник</label>
+                                        <input type="text" data-field="payer" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${payerVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
+                                    </div>
+
+                                    <div class="sm:col-span-8">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Область</label>
+                                        <select data-field="region" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full p-2 rounded-xl bg-white border border-slate-200">${regionOptionsHtml}</select>
+                                    </div>
+                                    <div class="sm:col-span-4">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Сума (₴)</label>
+                                        <input type="number" min="0" data-field="amount" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${amountVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200 text-right font-bold text-slate-800" />
+                                    </div>
+
+                                    <div class="sm:col-span-6">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Додаткові пункти</label>
+                                        <input type="text" data-field="items" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${itemsVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Додаткові пункти" />
+                                    </div>
+                                    <div class="sm:col-span-6">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Коментар</label>
+                                        <input type="text" data-field="comment" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${commentVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Коментар" />
+                                    </div>
+
+                                    <div class="sm:col-span-12">
+                                        <div class="flex flex-col sm:flex-row justify-end gap-2">
+                                            <button type="button" data-action="save" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">Зберегти</button>
+                                            <button type="button" data-action="cancel" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">Скасувати</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -1221,16 +1785,25 @@
             }
             if (action === 'delete') {
                 if (!confirm('Видалити це замовлення?')) return;
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({
-                        action: 'deleteOrder',
-                        managerId: loggedInManagerId,
-                        id: orderId,
-                        rowId: Number(rowId)
-                    })
-                });
+                const prevAmount = state.byOrderId?.[orderId]?.amount;
+                if (!orderId) {
+                    alert('Не вдалося визначити ID замовлення для видалення');
+                    return;
+                }
+
+                try {
+                    await fs_deleteOrder_(loggedInManagerId, orderId, prevAmount);
+                    console.info('[CRM] deleteOrder source: firebase');
+
+                    // Sheets backup: try now; if fails, queue for later.
+                    const payload = { action: 'deleteOrder', managerId: loggedInManagerId, id: orderId };
+                    const ok = await postToScript_(payload);
+                    if (!ok) enqueueSheetsOp_({ type: 'deleteOrder', payload });
+                } catch (e) {
+                    console.warn('[CRM] deleteOrder firebase failed', e);
+                    alert('Помилка видалення в базі. Спробуйте ще раз.');
+                    return;
+                }
                 state.editingOrderId = null;
                 setTimeout(updateStats, 600);
                 return;
@@ -1252,22 +1825,25 @@
                     return;
                 }
 
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({
-                        action: 'updateOrder',
-                        managerId: loggedInManagerId,
-                        id: orderId,
-                        rowId: Number(rowId),
-                        date,
-                        payer,
-                        region,
-                        items,
-                        comment,
-                        amount
-                    })
-                });
+                const prevAmount = state.byOrderId?.[orderId]?.amount;
+                if (!orderId) {
+                    alert('Не вдалося визначити ID замовлення для редагування');
+                    return;
+                }
+
+                try {
+                    await fs_updateOrder_(loggedInManagerId, orderId, { date, payer, region, items, comment, amount }, prevAmount);
+                    console.info('[CRM] updateOrder source: firebase');
+
+                    // Sheets backup: try now; if fails, queue for later.
+                    const payload = { action: 'updateOrder', managerId: loggedInManagerId, id: orderId, date, payer, region, items, comment, amount };
+                    const ok = await postToScript_(payload);
+                    if (!ok) enqueueSheetsOp_({ type: 'updateOrder', payload });
+                } catch (e) {
+                    console.warn('[CRM] updateOrder firebase failed', e);
+                    alert('Помилка збереження в базі. Спробуйте ще раз.');
+                    return;
+                }
 
                 state.editingOrderId = null;
                 setTimeout(updateStats, 600);
@@ -1276,12 +1852,23 @@
         });
 
         async function updateStats() {
-            if (!loggedInManagerId || SCRIPT_URL.includes('ВАШ_URL')) return; 
             try {
                 setLoading_(true);
-                const url = `${SCRIPT_URL}?managerId=${encodeURIComponent(loggedInManagerId)}&_=${Date.now()}`;
-                const response = await fetch(url, { cache: 'no-store' });
-                const data = await response.json();
+                let data;
+                try {
+                    data = await fs_getStats_(loggedInManagerId);
+                    window.__crmDataSource = 'firebase';
+                    console.info('[CRM] updateStats source: firebase');
+                } catch (e) {
+                    console.warn('[CRM] updateStats firebase failed', e);
+                    const status = document.getElementById('connectionStatus');
+                    if (status) {
+                        status.textContent = 'Немає доступу до бази';
+                        status.className = 'text-[10px] text-red-600 bg-red-50 px-2 py-1 rounded';
+                    }
+                    setLoading_(false);
+                    return;
+                }
 
                 // Plans come from backend
                 setDbPlans_(data.plans);
@@ -1298,6 +1885,22 @@
                 setLoading_(false);
             } catch (e) { console.error(e); }
         }
+
+        // Conversion toggle (client-side only)
+        (function () {
+            try {
+                const conv = document.getElementById('conversionToggle');
+                if (!conv) return;
+                conv.checked = true;
+                conversionMet = true;
+                conv.addEventListener('change', () => {
+                    conversionMet = !!conv.checked;
+                    const allHistory = Array.isArray(window.__lastAllHistory) ? window.__lastAllHistory : [];
+                    const view = buildProgressView_(allHistory);
+                    updateUI(view.total || 0, allHistory);
+                });
+            } catch (e) {}
+        })();
 
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1318,19 +1921,33 @@
             btn.innerText = 'Зберігаємо...';
 
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({
+                let newId = '';
+                try {
+                    newId = await fs_addOrder_(loggedInManagerId, { date: orderDate, payer, region, items, comment, amount });
+                    window.__crmDataSource = 'firebase';
+                    console.info('[CRM] addOrder source: firebase');
+                } catch (e) {
+                    console.warn('[CRM] addOrder firebase failed', e);
+                    alert('Помилка збереження в базі. Спробуйте ще раз.');
+                    return;
+                }
+
+                // Backup to Sheets (best-effort, do not block UI)
+                if (newId) {
+                    const payload = {
                         managerId: loggedInManagerId,
+                        id: newId,
                         date: orderDate,
                         payer,
                         region,
                         items,
                         comment,
                         amount
-                    })
-                });
+                    };
+                    const ok = await postToScript_(payload);
+                    if (!ok) enqueueSheetsOp_({ type: 'createOrder', payload });
+                }
+
                 setTimeout(() => {
                     document.getElementById('orderForm').reset();
                     const d = new Date();
@@ -1340,7 +1957,10 @@
                     btn.innerText = 'Додати';
                     updateStats();
                 }, 800);
-            } catch (err) { btn.disabled = false; }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = 'Додати';
+            }
         });
 
         function initAddPlanUI_() {
@@ -1408,13 +2028,20 @@
             }
             const goal = Number(document.getElementById('addPlanGoal')?.value || 0);
 
-            await postToScript_({
-                action: 'setPlan',
-                managerId: loggedInManagerId,
-                period: period,
-                label: formatPeriodLabel_(period),
-                goal: Number.isFinite(goal) && goal > 0 ? goal : 0
-            });
+            const safeGoal = Number.isFinite(goal) && goal > 0 ? goal : 0;
+            try {
+                await fs_setPlan_(loggedInManagerId, { period, label: formatPeriodLabel_(period), goal: safeGoal });
+                console.info('[CRM] setPlan source: firebase');
+                // Backup to Sheets (best-effort)
+                const payload = { action: 'setPlan', managerId: loggedInManagerId, period, label: formatPeriodLabel_(period), goal: safeGoal };
+                const ok = await postToScript_(payload);
+                if (!ok) enqueueSheetsOp_({ type: 'setPlan', payload });
+            } catch (e) {
+                console.warn('[CRM] setPlan firebase failed', e);
+                withButtonLoading_(btn, false);
+                alert('Помилка збереження плану в базі. Спробуйте ще раз.');
+                return;
+            }
 
             optimisticUpsertPlan_(period, formatPeriodLabel_(period), Number.isFinite(goal) && goal > 0 ? goal : 0);
             closeAddPlanPanel_();

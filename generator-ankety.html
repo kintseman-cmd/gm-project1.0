@@ -13,6 +13,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        (function () {
+            try {
+                const params = new URLSearchParams(location.search);
+                if (params.get('embed') === '1') document.documentElement.classList.add('embed');
+            } catch (e) {}
+        })();
+    </script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eceff1; margin: 0; padding: 60px 0 20px; }
 
@@ -44,8 +52,28 @@
             .hamburger.open .bar:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
         }
 
-        .page-container { display: flex; justify-content: center; padding: 0 20px; margin-top: 16px; }
+        /* Embedded mode (inside index.html) */
+        html.embed .header { display: none !important; }
+        html.embed body { padding-top: 0 !important; }
+
+        .page-container { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 0 20px; margin-top: 16px; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+
+        .hidden { display: none !important; }
+
+        .anketa-menu-header { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+        .anketa-menu-actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: 100%; max-width: 420px; }
+        .anketa-menu-actions .btn-secondary { width: 100%; justify-content: center; }
+
+        /* Menu button colors */
+        #anketaBtn { background: #2e7d32; }
+        #anketaBtn:hover, #anketaBtn.active { background: #1b5e20; }
+
+        #buhBtn { background: #1565c0; }
+        #buhBtn:hover, #buhBtn.active { background: #0f4f99; }
+
+        #orderFormBtn { background: #8e44ad; }
+        #orderFormBtn:hover, #orderFormBtn.active { background: #6c3483; }
         h2 { color: #1565c0; text-align: center; margin-bottom: 25px; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .field { display: flex; flex-direction: column; }
@@ -68,12 +96,13 @@
         .modal-body li { margin-bottom: 10px; }
         .btn-secondary { background: #1565c0; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
         .btn-secondary:hover { background: #0f4f99; }
+        .btn-secondary.active { background: #0f4f99; }
 
         /* Buhalteria Modal Styles */
         .buh-modal .modal { max-width: 800px; max-height: 90vh; overflow-y: auto; }
         .buh-modal-body { max-height: calc(90vh - 120px); overflow-y: auto; }
         .buh-container { padding: 10px 0; }
-        .buh-container .row { display: flex; gap: 10px; }
+        .buh-container .row { display: flex; gap: 10px; flex-wrap: wrap; }
         .buh-container .col-half { flex: 1; }
         .buh-container .form-group { margin-bottom: 15px; }
         .buh-container label { display: block; margin-bottom: 5px; font-weight: 600; }
@@ -87,6 +116,8 @@
         .buh-container .btn-add { background-color: #27ae60; color: white; }
         .buh-container .btn-gen { background-color: #2980b9; color: white; margin-top: 20px; }
         .buh-container .btn-copy { background-color: #8e44ad; color: white; }
+        .buh-container .btn-state-success { background-color: #2e7d32 !important; color: #fff !important; }
+        .buh-container .btn:disabled { cursor: not-allowed; opacity: 0.9; }
         .buh-container .btn:hover { opacity: 0.9; }
         .buh-container #buh_resultOutput { height: 300px; font-family: monospace; background-color: #f8f9fa; border: 1px solid #333; }
         .buh-container .helper-text { font-size: 12px; color: #666; margin-top: 2px; }
@@ -95,9 +126,8 @@
         .buh-container .price-error { border: 2px solid #ff9800 !important; background-color: #fff8f0 !important; }
         .buh-container .price-error-msg { color: #ff9800; font-size: 11px; font-weight: bold; margin-top: 3px; }
 
-        /* Order Modal */
-        .order-modal .modal { max-width: 980px; max-height: 92vh; }
-        .order-modal .modal-body { max-height: calc(92vh - 60px); }
+        /* Order (inline iframe) */
+        .order-iframe { width: 100%; border: 0; display: block; overflow: hidden; }
 
         /* Page responsiveness */
         @media (max-width: 768px) {
@@ -146,13 +176,22 @@
     </header>
 
     <div class="page-container">
-        <div class="card">
+        <div class="card" id="anketaMenu">
+            <div class="anketa-menu-header">
+                <h2 style="margin: 0;">Анкета</h2>
+                <div class="anketa-menu-actions">
+                    <button id="anketaBtn" class="btn-secondary" type="button"><i class="fas fa-file-excel"></i> Заповнення анкети</button>
+                    <button id="buhBtn" class="btn-secondary" type="button"><i class="fas fa-calculator"></i> Сформувати повідомлення</button>
+                    <button id="orderFormBtn" class="btn-secondary" type="button"><i class="fas fa-shopping-cart"></i> Сформувати замовлення</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card hidden" id="anketaSection">
             <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <h2 style="margin: 0;">Заповнення Анкети</h2>
                 <div style="display:flex; gap: 8px; flex-wrap: wrap;">
-                    <button id="buhBtn" class="btn-secondary"><i class="fas fa-calculator"></i> Повідомлення</button>
-                    <button id="instructionBtn" class="btn-secondary"><i class="fas fa-info-circle"></i> Інструкція</button>
-                    <button id="orderFormBtn" class="btn-secondary"><i class="fas fa-shopping-cart"></i> Сформувати замовлення</button>
+                    <button id="instructionBtn" class="btn-secondary" type="button"><i class="fas fa-info-circle"></i> Інструкція</button>
                 </div>
             </div>
             <div class="grid">
@@ -176,6 +215,137 @@
             </div>
             <button class="btn-download" id="downloadBtn" onclick="generate()" disabled>Скачати заповнений Excel</button>
         </div>
+
+        <div class="card hidden" id="buhSection">
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h2 style="margin: 0; text-align: left;">Повідомлення</h2>
+                <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+                    <button id="buhInstructionBtn" class="btn-secondary" type="button"><i class="fas fa-info-circle"></i> Інструкція</button>
+                </div>
+            </div>
+
+            <div id="buhInstructionBox" class="hidden" style="background: #f0f4f8; border-left: 4px solid #1976D2; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                <h4 style="margin-top: 0; color: #1976D2;">📋 Інструкція:</h4>
+                <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>Заповнюємо дані</strong> — всі поля форми (платник, товари, суми тощо)</li>
+                    <li><strong>Отриманий текст копіюємо</strong> — натискаємо кнопку "Копіювати текст"</li>
+                    <li><strong>Відправляємо в групу Вайбер</strong> — Рахунки / договора (попередньо відправив анкету на пошту)</li>
+                </ol>
+            </div>
+
+            <div class="buh-container">
+                <div class="row">
+                    <div class="col-half form-group">
+                        <label>1. Платник (ФГ, ТОВ...)</label>
+                        <input type="text" id="buh_payer" placeholder="ФГ ШПИКОЛОС">
+                    </div>
+                    <div class="col-half form-group">
+                        <label>2. Продавець</label>
+                        <input type="text" id="buh_seller" value="ТОВ АГРОКУБ" placeholder="ТОВ АГРОКУБ або ФОП ДЖУС">
+                    </div>
+                </div>
+
+                <hr>
+
+                <label>3. Товари</label>
+                <div id="buh_productList"></div>
+                <button class="btn btn-add" onclick="buh_addProductRow()">+ Додати товар</button>
+                <div class="helper-text" style="text-align: right; margin-bottom: 10px;">Автосума (довідково): <span id="buh_autoSumDisplay">0</span> грн</div>
+
+                <div class="form-group">
+                    <label>3.1. Сума доставки (автоматично розподілиться між товарами)</label>
+                    <input type="text" id="buh_deliveryCost" placeholder="Наприклад: 5 000" oninput="buh_distributeDeliveryCost()">
+                    <div class="helper-text">Не відображається у фінальному тексті. Додається до цін товарів.</div>
+                </div>
+
+                <div class="form-group">
+                    <label>4. Загальна сума (пишемо руками)</label>
+                    <input type="text" id="buh_totalSumManual" placeholder="Наприклад: 365 000" oninput="buh_validateSum()">
+                    <div id="buh_sumErrorMessage" class="sum-error-text" style="display: none;"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-half form-group">
+                        <label>5. Передплата (%)</label>
+                        <select id="buh_paymentPercent" onchange="buh_updatePaymentLabel()">
+                            <option value="передплата">передплата</option>
+                            <option value="оплата по факту поставки">оплата по факту поставки</option>
+                            <option value="10">10% / 90%</option>
+                            <option value="20">20% / 80%</option>
+                            <option value="30">30% / 70%</option>
+                            <option value="50">50% / 50%</option>
+                            <option value="100">100% / 0%</option>
+                        </select>
+                        <div class="helper-text" id="buh_paymentTextPreview">передплата</div>
+                    </div>
+                    <div class="col-half form-group">
+                        <label>6. Термін поставки (днів)</label>
+                        <input type="number" id="buh_deliveryDays" value="10">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-half form-group">
+                        <label>7. Посада</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="buh_positionSelect" onchange="buh_toggleCustomPosition()" style="flex: 1;">
+                                <option value="Голова">Голова</option>
+                                <option value="Директор">Директор</option>
+                                <option value="Керівник">Керівник</option>
+                                <option value="Власник">Власник</option>
+                                <option value="custom">Свій варіант...</option>
+                            </select>
+                        </div>
+                        <input type="text" id="buh_positionCustom" placeholder="Впишіть посаду" style="display: none; margin-top: 5px;">
+                    </div>
+                    <div class="col-half form-group">
+                        <label>8. Платник ПДВ</label>
+                        <select id="buh_taxStatus">
+                            <option value="Платник ПДВ">Платник ПДВ</option>
+                            <option value="Не платник ПДВ">Не платник ПДВ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>9. Доставка</label>
+                    <select id="buh_deliveryStatus">
+                        <option value="Доставка врахована">Доставка врахована</option>
+                        <option value="Доставка НЕ врахована">Доставка НЕ врахована</option>
+                        <option value="Самовивіз">Самовивіз</option>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-half form-group">
+                        <label>10. ПІБ Клієнта</label>
+                        <input type="text" id="buh_clientName" placeholder="Іванов Іван Іванович">
+                    </div>
+                    <div class="col-half form-group">
+                        <label>11. Телефон</label>
+                        <input type="text" id="buh_clientPhone" placeholder="+380...">
+                    </div>
+                </div>
+
+                <button id="buhGenerateButton" class="btn btn-gen" onclick="buh_generateMessage(this)"><span id="buhGenerateButtonText">Сформувати повідомлення</span></button>
+
+                <div class="form-group">
+                    <label>Результат:</label>
+                    <textarea id="buh_resultOutput"></textarea>
+                </div>
+                
+                <button id="buhCopyButton" class="btn btn-copy" onclick="buh_copyToClipboard(this)"><span id="buhCopyButtonText">Копіювати текст</span></button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="orderSection">
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h2 style="margin: 0; text-align: left;">Сформувати замовлення</h2>
+            </div>
+            <div style="margin-top: 12px;">
+                <iframe id="orderFrame" class="order-iframe" src="zakaz.html" title="Форма Замовлення" scrolling="no"></iframe>
+            </div>
+        </div>
     </div>
 
     <!-- Instruction Modal -->
@@ -194,145 +364,6 @@
                     <li>Натискаємо зберегти та зберігаємо де зручно.</li>
                     <li>Відправляємо з робочого емейлу на пошту agrokubanketa@ukr.net.</li>
                 </ol>
-            </div>
-        </div>
-    </div>
-
-    <!-- Buhalteria Modal -->
-    <div id="buhModal" class="modal-backdrop buh-modal" aria-hidden="true">
-        <div class="modal buh-modal-content" role="dialog" aria-modal="true">
-            <div class="modal-header">
-                <h3 class="modal-title">Генератор повідомлення в вайбер</h3>
-                <button class="modal-close" id="buhClose" aria-label="Закрити">×</button>
-            </div>
-            
-            <!-- Instruction Section -->
-            <div style="background: #f0f4f8; border-left: 4px solid #1976D2; padding: 15px; margin: 15px; border-radius: 4px;">
-                <h4 style="margin-top: 0; color: #1976D2;">📋 Інструкція:</h4>
-                <ol style="margin: 10px 0; padding-left: 20px;">
-                    <li><strong>Заповнюємо дані</strong> — всі поля форми (платник, товари, суми тощо)</li>
-                    <li><strong>Отриманий текст копіюємо</strong> — натискаємо кнопку "Копіювати текст"</li>
-                    <li><strong>Відправляємо в групу Вайбер</strong> — Рахунки / договора (попередньо відправив анкету на пошту)</li>
-                </ol>
-            </div>
-            
-            <div class="modal-body buh-modal-body">
-                <div class="buh-container">
-                    <div class="row">
-                        <div class="col-half form-group">
-                            <label>1. Платник (ФГ, ТОВ...)</label>
-                            <input type="text" id="buh_payer" placeholder="ФГ ШПИКОЛОС">
-                        </div>
-                        <div class="col-half form-group">
-                            <label>2. Продавець</label>
-                            <input type="text" id="buh_seller" value="ТОВ АГРОКУБ" placeholder="ТОВ АГРОКУБ або ФОП ДЖУС">
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <label>3. Товари</label>
-                    <div id="buh_productList"></div>
-                    <button class="btn btn-add" onclick="buh_addProductRow()">+ Додати товар</button>
-                    <div class="helper-text" style="text-align: right; margin-bottom: 10px;">Автосума (довідково): <span id="buh_autoSumDisplay">0</span> грн</div>
-
-                    <div class="form-group">
-                        <label>3.1. Сума доставки (автоматично розподілиться між товарами)</label>
-                        <input type="text" id="buh_deliveryCost" placeholder="Наприклад: 5 000" oninput="buh_distributeDeliveryCost()">
-                        <div class="helper-text">Не відображається у фінальному тексті. Додається до цін товарів.</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>4. Загальна сума (пишемо руками)</label>
-                        <input type="text" id="buh_totalSumManual" placeholder="Наприклад: 365 000" oninput="buh_validateSum()">
-                        <div id="buh_sumErrorMessage" class="sum-error-text" style="display: none;"></div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-half form-group">
-                            <label>5. Передплата (%)</label>
-                            <select id="buh_paymentPercent" onchange="buh_updatePaymentLabel()">
-                                <option value="передплата">передплата</option>
-                                <option value="оплата по факту поставки">оплата по факту поставки</option>
-                                <option value="10">10% / 90%</option>
-                                <option value="20">20% / 80%</option>
-                                <option value="30">30% / 70%</option>
-                                <option value="50">50% / 50%</option>
-                                <option value="100">100% / 0%</option>
-                            </select>
-                            <div class="helper-text" id="buh_paymentTextPreview">передплата</div>
-                        </div>
-                        <div class="col-half form-group">
-                            <label>6. Термін поставки (днів)</label>
-                            <input type="number" id="buh_deliveryDays" value="10">
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-half form-group">
-                            <label>7. Посада</label>
-                            <div style="display: flex; gap: 5px;">
-                                <select id="buh_positionSelect" onchange="buh_toggleCustomPosition()" style="flex: 1;">
-                                    <option value="Голова">Голова</option>
-                                    <option value="Директор">Директор</option>
-                                    <option value="Керівник">Керівник</option>
-                                    <option value="Власник">Власник</option>
-                                    <option value="custom">Свій варіант...</option>
-                                </select>
-                            </div>
-                            <input type="text" id="buh_positionCustom" placeholder="Впишіть посаду" style="display: none; margin-top: 5px;">
-                        </div>
-                        <div class="col-half form-group">
-                            <label>8. Платник ПДВ</label>
-                            <select id="buh_taxStatus">
-                                <option value="Платник ПДВ">Платник ПДВ</option>
-                                <option value="Не платник ПДВ">Не платник ПДВ</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>9. Доставка</label>
-                        <select id="buh_deliveryStatus">
-                            <option value="Доставка врахована">Доставка врахована</option>
-                            <option value="Доставка НЕ врахована">Доставка НЕ врахована</option>
-                            <option value="Самовивіз">Самовивіз</option>
-                        </select>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-half form-group">
-                            <label>10. ПІБ Клієнта</label>
-                            <input type="text" id="buh_clientName" placeholder="Іванов Іван Іванович">
-                        </div>
-                        <div class="col-half form-group">
-                            <label>11. Телефон</label>
-                            <input type="text" id="buh_clientPhone" placeholder="+380...">
-                        </div>
-                    </div>
-
-                    <button class="btn btn-gen" onclick="buh_generateMessage()">Сформувати повідомлення</button>
-
-                    <div class="form-group">
-                        <label>Результат:</label>
-                        <textarea id="buh_resultOutput"></textarea>
-                    </div>
-                    
-                    <button class="btn btn-copy" onclick="buh_copyToClipboard()">Копіювати текст</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Order Form Modal -->
-    <div id="orderModal" class="modal-backdrop order-modal" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true">
-            <div class="modal-header">
-                <h3 class="modal-title">Форма Замовлення (GM)</h3>
-                <button class="modal-close" id="orderClose" aria-label="Закрити">×</button>
-            </div>
-            <div class="modal-body" style="padding: 0;">
-                <iframe src="zakaz.html" title="Форма Замовлення" style="width: 100%; height: 82vh; border: 0; display: block;"></iframe>
             </div>
         </div>
     </div>
@@ -454,51 +485,165 @@
         if (e.target === instructionModal) closeInstruction();
     });
 
-    // Buhalteria modal
+    // Inline sections (toggle like in scripts)
+    const anketaBtn = document.getElementById('anketaBtn');
     const buhBtn = document.getElementById('buhBtn');
-    const buhModal = document.getElementById('buhModal');
-    const buhClose = document.getElementById('buhClose');
-
-    const closeBuh = () => {
-        buhModal?.classList.remove('open');
-        buhModal?.setAttribute('aria-hidden', 'true');
-    };
-
-    const openBuh = () => {
-        buhModal?.classList.add('open');
-        buhModal?.setAttribute('aria-hidden', 'false');
-        if (document.getElementById('buh_productList').children.length === 0) {
-            buh_addProductRow();
-        }
-        buh_updatePaymentLabel();
-    };
-
-    buhBtn?.addEventListener('click', openBuh);
-    buhClose?.addEventListener('click', closeBuh);
-    buhModal?.addEventListener('click', (e) => {
-        if (e.target === buhModal) closeBuh();
-    });
-
-    // Order form modal
     const orderFormBtn = document.getElementById('orderFormBtn');
-    const orderModal = document.getElementById('orderModal');
-    const orderClose = document.getElementById('orderClose');
+    const orderFrame = document.getElementById('orderFrame');
 
-    const closeOrder = () => {
-        orderModal?.classList.remove('open');
-        orderModal?.setAttribute('aria-hidden', 'true');
+    // Buh instruction toggle (collapsed by default)
+    const buhInstructionBtn = document.getElementById('buhInstructionBtn');
+    const buhInstructionBox = document.getElementById('buhInstructionBox');
+    if (buhInstructionBtn && buhInstructionBox) {
+        buhInstructionBtn.setAttribute('aria-expanded', 'false');
+        buhInstructionBtn.addEventListener('click', () => {
+            const isHidden = buhInstructionBox.classList.contains('hidden');
+            buhInstructionBox.classList.toggle('hidden');
+            buhInstructionBtn.setAttribute('aria-expanded', String(isHidden));
+        });
+    }
+
+    const sections = {
+        anketa: document.getElementById('anketaSection'),
+        buh: document.getElementById('buhSection'),
+        order: document.getElementById('orderSection'),
+    };
+    const buttons = {
+        anketa: anketaBtn,
+        buh: buhBtn,
+        order: orderFormBtn,
     };
 
-    const openOrder = () => {
-        orderModal?.classList.add('open');
-        orderModal?.setAttribute('aria-hidden', 'false');
+    let openSectionKey = null;
+    const closeAllSections = () => {
+        Object.values(sections).forEach((el) => el?.classList.add('hidden'));
+        Object.values(buttons).forEach((el) => el?.classList.remove('active'));
     };
 
-    orderFormBtn?.addEventListener('click', openOrder);
-    orderClose?.addEventListener('click', closeOrder);
-    orderModal?.addEventListener('click', (e) => {
-        if (e.target === orderModal) closeOrder();
+    const scrollToSection = (el) => {
+        if (!el) return;
+
+        const doScroll = () => {
+            const header = document.querySelector('.header');
+            let headerOffset = 0;
+            if (header) {
+                const style = window.getComputedStyle(header);
+                const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
+                headerOffset = isVisible ? (header.getBoundingClientRect().height || 0) : 0;
+            }
+
+            const extraGap = 24;
+            const top = el.getBoundingClientRect().top + window.pageYOffset;
+            const target = Math.max(0, top - headerOffset - extraGap);
+            window.scrollTo({ top: target, behavior: 'smooth' });
+        };
+
+        requestAnimationFrame(doScroll);
+        setTimeout(doScroll, 120);
+        setTimeout(doScroll, 420);
+    };
+
+    const toggleSection = (key) => {
+        const isSame = openSectionKey === key;
+        closeAllSections();
+        if (isSame) {
+            openSectionKey = null;
+            return;
+        }
+        sections[key]?.classList.remove('hidden');
+        buttons[key]?.classList.add('active');
+        openSectionKey = key;
+        scrollToSection(sections[key]);
+        if (key === 'buh') {
+            // Keep instruction collapsed by default.
+            buhInstructionBox?.classList.add('hidden');
+            buhInstructionBtn?.setAttribute('aria-expanded', 'false');
+        }
+        if (key === 'order') {
+            // Ensure iframe is tall enough to avoid inner scrolling.
+            resizeOrderFrame();
+            setTimeout(resizeOrderFrame, 120);
+            setTimeout(resizeOrderFrame, 420);
+        }
+    };
+
+    anketaBtn?.addEventListener('click', () => toggleSection('anketa'));
+    buhBtn?.addEventListener('click', () => toggleSection('buh'));
+    orderFormBtn?.addEventListener('click', () => toggleSection('order'));
+
+    const resizeOrderFrame = () => {
+        try {
+            if (!orderFrame) return;
+            const doc = orderFrame.contentDocument || orderFrame.contentWindow?.document;
+            if (!doc) return;
+            const docEl = doc.documentElement;
+            const body = doc.body;
+            const height = Math.max(
+                docEl?.scrollHeight || 0,
+                body?.scrollHeight || 0,
+                docEl?.offsetHeight || 0,
+                body?.offsetHeight || 0,
+                600
+            );
+            orderFrame.style.height = `${height + 2}px`;
+        } catch (e) {
+            // If access is blocked for any reason, fall back to a reasonable height.
+            if (orderFrame && !orderFrame.style.height) orderFrame.style.height = '1200px';
+        }
+    };
+
+    let orderFrameObserver = null;
+    let orderFrameResizeTimer = null;
+    const scheduleOrderFrameResize = () => {
+        if (orderFrameResizeTimer) clearTimeout(orderFrameResizeTimer);
+        orderFrameResizeTimer = setTimeout(() => {
+            resizeOrderFrame();
+        }, 50);
+    };
+
+    const attachOrderFrameAutoResize = () => {
+        try {
+            if (!orderFrame) return;
+            const doc = orderFrame.contentDocument || orderFrame.contentWindow?.document;
+            if (!doc) return;
+
+            if (orderFrameObserver) {
+                orderFrameObserver.disconnect();
+                orderFrameObserver = null;
+            }
+
+            orderFrameObserver = new MutationObserver(() => {
+                scheduleOrderFrameResize();
+            });
+
+            const target = doc.body || doc.documentElement;
+            if (target) {
+                orderFrameObserver.observe(target, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    characterData: true,
+                });
+            }
+
+            // Initial sizing passes
+            scheduleOrderFrameResize();
+            setTimeout(scheduleOrderFrameResize, 150);
+            setTimeout(scheduleOrderFrameResize, 600);
+        } catch (e) {
+            // no-op
+        }
+    };
+
+    orderFrame?.addEventListener('load', () => {
+        resizeOrderFrame();
+        attachOrderFrameAutoResize();
+        // Some pages change height after load; run a few delayed passes.
+        setTimeout(resizeOrderFrame, 150);
+        setTimeout(resizeOrderFrame, 600);
+        setTimeout(resizeOrderFrame, 1500);
     });
+    window.addEventListener('resize', resizeOrderFrame);
 
     // Buhalteria functionality
     const buh_productsDB = [
@@ -578,6 +723,17 @@
         {name: "Агрегат комбінований передпосівний причіпний 6.0 м", price: 1800000}
     ];
 
+    // Ensure Buhalteria form is ready (after DB is defined)
+    try {
+        if (document.getElementById('buh_productList')?.children?.length === 0) {
+            buh_addProductRow();
+        }
+        buh_updatePaymentLabel();
+        buh_calculateAutoSum();
+    } catch (e) {
+        console.warn('Buh init failed:', e);
+    }
+
     function buh_formatMoney(amount) {
         return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     }
@@ -598,13 +754,44 @@
                     ${options}
                 </select>
             </div>
+            <div style="flex: 0 0 90px;">
+                <input type="number" class="product-qty" min="1" step="1" value="1" oninput="buh_onQtyChange(this)" title="Кількість">
+            </div>
             <div style="flex: 1;">
-                <input type="text" class="product-price" placeholder="Ціна" value="0" data-base-price="0" oninput="buh_validateProductPrice(this); buh_calculateAutoSum();">
+                <input type="text" class="product-price" placeholder="Сума" value="0" data-base-price="0" oninput="buh_validateProductPrice(this); buh_calculateAutoSum();">
                 <div class="price-error-msg" style="display: none;"></div>
             </div>
             <button class="btn-delete" onclick="buh_removeRow(this)">X</button>
         `;
         list.appendChild(div);
+    }
+
+    function buh_onQtyChange(qtyInput) {
+        const row = qtyInput.closest('.product-item');
+        const select = row.querySelector('.product-select');
+        const priceInput = row.querySelector('.product-price');
+
+        let qty = parseInt(qtyInput.value, 10);
+        if (!Number.isFinite(qty) || qty < 1) qty = 1;
+        qtyInput.value = qty;
+
+        const unitBasePrice = parseInt(select?.options?.[select.selectedIndex]?.getAttribute('data-price') || '0', 10) || 0;
+        if (!unitBasePrice) {
+            buh_calculateAutoSum();
+            return;
+        }
+
+        const baseTotal = unitBasePrice * qty;
+        priceInput.setAttribute('data-base-price', String(baseTotal));
+        priceInput.value = buh_formatMoney(baseTotal);
+
+        const errorMsg = row.querySelector('.price-error-msg');
+        if (errorMsg) {
+            errorMsg.style.display = 'none';
+            priceInput.classList.remove('price-error');
+        }
+
+        buh_distributeDeliveryCost();
     }
 
     function buh_removeRow(btn) {
@@ -615,10 +802,12 @@
     function buh_updateRowPrice(select) {
         const row = select.closest('.product-item');
         const priceInput = row.querySelector('.product-price');
-        const price = select.options[select.selectedIndex].getAttribute('data-price');
-        
-        priceInput.setAttribute('data-base-price', price);
-        priceInput.value = buh_formatMoney(price);
+        const unitPrice = parseInt(select.options[select.selectedIndex].getAttribute('data-price') || '0', 10) || 0;
+        const qty = parseInt(row.querySelector('.product-qty')?.value || '1', 10) || 1;
+
+        const baseTotal = unitPrice * qty;
+        priceInput.setAttribute('data-base-price', String(baseTotal));
+        priceInput.value = buh_formatMoney(baseTotal);
         
         const errorMsg = row.querySelector('.price-error-msg');
         if (errorMsg) {
@@ -751,7 +940,24 @@
         }
     }
 
-    function buh_generateMessage() {
+    function buh_setTempButtonState(btn, successText) {
+        if (!btn) return;
+
+        const textEl = btn.querySelector('span') || btn;
+        const originalText = textEl.innerText;
+
+        btn.disabled = true;
+        btn.classList.add('btn-state-success');
+        textEl.innerText = successText;
+
+        window.setTimeout(() => {
+            textEl.innerText = originalText;
+            btn.classList.remove('btn-state-success');
+            btn.disabled = false;
+        }, 2000);
+    }
+
+    function buh_generateMessage(btn) {
         const payer = document.getElementById('buh_payer').value;
         const seller = document.getElementById('buh_seller').value;
         
@@ -762,7 +968,8 @@
             const price = row.querySelector('.product-price').value;
             const name = sel.value;
             if(name) {
-                productsText += `${name} 1 шт. - ${price} грн.\n`;
+                const qty = parseInt(row.querySelector('.product-qty')?.value || '1', 10) || 1;
+                productsText += `${name} ${qty} шт. - ${price} грн.\n`;
             }
         });
 
@@ -809,14 +1016,40 @@ ${phone}
 Анкета на пошті`;
 
         document.getElementById('buh_resultOutput').value = finalMessage;
+
+        buh_setTempButtonState(btn, 'Сформовано! ✓');
     }
 
-    function buh_copyToClipboard() {
-        const copyText = document.getElementById("buh_resultOutput");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999); 
-        navigator.clipboard.writeText(copyText.value);
-        alert("Текст скопійовано!");
+    function buh_copyToClipboard(btn) {
+        const textarea = document.getElementById('buh_resultOutput');
+        const text = textarea?.value || '';
+
+        if (!text.trim()) {
+            alert('Спочатку сформуйте повідомлення!');
+            return;
+        }
+
+        const fallbackCopy = () => {
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+            try {
+                document.execCommand('copy');
+                buh_setTempButtonState(btn, 'Скопійовано! ✓');
+            } catch (e) {
+                alert('Не вдалося скопіювати текст');
+            }
+            try { window.getSelection()?.removeAllRanges(); } catch (e) {}
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+                .writeText(text)
+                .then(() => buh_setTempButtonState(btn, 'Скопійовано! ✓'))
+                .catch(() => fallbackCopy());
+        } else {
+            fallbackCopy();
+        }
     }
 </script>
 

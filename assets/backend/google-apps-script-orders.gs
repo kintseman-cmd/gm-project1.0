@@ -603,7 +603,11 @@ function doPost(e) {
     const items = safeString_(params.items);
     const comment = safeString_(params.comment);
     const amount = normalizeAmount_(params.amount);
-    const id = Utilities.getUuid();
+
+    // Allow caller to provide a stable id (e.g. Firestore doc id) so that
+    // delete/update requests can reliably find the row later.
+    const providedId = safeString_(params.id || params.orderId);
+    const id = providedId || Utilities.getUuid();
 
     const row = new Array(ORDER_COLUMNS.length).fill('');
 
@@ -616,12 +620,23 @@ function doPost(e) {
     if (headerMap.amount !== undefined) row[headerMap.amount] = amount;
     if (headerMap.id !== undefined) row[headerMap.id] = id;
 
+    // If we already have this id, update in place to avoid duplicates.
+    if (providedId) {
+      ensureOrderIds_(sheet, headerMap);
+      const existingRowId = findOrderRowById_(sheet, headerMap, managerId, id);
+      if (existingRowId) {
+        sheet.getRange(existingRowId, 1, 1, row.length).setValues([row]);
+        applyOrderSheetEnhancements_(sheet);
+        return json_({ ok: true, id: id, updated: true });
+      }
+    }
+
     // New orders at the top (row 2)
     sheet.insertRowAfter(1);
     sheet.getRange(2, 1, 1, row.length).setValues([row]);
     applyOrderSheetEnhancements_(sheet);
 
-    return json_({ ok: true });
+    return json_({ ok: true, id: id, created: true });
   } finally {
     lock.releaseLock();
   }

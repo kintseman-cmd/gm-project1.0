@@ -723,9 +723,130 @@
         if (el) el.textContent = text || '';
     }
 
+    // --- Firebase: прайс з бази (Firestore) ---
+    // Колекція: priceItems
+    // Поля: { category, name, price1, price2, sortCategory?, sortItem?, active? }
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+        authDomain: "gm-base.firebaseapp.com",
+        projectId: "gm-base",
+        storageBucket: "gm-base.firebasestorage.app",
+        messagingSenderId: "579626247182",
+        appId: "1:579626247182:web:09324aa5823c564defc85f"
+    };
+
+    let firebasePriceApiPromise_ = null;
+
+    async function initFirebaseForPrice_() {
+        if (firebasePriceApiPromise_) return firebasePriceApiPromise_;
+        firebasePriceApiPromise_ = (async () => {
+            const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+            const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+
+            let app;
+            const appName = 'price-kp';
+            try {
+                app = appMod.initializeApp(FIREBASE_CONFIG, appName);
+            } catch (e) {
+                app = appMod.getApp(appName);
+            }
+
+            const db = fsMod.getFirestore(app);
+
+            try {
+                const auth = authMod.getAuth(app);
+                if (!auth.currentUser) {
+                    await authMod.signInAnonymously(auth);
+                    console.info('[kp] Firebase auth: anonymous signed in');
+                }
+            } catch (e) {
+                console.warn('[kp] Firebase auth: anonymous sign-in failed', { code: e?.code, message: e?.message });
+            }
+
+            return { db, ...fsMod };
+        })();
+        return firebasePriceApiPromise_;
+    }
+
+    function buildCatalogFromPriceDocs_(docs) {
+        const byCat = new Map();
+        for (const d of docs) {
+            const data = d.data ? d.data() : d;
+            if (!data) continue;
+            if (data.active === false) continue;
+            const category = String(data.category || '').trim();
+            const name = String(data.name || '').trim();
+            const price1 = Number(data.price1);
+            const price2 = Number(data.price2);
+            if (!category || !name) continue;
+            if (!Number.isFinite(price1) || !Number.isFinite(price2)) continue;
+
+            const sortCategory = Number.isFinite(Number(data.sortCategory)) ? Number(data.sortCategory) : null;
+            const sortItem = Number.isFinite(Number(data.sortItem)) ? Number(data.sortItem) : null;
+
+            if (!byCat.has(category)) byCat.set(category, { category, sortCategory, items: [] });
+            byCat.get(category).items.push({ name, price1, price2, sortItem });
+        }
+
+        const cats = Array.from(byCat.values());
+        cats.sort((a, b) => {
+            const as = a.sortCategory;
+            const bs = b.sortCategory;
+            if (as != null && bs != null && as !== bs) return as - bs;
+            if (as != null && bs == null) return -1;
+            if (as == null && bs != null) return 1;
+            return String(a.category).localeCompare(String(b.category), 'uk');
+        });
+
+        for (const c of cats) {
+            c.items.sort((a, b) => {
+                const as = a.sortItem;
+                const bs = b.sortItem;
+                if (as != null && bs != null && as !== bs) return as - bs;
+                if (as != null && bs == null) return -1;
+                if (as == null && bs != null) return 1;
+                return String(a.name).localeCompare(String(b.name), 'uk');
+            });
+            c.items = c.items.map(({ name, price1, price2 }) => ({ name, price1, price2 }));
+            delete c.sortCategory;
+        }
+        return cats;
+    }
+
+    async function loadCatalogFromFirestore_() {
+        try {
+            const api = await initFirebaseForPrice_();
+            const snap = await api.getDocs(api.collection(api.db, 'priceItems'));
+            if (!snap || snap.empty) return false;
+
+            const next = buildCatalogFromPriceDocs_(snap.docs);
+            if (!next.length) return false;
+
+            catalogData.length = 0;
+            catalogData.push(...next);
+            return true;
+        } catch (e) {
+            const code = e?.code;
+            if (code === 'permission-denied' || /insufficient permissions/i.test(String(e?.message || ''))) {
+                console.warn('[kp] price catalog load failed: permission denied. Fix Firestore Rules for /priceItems.', e);
+            } else if (code === 'auth/unauthorized-domain') {
+                console.warn('[kp] price catalog load failed: unauthorized domain. Add domain in Firebase Auth -> Settings -> Authorized domains.', e);
+            } else {
+                console.warn('[kp] price catalog load failed', e);
+            }
+            return false;
+        }
+    }
+
     function populateProductSelect() {
         const select = $('productSelect');
         if (!select) return;
+
+        // clear previous groups, keep the first placeholder option
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
 
         for (const cat of catalogData) {
             const group = document.createElement('optgroup');
@@ -868,7 +989,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        populateProductSelect();
+        // Try to load price list from Firestore, then populate.
+        loadCatalogFromFirestore_().finally(() => {
+            populateProductSelect();
+        });
 
         $('productSelect').addEventListener('change', () => {
             applySelectedProductToInputs();
