@@ -1,6 +1,14 @@
 (() => {
   const docEl = document.documentElement;
 
+  const closeHeaderMenu = () => {
+    try {
+      document.querySelectorAll('.nav.open').forEach((el) => el.classList.remove('open'));
+      document.querySelectorAll('.nav.active').forEach((el) => el.classList.remove('active'));
+      document.querySelectorAll('.hamburger.open').forEach((el) => el.classList.remove('open'));
+    } catch {}
+  };
+
   const markReady = () => {
     docEl.classList.add('pagefx-ready');
     docEl.classList.remove('pagefx-exit');
@@ -67,6 +75,10 @@
       // The request is specifically about header navigation.
       const anchor = event.target?.closest?.('.header a');
       if (!anchor) return;
+
+      // Close hamburger menu instantly (mobile UX).
+      closeHeaderMenu();
+
       if (!shouldAnimateLink(anchor, event)) return;
 
       let url;
