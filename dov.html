@@ -1707,19 +1707,9 @@
                 const items = (item.items || '').toString().trim();
                 const comment = (item.comment || '').toString().trim();
 
-                const secondParts = [];
-                if (region) {
-                    secondParts.push(`<span class="font-medium text-slate-600 whitespace-nowrap">${escapeHtml(region)}</span>`);
-                }
-                if (items) {
-                    secondParts.push(`<span class="min-w-0 truncate" title="${escapeHtml(items)}">${escapeHtml(items)}</span>`);
-                }
-                if (comment) {
-                    secondParts.push(`<span class="min-w-0 truncate text-slate-400" title="${escapeHtml(comment)}">${escapeHtml(comment)}</span>`);
-                }
-
-                const secondLine = secondParts.length
-                    ? `<div class="mt-1 text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1 min-w-0">${secondParts.join('<span class="text-slate-300">•</span>')}</div>`
+                const secondText = [region, items, comment].filter(Boolean).join(' • ');
+                const secondLine = secondText
+                    ? `<div class="mt-1 text-xs text-slate-500 truncate" title="${escapeHtml(secondText)}">${escapeHtml(secondText)}</div>`
                     : '';
 
                 const rowId = String(item.rowId);
@@ -1788,12 +1778,12 @@
                     <tr class="hover:bg-slate-50 transition-colors group">
                         <td class="p-0" colspan="4">
                             <div class="px-4 py-3">
-                                <div class="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3">
+                                <div class="flex items-center gap-3">
                                     <div class="shrink-0 text-slate-400 text-xs tabular-nums whitespace-nowrap">
                                         ${new Date(item.date).toLocaleDateString('uk-UA')}
                                     </div>
 
-                                    <div class="min-w-0 text-sm font-medium text-slate-900 break-words">
+                                    <div class="min-w-0 flex-1 text-sm font-medium text-slate-900 break-words leading-snug">
                                         ${escapeHtml(item.payer)}
                                     </div>
 
