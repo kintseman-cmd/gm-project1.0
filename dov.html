@@ -164,6 +164,10 @@
         /* Embedded mode (inside index.html) */
         html.embed .header { display: none !important; }
         html.embed body { padding-top: 0 !important; }
+
+        /* CRM small-screen fixes */
+        #orderForm > div { min-width: 0; }
+        #historyBody td { overflow-wrap: anywhere; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen pb-12 text-slate-900">
@@ -239,15 +243,15 @@
                         <i class="fa-solid fa-user-tie"></i> <span id="currentManagerName">Менеджер</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 md:gap-4">
-                    <button onclick="togglePlans()" class="text-slate-400 hover:text-white transition-colors text-xs md:text-sm whitespace-nowrap">
-                        <i class="fa-solid fa-flag"></i> <span class="hidden sm:inline">Плани</span>
+                <div class="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
+                    <button onclick="togglePlans()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                        <i class="fa-solid fa-flag"></i> <span>Плани</span>
                     </button>
-                    <button onclick="toggleSettings()" class="text-slate-400 hover:text-white transition-colors text-xs md:text-sm whitespace-nowrap">
-                        <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Налаштування</span>
+                    <button onclick="toggleSettings()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                        <i class="fa-solid fa-gear"></i> <span>Налаштування</span>
                     </button>
-                    <button onclick="logout()" class="text-red-400 hover:text-red-300 text-xs md:text-sm whitespace-nowrap">
-                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Вихід</span>
+                    <button onclick="logout()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-200 transition-colors text-sm font-semibold whitespace-nowrap">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span>Вихід</span>
                     </button>
                 </div>
             </div>
@@ -385,18 +389,18 @@
                         </h2>
                         <form id="orderForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Дата</label>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Дата</label>
                                 <input type="date" id="orderDate" required
-                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Платник</label>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Платник</label>
                                 <input type="text" id="payer" required placeholder="Назва клієнта"
-                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Область</label>
-                                <select id="regionSelect" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Область</label>
+                                <select id="regionSelect" class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                                     <option value="">Оберіть область</option>
                                     <option value="Вінницька">Вінницька</option>
                                     <option value="Волинська">Волинська</option>
@@ -426,19 +430,19 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Сума (₴)</label>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Сума (₴)</label>
                                 <input type="number" id="amount" required placeholder="0.00"
-                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Додаткові пункти / позиції (опціонально)</label>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Додаткові пункти / позиції (опціонально)</label>
                                 <input type="text" id="orderItems" placeholder="Напр.: ЛН 2.6; ковш 2.2; доставка"
-                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Коментар (опціонально)</label>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Коментар (опціонально)</label>
                                 <input type="text" id="orderComment" placeholder="Будь-які примітки по замовленню"
-                                    class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div class="md:col-span-2 flex items-end">
                                 <button type="submit" id="submitBtn" 
@@ -450,19 +454,19 @@
                     </div>
 
                     <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-5 bg-slate-50/50 flex justify-between items-center border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-500">
+                        <div class="p-5 bg-slate-50/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-500">
                             <span>Мої продажі</span>
-                            <div class="flex items-center gap-2">
-                                <input type="date" id="exportFromDate" aria-label="Дата з" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-white border border-slate-200 text-slate-700" />
-                                <input type="date" id="exportToDate" aria-label="Дата по" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-white border border-slate-200 text-slate-700" />
-                                <button type="button" id="exportOrdersBtn" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+                                <input type="date" id="exportFromDate" aria-label="Дата з" class="w-full sm:w-[140px] text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700" />
+                                <input type="date" id="exportToDate" aria-label="Дата по" class="w-full sm:w-[140px] text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700" />
+                                <button type="button" id="exportOrdersBtn" class="w-full sm:w-auto text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
                                     Експорт
                                 </button>
-                                <div id="connectionStatus" class="text-[10px] text-green-500 bg-green-50 px-2 py-1 rounded">З'єднано</div>
+                                <div id="connectionStatus" class="w-full sm:w-auto text-center text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl">З'єднано</div>
                             </div>
                         </div>
-                        <div class="max-h-[300px] overflow-y-auto">
-                            <table class="w-full text-left">
+                        <div class="max-h-[300px] overflow-y-auto overflow-x-hidden">
+                            <table class="w-full text-left table-fixed">
                                 <tbody id="historyBody" class="text-sm divide-y divide-slate-100">
                                     <tr><td class="p-10 text-center text-slate-400 italic">Синхронізація...</td></tr>
                                 </tbody>
@@ -1568,6 +1572,27 @@
         }
 
         // --- АВТОРИЗАЦІЯ ---
+        function initDateInputs_() {
+            const today = toLocalYmd_(new Date());
+
+            const orderDate = document.getElementById('orderDate');
+            if (orderDate && !String(orderDate.value || '').trim()) {
+                orderDate.value = today;
+            }
+
+            const to = document.getElementById('exportToDate');
+            if (to && !String(to.value || '').trim()) {
+                to.value = today;
+            }
+
+            const from = document.getElementById('exportFromDate');
+            if (from && !String(from.value || '').trim()) {
+                const d = new Date();
+                d.setDate(1);
+                from.value = toLocalYmd_(d);
+            }
+        }
+
         async function login() {
             const mId = document.getElementById('managerSelect').value;
             const pass = document.getElementById('passInput').value;
@@ -1580,6 +1605,7 @@
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('appContent').classList.remove('hidden');
                 document.getElementById('currentManagerName').innerText = MANAGERS[mId].name;
+                initDateInputs_();
                 renderLocalPlans_();
                 renderProgressPeriodPicker_();
                 updateStats();
@@ -1677,16 +1703,23 @@
                 const orderId = String(item.id || '');
                 if (orderId) state.byOrderId[orderId] = item;
 
-                const metaParts = [];
                 const region = (item.region || '').toString().trim();
                 const items = (item.items || '').toString().trim();
                 const comment = (item.comment || '').toString().trim();
-                if (region) metaParts.push(region);
-                if (items) metaParts.push(items);
-                if (comment) metaParts.push(comment);
 
-                const metaLine = metaParts.length
-                    ? `<div class="text-[11px] text-slate-400 mt-1">${escapeHtml(metaParts.join(' • '))}</div>`
+                const secondParts = [];
+                if (region) {
+                    secondParts.push(`<span class="font-medium text-slate-600 whitespace-nowrap">${escapeHtml(region)}</span>`);
+                }
+                if (items) {
+                    secondParts.push(`<span class="min-w-0 truncate" title="${escapeHtml(items)}">${escapeHtml(items)}</span>`);
+                }
+                if (comment) {
+                    secondParts.push(`<span class="min-w-0 truncate text-slate-400" title="${escapeHtml(comment)}">${escapeHtml(comment)}</span>`);
+                }
+
+                const secondLine = secondParts.length
+                    ? `<div class="mt-1 text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1 min-w-0">${secondParts.join('<span class="text-slate-300">•</span>')}</div>`
                     : '';
 
                 const rowId = String(item.rowId);
@@ -1753,15 +1786,31 @@
 
                 historyBody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition-colors group">
-                        <td class="p-4 text-slate-400 text-xs">${new Date(item.date).toLocaleDateString('uk-UA')}</td>
-                        <td class="p-4 font-semibold">${escapeHtml(item.payer)}${metaLine}</td>
-                        <td class="p-4 text-right font-bold text-blue-600">
-                            ${Number(item.amount).toLocaleString()} ₴
-                        </td>
-                        <td class="p-4 text-right whitespace-nowrap">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button type="button" data-action="edit" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">Редагувати</button>
-                                <button type="button" data-action="delete" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-red-100 text-red-700 text-xs font-bold">Видалити</button>
+                        <td class="p-0" colspan="4">
+                            <div class="px-4 py-3">
+                                <div class="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3">
+                                    <div class="shrink-0 text-slate-400 text-xs tabular-nums whitespace-nowrap">
+                                        ${new Date(item.date).toLocaleDateString('uk-UA')}
+                                    </div>
+
+                                    <div class="min-w-0 text-sm font-medium text-slate-900 break-words">
+                                        ${escapeHtml(item.payer)}
+                                    </div>
+
+                                    <div class="shrink-0 text-right font-bold text-blue-600 tabular-nums whitespace-nowrap">
+                                        ${Number(item.amount).toLocaleString()} ₴
+                                    </div>
+
+                                    <div class="shrink-0 flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button" title="Редагувати" aria-label="Редагувати" data-action="edit" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <button type="button" title="Видалити" aria-label="Видалити" data-action="delete" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="px-3 py-2 rounded-xl bg-red-100 text-red-700 text-xs font-bold">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                ${secondLine}
                             </div>
                         </td>
                     </tr>
