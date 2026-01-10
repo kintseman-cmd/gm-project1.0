@@ -315,9 +315,12 @@
                         <h3 class="font-bold text-center border-b border-dashed border-gray-400 pb-2 mb-2">ЧЕК ЗАМОВЛЕННЯ</h3>
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-[10px] text-gray-500 uppercase tracking-wide">Ціни</span>
-                            <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden" id="vat-toggle">
-                                <button type="button" id="vatModeNoBtn" class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white">Без ПДВ</button>
-                                <button type="button" id="vatModeYesBtn" class="px-3 py-1.5 text-xs font-bold bg-white text-gray-700">З ПДВ</button>
+                            <div class="flex items-center gap-2">
+                                <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden" id="vat-toggle">
+                                    <button type="button" id="vatModeNoBtn" class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white">Без ПДВ</button>
+                                    <button type="button" id="vatModeYesBtn" class="px-3 py-1.5 text-xs font-bold bg-white text-gray-700">З ПДВ</button>
+                                </div>
+                                <button type="button" id="vatDiscount25Btn" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition" title="25% від бази (без ПДВ), але від ціни з ПДВ">25%</button>
                             </div>
                         </div>
                         <div id="receipt-items" class="space-y-2 mb-4">
@@ -631,6 +634,8 @@
         let cart = {}; 
         let selectedDelivery = 0;
         let vatMode_ = 1; // 1 = Без ПДВ, 2 = З ПДВ
+        let vatDiscount25Active_ = false;
+        let vatDiscount25PrevDiscount_ = '';
 
         // --- Міні адмін редагування прайсу ---
         // ВАЖЛИВО: Firestore Rules не можуть перевіряти цей пароль.
@@ -770,6 +775,7 @@
             // VAT mode toggle in receipt
             const vatNo = document.getElementById('vatModeNoBtn');
             const vatYes = document.getElementById('vatModeYesBtn');
+            const vat25 = document.getElementById('vatDiscount25Btn');
             if (vatNo) vatNo.addEventListener('click', () => {
                 setVatMode_(1, true);
                 calculateTotal();
@@ -778,7 +784,30 @@
                 setVatMode_(2, true);
                 calculateTotal();
             });
+            if (vat25) vat25.addEventListener('click', () => {
+                const discountEl = document.getElementById('discount-input');
+                if (!discountEl) return;
+
+                if (!vatDiscount25Active_) {
+                    // Toggle ON
+                    vatDiscount25PrevDiscount_ = String(discountEl.value || '');
+                    vatDiscount25Active_ = true;
+                    setVatMode_(2, true);
+                } else {
+                    // Toggle OFF
+                    vatDiscount25Active_ = false;
+                    discountEl.value = vatDiscount25PrevDiscount_;
+                    vatDiscount25PrevDiscount_ = '';
+                    updateVat25Ui_();
+                    calculateTotal();
+                    return;
+                }
+
+                updateVat25Ui_();
+                calculateTotal();
+            });
             updateVatToggleUi_();
+            updateVat25Ui_();
 
             // Спробувати підвантажити прайс з Firestore і перерендерити каталог.
             loadCatalogFromFirestore_().then((ok) => {
@@ -1043,6 +1072,7 @@
         function setVatMode_(mode, applyToCart) {
             vatMode_ = mode === 2 ? 2 : 1;
             updateVatToggleUi_();
+            updateVat25Ui_();
             if (applyToCart) {
                 for (const k of Object.keys(cart)) {
                     const it = cart[k];
@@ -1053,6 +1083,30 @@
                 }
                 syncCatalogActiveStates_();
             }
+        }
+
+        function computeC2WithVat_() {
+            // C2 = total price with VAT for goods (sum of price2 * qty)
+            let c2 = 0;
+            for (const k of Object.keys(cart)) {
+                const it = cart[k];
+                const qty = Math.max(1, Math.floor(Number(it?.qty) || 1));
+                const p2 = Number(it?.price2);
+                const p1 = Number(it?.price1);
+                const priceWithVat = Number.isFinite(p2) ? p2 : (Number.isFinite(p1) ? p1 * 1.2 : 0);
+                c2 += priceWithVat * qty;
+            }
+            return c2;
+        }
+
+        function updateVat25Ui_() {
+            const btn = document.getElementById('vatDiscount25Btn');
+            if (!btn) return;
+            btn.classList.toggle('bg-blue-600', !vatDiscount25Active_);
+            btn.classList.toggle('hover:bg-blue-700', !vatDiscount25Active_);
+            btn.classList.toggle('bg-blue-800', vatDiscount25Active_);
+            btn.classList.toggle('hover:bg-blue-900', vatDiscount25Active_);
+            btn.setAttribute('aria-pressed', vatDiscount25Active_ ? 'true' : 'false');
         }
 
         function updateVatToggleUi_() {
@@ -1322,6 +1376,16 @@
             let deliveryCost = selectedDelivery;
             let baseTotal = itemsTotal + deliveryCost;
 
+            // If 25% VAT-discount mode is active, sync discount input to formula.
+            if (vatDiscount25Active_) {
+                const discountEl = document.getElementById('discount-input');
+                if (discountEl) {
+                    const c2 = computeC2WithVat_();
+                    const discountValue = c2 > 0 ? (c2 - (c2 / 6)) * 0.25 : 0;
+                    discountEl.value = discountValue > 0 ? String(Math.round(discountValue)) : '';
+                }
+            }
+
             const discountInput = document.getElementById('discount-input').value;
             const markupInput = document.getElementById('markup-input').value;
 
@@ -1356,7 +1420,10 @@
             cart = {};
             selectedDelivery = 0;
             vatMode_ = 1;
+            vatDiscount25Active_ = false;
+            vatDiscount25PrevDiscount_ = '';
             updateVatToggleUi_();
+            updateVat25Ui_();
             document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('#delivery-buttons button').forEach(btn => {
                 btn.classList.remove('active');

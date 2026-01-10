@@ -934,9 +934,12 @@
         let currentMonth = 'План';
         let currentGoal = 1000000;
         const BASE_SALARY = 40000;
-        const MAX_BONUS = 60000;
-        const CONVERSION_PENALTY = 20000;
-        const CONVERSION_FLOOR = 80000;
+        // KPI model:
+        // - Turnover KPI: up to 40k (0 if <=50% plan; proportional 51–100%; capped at 40k)
+        // - Conversion KPI: +20k if target is met AND turnover plan is reached (>=100%)
+        // - Over-plan bonus: +1% of sales above goal
+        const MAX_BONUS = 40000;
+        const CONVERSION_BONUS = 20000;
         let conversionMet = true;
 
         const MONTH_LABELS = {
@@ -1603,10 +1606,9 @@
             let bonus = 0;
             let extra = 0;
             const progress = totalSales / goal;
-            // Excel logic:
-            // salary = BASE_SALARY + IF(sales < 0.5*goal, 0,
-            //                         IF(sales < goal, MAX_BONUS*(sales/goal), MAX_BONUS + (sales-goal)*0.01))
-            if (totalSales < 0.5 * goal) {
+
+            // Turnover KPI (max 40k)
+            if (totalSales <= 0.5 * goal) {
                 bonus = 0;
             } else if (totalSales < goal) {
                 bonus = MAX_BONUS * progress;
@@ -1615,15 +1617,10 @@
                 extra = (totalSales - goal) * 0.01;
             }
 
-            // Conversion rule: if conversion is NOT met, reduce the plan bonus by 20k,
-            // but only once the plan is reached (sales >= goal). Total salary can't go below 80k.
-            if (!conversionMet && totalSales >= goal) {
-                bonus = Math.max(0, bonus - CONVERSION_PENALTY);
-                const totalAfterPenalty = salary + bonus + extra;
-                if (totalAfterPenalty < CONVERSION_FLOOR) {
-                    bonus = Math.max(0, CONVERSION_FLOOR - salary - extra);
-                }
-            }
+            // Conversion KPI (20k) is counted only when the turnover plan is reached.
+            const convBonus = (conversionMet && totalSales >= goal) ? CONVERSION_BONUS : 0;
+            bonus += convBonus;
+
             return { total: salary + bonus + extra, bonus, extra, percent: progress * 100 };
         }
 
