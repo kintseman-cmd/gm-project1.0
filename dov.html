@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+    <script>
+        (function () {
+            try {
+                document.documentElement.classList.add('pagefx');
+                window.setTimeout(function () {
+                    document.documentElement.classList.add('pagefx-ready');
+                }, 900);
+            } catch (e) {}
+        })();
+    </script>
+    <style>html.pagefx body{opacity:0}</style>
+    <link rel="stylesheet" href="assets/page-transitions.css">
+    <script src="assets/page-transitions.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -16,7 +29,21 @@
         (function () {
             try {
                 const params = new URLSearchParams(location.search);
-                if (params.get('embed') === '1') document.documentElement.classList.add('embed');
+                const isEmbed = params.get('embed') === '1';
+                const inIframe = (function () {
+                    try { return window.self !== window.top; } catch (e) { return true; }
+                })();
+
+                if (isEmbed && inIframe) {
+                    document.documentElement.classList.add('embed');
+                    return;
+                }
+
+                const target = new URL(location.href);
+                target.search = '';
+                target.pathname = target.pathname.replace(/[^/]+\.html$/i, 'index.html');
+                target.hash = '#plan';
+                location.replace(target.toString());
             } catch (e) {}
         })();
     </script>

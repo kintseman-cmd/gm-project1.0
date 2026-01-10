@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+    <script>
+        (function () {
+            try {
+                document.documentElement.classList.add('pagefx');
+                window.setTimeout(function () {
+                    document.documentElement.classList.add('pagefx-ready');
+                }, 900);
+            } catch (e) {}
+        })();
+    </script>
+    <style>html.pagefx body{opacity:0}</style>
+    <link rel="stylesheet" href="assets/page-transitions.css">
+    <script src="assets/page-transitions.js" defer></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -184,6 +197,32 @@
             height: 100%;
             border: 0;
             background: #f3f4f6;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        #pageFrame.is-ready {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #pageFrame.is-exiting {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #pageFrame {
+                transition: none;
+                transform: none;
+            }
+            #pageFrame.is-ready {
+                transform: none;
+            }
+            #pageFrame.is-exiting {
+                transform: none;
+            }
         }
     </style>
 </head>
@@ -236,6 +275,26 @@
         const frame = document.getElementById('pageFrame');
         const nav = document.getElementById('nav');
         const hamburger = document.getElementById('hamburger');
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let loadToken = 0;
+
+        function wait(ms) {
+            return new Promise(resolve => window.setTimeout(resolve, ms));
+        }
+
+        function markFrameReady() {
+            frame.classList.add('is-ready');
+            frame.classList.remove('is-exiting');
+        }
+
+        frame.addEventListener('load', () => {
+            // Fade-in when iframe finishes loading the new route.
+            if (prefersReducedMotion) {
+                markFrameReady();
+                return;
+            }
+            requestAnimationFrame(markFrameReady);
+        });
 
         function getRouteKeyFromHash() {
             const raw = (location.hash || '').replace(/^#/, '').trim();
@@ -255,13 +314,28 @@
             return `${file}${joiner}embed=1`;
         }
 
-        function loadRoute(routeKey) {
+        async function loadRoute(routeKey) {
             const src = buildSrc(routeKey);
             setActiveLink(routeKey);
 
-            if (frame.getAttribute('src') !== src) {
-                frame.setAttribute('src', src);
+            const currentSrc = frame.getAttribute('src') || '';
+            if (currentSrc === src) {
+                nav.classList.remove('active');
+                return;
             }
+
+            const token = ++loadToken;
+
+            if (!prefersReducedMotion) {
+                frame.classList.add('is-exiting');
+                frame.classList.remove('is-ready');
+                await wait(160);
+            }
+
+            // If a newer navigation happened while waiting, ignore this one.
+            if (token !== loadToken) return;
+
+            frame.setAttribute('src', src);
 
             nav.classList.remove('active');
         }
