@@ -640,6 +640,145 @@
         let selectedDelivery = 0;
         let vatMode_ = 1; // 1 = Без ПДВ, 2 = З ПДВ
         let vatDiscount25Active_ = false;
+        // --- LocalStorage: persist calculator state across tab switches ---
+        const CALC_STATE_KEY_ = 'gm_calc_state_v1';
+        let calcSaveTimer_ = null;
+
+        function scheduleCalcSave_() {
+            if (calcSaveTimer_) clearTimeout(calcSaveTimer_);
+            calcSaveTimer_ = setTimeout(() => {
+                calcSaveTimer_ = null;
+                saveCalcState_();
+            }, 200);
+        }
+
+        function saveCalcState_() {
+            try {
+                const discountEl = document.getElementById('discount-input');
+                const markupEl = document.getElementById('markup-input');
+
+                const cartItems = Object.keys(cart).map((k) => {
+                    const it = cart[k] || {};
+                    return {
+                        category: String(it.category || ''),
+                        name: String(it.name || ''),
+                        type: Number(it.type) === 2 ? 2 : 1,
+                        qty: Math.max(1, Math.floor(Number(it.qty) || 1)),
+                        docId: String(it.docId || '')
+                    };
+                }).filter(x => x.name);
+
+                const state = {
+                    v: 1,
+                    t: Date.now(),
+                    selectedDelivery: Number(selectedDelivery) || 0,
+                    vatMode: Number(vatMode_) === 2 ? 2 : 1,
+                    vatDiscount25Active: !!vatDiscount25Active_,
+                    discountInput: String(discountEl?.value ?? ''),
+                    markupInput: String(markupEl?.value ?? ''),
+                    cartItems
+                };
+                localStorage.setItem(CALC_STATE_KEY_, JSON.stringify(state));
+            } catch (e) {}
+        }
+
+        function clearCalcState_() {
+            try { localStorage.removeItem(CALC_STATE_KEY_); } catch (e) {}
+        }
+
+        function readCalcState_() {
+            try {
+                const raw = localStorage.getItem(CALC_STATE_KEY_);
+                const obj = raw ? JSON.parse(raw) : null;
+                return obj && typeof obj === 'object' ? obj : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function findCatalogItemByRef_(ref) {
+            const wantDocId = String(ref?.docId || '');
+            const wantCat = String(ref?.category || '');
+            const wantName = String(ref?.name || '');
+            for (let ci = 0; ci < catalogData.length; ci++) {
+                const cat = catalogData[ci];
+                if (!cat) continue;
+                if (wantCat && String(cat.category) !== wantCat) continue;
+                const items = Array.isArray(cat.items) ? cat.items : [];
+                for (let ii = 0; ii < items.length; ii++) {
+                    const it = items[ii];
+                    if (!it) continue;
+                    if (wantDocId && it.id && String(it.id) === wantDocId) return { catIdx: ci, itemIdx: ii, cat, item: it };
+                    if (wantName && String(it.name) === wantName) return { catIdx: ci, itemIdx: ii, cat, item: it };
+                }
+            }
+            return null;
+        }
+
+        function applyDeliveryUiFromState_() {
+            const buttonsHost = document.getElementById('delivery-buttons');
+            if (!buttonsHost) return;
+            const kids = buttonsHost.querySelectorAll('button[data-delivery-price]');
+            kids.forEach((b) => {
+                const p = Number(b.getAttribute('data-delivery-price'));
+                b.classList.toggle('active', p === Number(selectedDelivery));
+            });
+        }
+
+        function restoreCalcState_() {
+            const st = readCalcState_();
+            if (!st) return;
+
+            // Inputs
+            const discountEl = document.getElementById('discount-input');
+            const markupEl = document.getElementById('markup-input');
+            if (discountEl) discountEl.value = String(st.discountInput ?? '');
+            if (markupEl) markupEl.value = String(st.markupInput ?? '');
+
+            // Delivery
+            selectedDelivery = Number(st.selectedDelivery) || 0;
+            applyDeliveryUiFromState_();
+            setDeliveryMenuCollapsed(false);
+
+            // VAT / 25%
+            vatMode_ = Number(st.vatMode) === 2 ? 2 : 1;
+            vatDiscount25Active_ = !!st.vatDiscount25Active;
+            updateVatToggleUi_();
+            updateVat25Ui_();
+
+            // Cart
+            cart = {};
+            const saved = Array.isArray(st.cartItems) ? st.cartItems : [];
+            let enforcedType = null;
+            for (const ref of saved) {
+                const found = findCatalogItemByRef_(ref);
+                if (!found) continue;
+                const t = Number(ref?.type) === 2 ? 2 : 1;
+                if (enforcedType == null) {
+                    enforcedType = t;
+                    vatMode_ = enforcedType;
+                }
+                if (enforcedType !== t) continue; // enforce single VAT mode
+
+                const id = `${found.catIdx}_${found.itemIdx}`;
+                const qty = Math.max(1, Math.floor(Number(ref?.qty) || 1));
+                const price1 = Number(found.item.price1);
+                const price2 = Number(found.item.price2);
+                cart[id] = {
+                    name: String(found.item.name),
+                    category: String(found.cat.category),
+                    docId: found.item.id ? String(found.item.id) : '',
+                    price1,
+                    price2,
+                    type: enforcedType,
+                    price: enforcedType === 1 ? price1 : price2,
+                    qty,
+                };
+            }
+            updateVatToggleUi_();
+            syncCatalogActiveStates_();
+            calculateTotal();
+        }
 
         // --- Міні адмін редагування прайсу ---
         // ВАЖЛИВО: Firestore Rules не можуть перевіряти цей пароль.
@@ -774,6 +913,9 @@
             renderDeliveryButtons();
             renderCatalog();
 
+            // Restore persisted state (must run after initial render so buttons exist).
+            restoreCalcState_();
+
             updateStickyCalcOffset_();
 
             // VAT mode toggle in receipt
@@ -805,7 +947,11 @@
 
             // Спробувати підвантажити прайс з Firestore і перерендерити каталог.
             loadCatalogFromFirestore_().then((ok) => {
-                if (ok) renderCatalog();
+                if (ok) {
+                    renderCatalog();
+                    // Re-apply state after catalog potentially changed.
+                    restoreCalcState_();
+                }
             });
 
             // Адмін панель
@@ -878,6 +1024,7 @@
             const container = document.getElementById('delivery-buttons');
             deliveryOptions.forEach(price => {
                 const btn = document.createElement('button');
+                btn.setAttribute('data-delivery-price', String(price));
                 btn.className = 'price-btn px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition';
                 btn.textContent = `+${price.toLocaleString()} грн`;
                 btn.onclick = () => toggleDelivery(price, btn);
@@ -906,6 +1053,7 @@
                 }
             }
             calculateTotal();
+            scheduleCalcSave_();
         }
 
         function renderCatalog() {
@@ -970,12 +1118,12 @@
                         itemRow.innerHTML = `
                             <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
                             <div class="flex gap-2 md:w-1/2 justify-end">
-                                    <button data-item-id="${id}" data-item-type="1" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 1, this)" 
+                                    <button data-item-id="${id}" data-item-type="1" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 1, this, '${item.id ? String(item.id) : ''}', '${cat.category}')" 
                                             class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active1 ? 'active' : ''}">
                                     <span class="text-xs text-gray-500 mb-1">Без ПДВ</span>
                                     <span class="font-bold">${item.price1.toLocaleString()} грн</span>
                                 </button>
-                                    <button data-item-id="${id}" data-item-type="2" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 2, this)" 
+                                    <button data-item-id="${id}" data-item-type="2" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 2, this, '${item.id ? String(item.id) : ''}', '${cat.category}')" 
                                             class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active2 ? 'active' : ''}">
                                     <span class="text-xs text-gray-500 mb-1">З ПДВ</span>
                                     <span class="font-bold">${item.price2.toLocaleString()} грн</span>
@@ -1022,7 +1170,7 @@
             }
         }
 
-        function toggleItem(id, name, price1, price2, type, btn) {
+        function toggleItem(id, name, price1, price2, type, btn, docId, category) {
             const targetType = type === 2 ? 2 : 1;
             const exists = cart[id];
 
@@ -1048,6 +1196,8 @@
                 setVatMode_(targetType, false);
                 cart[id] = {
                     name,
+                    category: String(category || ''),
+                    docId: String(docId || ''),
                     price1,
                     price2,
                     type: targetType,
@@ -1056,6 +1206,7 @@
                 };
                 syncCatalogActiveStates_();
                 calculateTotal();
+                scheduleCalcSave_();
                 return;
             }
 
@@ -1072,6 +1223,8 @@
             const prevQty = Number.isFinite(Number(cart[id]?.qty)) ? Number(cart[id].qty) : 1;
             cart[id] = {
                 name,
+                category: String(category || ''),
+                docId: String(docId || ''),
                 price1,
                 price2,
                 type: targetType,
@@ -1080,6 +1233,7 @@
             };
             syncCatalogActiveStates_();
             calculateTotal();
+            scheduleCalcSave_();
         }
 
         function setVatMode_(mode, applyToCart) {
@@ -1096,6 +1250,7 @@
                 }
                 syncCatalogActiveStates_();
             }
+            scheduleCalcSave_();
         }
 
         function computeC2WithVat_() {
@@ -1367,6 +1522,7 @@
                     const v = Math.max(1, Math.floor(Number(el.value) || 1));
                     cart[k].qty = v;
                     calculateTotal();
+                    scheduleCalcSave_();
                 });
             });
 
@@ -1389,6 +1545,7 @@
                         setVatMode_(1, false);
                     }
                     calculateTotal();
+                    scheduleCalcSave_();
                 });
             });
 
@@ -1449,6 +1606,9 @@
             }
 
             document.getElementById('final-total').textContent = `${Math.round(finalTotal).toLocaleString()} грн`;
+
+            // Persist state after recalculation (debounced).
+            scheduleCalcSave_();
         }
 
         function clearCart() {
@@ -1466,6 +1626,7 @@
             document.getElementById('markup-input').value = '';
             setDeliveryMenuCollapsed(false);
             calculateTotal();
+            clearCalcState_();
         }
 
 	  function scrollToBottom() {

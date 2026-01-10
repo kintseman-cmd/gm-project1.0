@@ -257,13 +257,32 @@
 
         #notepad {
             width: 100%;
-            height: 100%;
+            flex: 1 1 auto;
+            min-height: 0;
+            height: auto;
             border: none;
             background: transparent;
             resize: none;
             outline: none;
             font-family: 'Courier New', Courier, monospace;
             font-size: 14px;
+        }
+
+        .notepad-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .notepad-actions .btn {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 13px;
+            border-radius: 10px;
+        }
+
+        .notepad-close-mobile {
+            display: none;
         }
 
         /* --- Основний контент --- */
@@ -423,6 +442,116 @@
         .btn-krn:hover, .btn-krn.active {
             background-color: #5D4037;
             color: white;
+        }
+
+        /* Кнопка "Трактори" */
+        .btn-tractors {
+            border-color: #607D8B;
+            color: #607D8B;
+        }
+        .btn-tractors:hover, .btn-tractors.active {
+            background-color: #607D8B;
+            color: white;
+        }
+
+        /* Таблиця в модалці "Трактори" */
+        .tractors-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table.tractors-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tractors-table th,
+        .tractors-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .tractors-table th {
+            background: #f8fafc;
+            font-weight: 800;
+        }
+
+        .tractors-table th:last-child,
+        .tractors-table td:last-child {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* Make tractors popup compact (do not affect other modals) */
+        #tractorsModal {
+            z-index: 5000;
+        }
+
+        #tractorsModal .modal-content {
+            width: min(420px, calc(100% - 28px)) !important;
+            max-width: 420px;
+            max-height: 70vh;
+            overflow: hidden;
+            margin: 10vh auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #tractorsModal .tractors-modal-header {
+            position: relative;
+            z-index: 3;
+            background: #fefefe;
+            padding: 12px 56px 12px 0;
+            min-height: 52px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #tractorsModal .tractors-modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.2;
+        }
+
+        #tractorsModal .tractors-modal-header .close-btn {
+            right: 10px;
+            top: 10px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.10);
+            color: #111;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+            font-size: 30px;
+            line-height: 1;
+            z-index: 4;
+        }
+
+        #tractorsModal .tractors-modal-header .close-btn:hover {
+            background: rgba(0, 0, 0, 0.16);
+            color: #000;
+        }
+
+        #tractorsModal .tractors-modal-header .close-btn:active {
+            transform: scale(0.98);
+        }
+
+        #tractorsModal .tractors-table-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            padding-top: 10px;
+        }
+
+        #tractorsModal .tractors-table th,
+        #tractorsModal .tractors-table td {
+            padding: 6px 10px;
+            font-size: 13px;
         }
 
 
@@ -685,6 +814,39 @@
         cursor: pointer;
     }
 
+    /* На мобільному показуємо тільки мобільну кнопку 📝 */
+    #notepad-toggle {
+        display: none !important;
+    }
+
+    /* Кнопка "Згорнути" всередині нотатника (щоб можна було закрити, коли панель перекрила кнопку 📝) */
+    .notepad-close-mobile {
+        display: inline-flex;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        height: 34px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.08);
+        color: #333;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+    }
+
+    .notepad-close-mobile:active {
+        transform: scale(0.98);
+    }
+
+    #notepad-container h3 {
+        padding-right: 110px;
+    }
+
     /* --- Основний контент --- */
     #main-content {
         margin-left: 0;
@@ -864,36 +1026,15 @@
         transform: translateY(0);
     }
 
-    .close-notepad {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.1);
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
-        color: #333;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1;
-        transition: background 0.2s;
-    }
-
-    .close-notepad:hover {
-        background: rgba(0, 0, 0, 0.2);
-    }
-
     #notepad-container h3 {
         margin-top: 10px;
         margin-bottom: 10px;
     }
 
     #notepad-container textarea {
-        height: calc(100% - 80px);
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
         resize: none;
     }
 }
@@ -972,9 +1113,55 @@
     <!-- Блок нотаток -->
     <div id="notepad-container">
         <div class="notepad-toggle-arrow">▶</div>
-        <button class="close-notepad">&times;</button>
         <h3>📝 Нотатки менеджера</h3>
+        <button type="button" id="notepad-close-mobile" class="notepad-close-mobile">Згорнути</button>
         <textarea id="notepad" placeholder="Ім'я клієнта, телефон, важливі деталі..."></textarea>
+        <div class="notepad-actions">
+            <button class="btn btn-tractors" type="button" onclick="openTractors()">Трактори</button>
+        </div>
+    </div>
+
+    <!-- Модальне вікно "Трактори" -->
+    <div id="tractorsModal" class="modal">
+        <div class="modal-content tractors-modal-content">
+            <div class="tractors-modal-header">
+                <span class="close-btn" onclick="closeTractors()">&times;</span>
+                <h2>Трактори</h2>
+            </div>
+            <div class="tractors-table-wrap">
+                <table class="tractors-table">
+                    <thead>
+                        <tr>
+                            <th>Трактори</th>
+                            <th>к.с.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>МТЗ-80</td><td>80</td></tr>
+                        <tr><td>МТЗ-82</td><td>80</td></tr>
+                        <tr><td>МТЗ-892</td><td>89</td></tr>
+                        <tr><td>МТЗ-920</td><td>84</td></tr>
+                        <tr><td>МТЗ-955</td><td>~95</td></tr>
+                        <tr><td>МТЗ-1025</td><td>100</td></tr>
+                        <tr><td>МТЗ-1221</td><td>136</td></tr>
+                        <tr><td>МТЗ-1523</td><td>155</td></tr>
+                        <tr><td>New Holland TD5.110</td><td>110</td></tr>
+                        <tr><td>Case JX110</td><td>~110</td></tr>
+                        <tr><td>ArmaTrac 90</td><td>90</td></tr>
+                        <tr><td>ArmaTrac 100</td><td>100</td></tr>
+                        <tr><td>ArmaTrac 110</td><td>110</td></tr>
+                        <tr><td>Deutz-Fahr Agrofarm 115G</td><td>110–115</td></tr>
+                        <tr><td>Lovol 1054</td><td>105</td></tr>
+                        <tr><td>YTO 1024</td><td>102</td></tr>
+                        <tr><td>YTO 1054</td><td>105</td></tr>
+                        <tr><td>Zoomlion 1104</td><td>110</td></tr>
+                        <tr><td>Solis 105</td><td>105</td></tr>
+                        <tr><td>Farmer 10286</td><td>~100</td></tr>
+                        <tr><td>Dong Feng</td><td>~100</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Модальне вікно для фото ЛН 2.6м (Навісний лущильник) -->
@@ -2478,7 +2665,6 @@
 
 
         </div>
-
     </div>
 
     <script>
@@ -2762,10 +2948,31 @@
         });
 
         // Notepad toggle - unified handler
+        const NOTEPAD_STORAGE_KEY = 'gm_script_notepad_v1';
+        const NOTEPAD_OPEN_KEY = 'gm_script_notepad_open_v1';
+
+        function safeGetLocalStorageItem(key) {
+            try {
+                return window.localStorage ? window.localStorage.getItem(key) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function safeSetLocalStorageItem(key, value) {
+            try {
+                if (!window.localStorage) return;
+                window.localStorage.setItem(key, value);
+            } catch (e) {
+                // Ignore (private mode, blocked storage, quota, etc.)
+            }
+        }
+
         function toggleNotepad() {
             const notepad = document.getElementById('notepad-container');
             if (notepad) {
                 notepad.classList.toggle('open');
+                safeSetLocalStorageItem(NOTEPAD_OPEN_KEY, notepad.classList.contains('open') ? '1' : '0');
             }
         }
 
@@ -2773,8 +2980,43 @@
         document.addEventListener('DOMContentLoaded', () => {
             const notepadToggle = document.getElementById('notepad-toggle');
             const notepadToggleMobile = document.getElementById('notepad-toggle-mobile');
-            const notepadClose = document.querySelector('.close-notepad');
             const notepadArrow = document.querySelector('.notepad-toggle-arrow');
+            const notepadContainer = document.getElementById('notepad-container');
+            const notepadTextarea = document.getElementById('notepad');
+            const notepadCloseMobile = document.getElementById('notepad-close-mobile');
+
+            // Restore notepad text + open/closed state
+            if (notepadTextarea) {
+                const savedText = safeGetLocalStorageItem(NOTEPAD_STORAGE_KEY);
+                if (typeof savedText === 'string') {
+                    notepadTextarea.value = savedText;
+                }
+            }
+
+            if (notepadContainer) {
+                const openState = safeGetLocalStorageItem(NOTEPAD_OPEN_KEY);
+                if (openState === '1') {
+                    notepadContainer.classList.add('open');
+                }
+            }
+
+            // Autosave (debounced) while typing
+            if (notepadTextarea) {
+                let saveTimer = null;
+
+                const scheduleSave = () => {
+                    if (saveTimer) window.clearTimeout(saveTimer);
+                    saveTimer = window.setTimeout(() => {
+                        safeSetLocalStorageItem(NOTEPAD_STORAGE_KEY, notepadTextarea.value || '');
+                    }, 250);
+                };
+
+                notepadTextarea.addEventListener('input', scheduleSave);
+                notepadTextarea.addEventListener('blur', () => {
+                    if (saveTimer) window.clearTimeout(saveTimer);
+                    safeSetLocalStorageItem(NOTEPAD_STORAGE_KEY, notepadTextarea.value || '');
+                });
+            }
 
             if (notepadToggle) {
                 notepadToggle.addEventListener('click', toggleNotepad);
@@ -2784,8 +3026,8 @@
                 notepadToggleMobile.addEventListener('click', toggleNotepad);
             }
 
-            if (notepadClose) {
-                notepadClose.addEventListener('click', toggleNotepad);
+            if (notepadCloseMobile) {
+                notepadCloseMobile.addEventListener('click', toggleNotepad);
             }
 
             if (notepadArrow) {
@@ -2985,6 +3227,14 @@ function closeImageModal() {
     document.getElementById('imageModal').style.display = 'none';
 }
 
+function openTractors() {
+    document.getElementById('tractorsModal').style.display = 'block';
+}
+
+function closeTractors() {
+    document.getElementById('tractorsModal').style.display = 'none';
+}
+
 window.onclick = function(event) {
     const ttxModal = document.getElementById('ttxModal');
     const photoModal = document.getElementById('cultivatorPhotosModal');
@@ -3009,6 +3259,7 @@ window.onclick = function(event) {
     const krnSolidTank56PhotosModal = document.getElementById('krnSolidTank56PhotosModal');
     const krnFoldableTank56PhotosModal = document.getElementById('krnFoldableTank56PhotosModal');
     const imageModal = document.getElementById('imageModal');
+    const tractorsModal = document.getElementById('tractorsModal');
 
     if (event.target === ttxModal) {
         closeTTX();
@@ -3078,6 +3329,9 @@ window.onclick = function(event) {
     }
     if (event.target === imageModal) {
         imageModal.style.display = 'none';
+    }
+    if (event.target === tractorsModal) {
+        tractorsModal.style.display = 'none';
     }
 }
 	

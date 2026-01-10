@@ -198,8 +198,10 @@
             max-height: calc(100vh - 170px);
             max-height: calc(100dvh - 170px);
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+            overscroll-behavior-x: none;
         }
     </style>
 </head>
@@ -1745,9 +1747,86 @@
             document.getElementById('authOverlay').classList.remove('hidden');
             document.getElementById('appContent').classList.add('hidden');
             renderProgressPeriodPicker_();
+            // Do not clear drafts globally; they are per-manager.
         }
 
         document.getElementById('exportOrdersBtn')?.addEventListener('click', exportOrdersToExcel_);
+
+        // --- LocalStorage: draft for New Order modal ---
+        function orderDraftKey_() {
+            const mid = String(loggedInManagerId || 'anonymous');
+            return `crm_order_draft_v1_${mid}`;
+        }
+
+        function readOrderDraft_() {
+            try {
+                const raw = localStorage.getItem(orderDraftKey_());
+                const obj = raw ? JSON.parse(raw) : null;
+                return obj && typeof obj === 'object' ? obj : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function writeOrderDraft_() {
+            try {
+                if (!loggedInManagerId) return;
+                const draft = {
+                    t: Date.now(),
+                    orderDate: document.getElementById('orderDate')?.value || '',
+                    payer: document.getElementById('payer')?.value || '',
+                    crmLink: document.getElementById('orderCrmLink')?.value || '',
+                    region: document.getElementById('regionSelect')?.value || '',
+                    amount: document.getElementById('amount')?.value || '',
+                    items: document.getElementById('orderItems')?.value || '',
+                    comment: document.getElementById('orderComment')?.value || ''
+                };
+                localStorage.setItem(orderDraftKey_(), JSON.stringify(draft));
+            } catch (e) {}
+        }
+
+        let orderDraftSaveTimer_ = null;
+        function scheduleOrderDraftSave_() {
+            if (orderDraftSaveTimer_) clearTimeout(orderDraftSaveTimer_);
+            orderDraftSaveTimer_ = setTimeout(() => {
+                orderDraftSaveTimer_ = null;
+                writeOrderDraft_();
+            }, 200);
+        }
+
+        function clearOrderDraft_() {
+            try {
+                if (!loggedInManagerId) return;
+                localStorage.removeItem(orderDraftKey_());
+            } catch (e) {}
+        }
+
+        function applyOrderDraftToUi_() {
+            const d = readOrderDraft_();
+            if (!d) return;
+            const setIfEmpty = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (String(el.value || '').trim()) return;
+                el.value = String(val ?? '');
+            };
+
+            setIfEmpty('orderDate', d.orderDate);
+            setIfEmpty('payer', d.payer);
+            setIfEmpty('orderCrmLink', d.crmLink);
+            setIfEmpty('regionSelect', d.region);
+            setIfEmpty('amount', d.amount);
+            setIfEmpty('orderItems', d.items);
+            setIfEmpty('orderComment', d.comment);
+        }
+
+        function bindOrderDraftAutosave_() {
+            const form = document.getElementById('orderForm');
+            if (!form || form.dataset.draftBound) return;
+            form.dataset.draftBound = '1';
+            form.addEventListener('input', () => scheduleOrderDraftSave_());
+            form.addEventListener('change', () => scheduleOrderDraftSave_());
+        }
 
         let bodyScrollLocked_ = false;
         let bodyScrollY_ = 0;
@@ -1807,6 +1886,8 @@
             modal.classList.remove('hidden');
             syncBodyScrollLock_();
             initDateInputs_();
+            bindOrderDraftAutosave_();
+            applyOrderDraftToUi_();
             setTimeout(() => {
                 const payer = document.getElementById('payer');
                 if (payer) payer.focus();
@@ -2271,6 +2352,7 @@
                     const d = new Date();
                     const el = document.getElementById('orderDate');
                     if (el) el.value = toLocalYmd_(d);
+                    clearOrderDraft_();
                     btn.disabled = false;
                     btn.innerText = 'Додати';
                     closeOrderModal_();
