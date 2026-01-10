@@ -114,8 +114,9 @@
         .buh-container .form-group { margin-bottom: 15px; }
         .buh-container label { display: block; margin-bottom: 5px; font-weight: 600; }
         .buh-container input, .buh-container select, .buh-container textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        .buh-container #buh_productList { background: #fafafa; border: 1px solid #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
-        .buh-container .product-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .buh-container #buh_productList { margin-bottom: 10px; }
+        .buh-container .product-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: transparent; padding: 0; border: 0; border-radius: 0; }
+        .buh-container .product-item + .product-item { padding-top: 10px; border-top: 1px solid #eee; }
         .buh-container .product-select { width: 100%; }
         .buh-container .product-price { width: 100%; }
         .buh-container .btn-delete { background: #ff4d4d; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
@@ -262,10 +263,12 @@
 
                 <hr>
 
-                <label>3. Товари</label>
-                <div id="buh_productList"></div>
-                <button class="btn btn-add" onclick="buh_addProductRow()">+ Додати товар</button>
-                <div class="helper-text" style="text-align: right; margin-bottom: 10px;">Автосума (довідково): <span id="buh_autoSumDisplay">0</span> грн</div>
+                <div class="form-group">
+                    <label>3. Товари</label>
+                    <div id="buh_productList"></div>
+                    <button class="btn btn-add" onclick="buh_addProductRow()">+ Додати товар</button>
+                    <div class="helper-text" style="text-align: right; margin-bottom: 10px;">Автосума (довідково): <span id="buh_autoSumDisplay">0</span> грн</div>
+                </div>
 
                 <div class="form-group">
                     <label>3.1. Сума доставки (автоматично розподілиться між товарами)</label>
@@ -783,7 +786,7 @@
                     ${options}
                 </select>
             </div>
-            <div style="flex: 0 0 90px;">
+            <div style="flex: 0 0 60px;">
                 <input type="number" class="product-qty" min="1" step="1" value="1" oninput="buh_onQtyChange(this)" title="Кількість">
             </div>
             <div style="flex: 1;">
@@ -800,9 +803,16 @@
         const select = row.querySelector('.product-select');
         const priceInput = row.querySelector('.product-price');
 
-        let qty = parseInt(qtyInput.value, 10);
-        if (!Number.isFinite(qty) || qty < 1) qty = 1;
-        qtyInput.value = qty;
+        const raw = String(qtyInput.value ?? '').trim();
+        // Allow empty qty: treat as 1 for calculations, but keep the field blank (for message readability).
+        let qty;
+        if (raw === '') {
+            qty = 1;
+        } else {
+            qty = parseInt(raw, 10);
+            if (!Number.isFinite(qty) || qty < 1) qty = 1;
+            qtyInput.value = qty;
+        }
 
         const unitBasePrice = parseInt(select?.options?.[select.selectedIndex]?.getAttribute('data-price') || '0', 10) || 0;
         if (!unitBasePrice) {
@@ -997,8 +1007,10 @@
             const price = row.querySelector('.product-price').value;
             const name = sel.value;
             if(name) {
-                const qty = parseInt(row.querySelector('.product-qty')?.value || '1', 10) || 1;
-                productsText += `${name} ${qty} шт. - ${price} грн.\n`;
+                const qtyRaw = String(row.querySelector('.product-qty')?.value ?? '').trim();
+                const qty = qtyRaw === '' ? 1 : (parseInt(qtyRaw, 10) || 1);
+                const qtyText = (qtyRaw === '' || qty === 1) ? '' : ` ${qty} шт.`;
+                productsText += `${name}${qtyText} - ${price} грн.\n`;
             }
         });
 

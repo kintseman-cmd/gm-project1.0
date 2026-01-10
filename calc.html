@@ -339,6 +339,10 @@
                                 <span>Знижка:</span>
                                 <span>-0 грн</span>
                             </div>
+                            <div class="flex justify-between text-amber-700 hidden" id="receipt-compensation">
+                                <span>Компенсація:</span>
+                                <span>-0 грн</span>
+                            </div>
                             <div class="flex justify-between text-green-600 hidden" id="receipt-markup">
                                 <span>Націнка:</span>
                                 <span>+0 грн</span>
@@ -350,8 +354,9 @@
                         </div>
                     </div>
                     
-                    <div class="text-center">
-                         <button onclick="clearCart()" class="text-red-500 text-sm hover:underline">Очистити все</button>
+                    <div class="text-center flex items-center justify-center gap-4">
+                        <button type="button" onclick="collapseAllCatalog()" class="text-gray-600 text-sm hover:underline">Згорнути все</button>
+                        <button type="button" onclick="clearCart()" class="text-red-500 text-sm hover:underline">Очистити все</button>
                     </div>
                 </div>
             </div>
@@ -635,7 +640,6 @@
         let selectedDelivery = 0;
         let vatMode_ = 1; // 1 = Без ПДВ, 2 = З ПДВ
         let vatDiscount25Active_ = false;
-        let vatDiscount25PrevDiscount_ = '';
 
         // --- Міні адмін редагування прайсу ---
         // ВАЖЛИВО: Firestore Rules не можуть перевіряти цей пароль.
@@ -785,24 +789,14 @@
                 calculateTotal();
             });
             if (vat25) vat25.addEventListener('click', () => {
-                const discountEl = document.getElementById('discount-input');
-                if (!discountEl) return;
-
                 if (!vatDiscount25Active_) {
                     // Toggle ON
-                    vatDiscount25PrevDiscount_ = String(discountEl.value || '');
                     vatDiscount25Active_ = true;
                     setVatMode_(2, true);
                 } else {
                     // Toggle OFF
                     vatDiscount25Active_ = false;
-                    discountEl.value = vatDiscount25PrevDiscount_;
-                    vatDiscount25PrevDiscount_ = '';
-                    updateVat25Ui_();
-                    calculateTotal();
-                    return;
                 }
-
                 updateVat25Ui_();
                 calculateTotal();
             });
@@ -1032,6 +1026,9 @@
             const targetType = type === 2 ? 2 : 1;
             const exists = cart[id];
 
+            const keysNow = Object.keys(cart);
+            const cartTypeNow = keysNow.length ? (Number(cart[keysNow[0]]?.type) === 2 ? 2 : 1) : null;
+
             if (exists) {
                 // Ensure we have both prices stored for switching.
                 if (!Number.isFinite(Number(exists.price1))) exists.price1 = Number(price1);
@@ -1045,15 +1042,31 @@
                     return;
                 }
 
-                // Different type click => switch VAT mode and keep item selected
-                setVatMode_(targetType, true);
+                // Different type click => do NOT convert other items.
+                // Enforce single VAT mode: clear previous selections, then select this item in requested mode.
+                cart = {};
+                setVatMode_(targetType, false);
+                cart[id] = {
+                    name,
+                    price1,
+                    price2,
+                    type: targetType,
+                    price: targetType === 1 ? price1 : price2,
+                    qty: Math.max(1, Math.floor(Number(exists?.qty) || 1)),
+                };
+                syncCatalogActiveStates_();
                 calculateTotal();
                 return;
             }
 
-            // New selection: set the global VAT mode and convert existing selected items.
+            // New selection: enforce single VAT mode.
+            // If user selects a different VAT type than the current cart type, turn off previous items.
+            if (cartTypeNow != null && cartTypeNow !== targetType) {
+                cart = {};
+                syncCatalogActiveStates_();
+            }
             if (vatMode_ !== targetType) {
-                setVatMode_(targetType, true);
+                setVatMode_(targetType, false);
             }
 
             const prevQty = Number.isFinite(Number(cart[id]?.qty)) ? Number(cart[id].qty) : 1;
@@ -1102,10 +1115,16 @@
         function updateVat25Ui_() {
             const btn = document.getElementById('vatDiscount25Btn');
             if (!btn) return;
+
+            // Inactive: blue. Active: amber + ring (high visibility).
             btn.classList.toggle('bg-blue-600', !vatDiscount25Active_);
             btn.classList.toggle('hover:bg-blue-700', !vatDiscount25Active_);
-            btn.classList.toggle('bg-blue-800', vatDiscount25Active_);
-            btn.classList.toggle('hover:bg-blue-900', vatDiscount25Active_);
+            btn.classList.toggle('bg-amber-500', vatDiscount25Active_);
+            btn.classList.toggle('hover:bg-amber-600', vatDiscount25Active_);
+            btn.classList.toggle('ring-2', vatDiscount25Active_);
+            btn.classList.toggle('ring-amber-300', vatDiscount25Active_);
+            btn.classList.toggle('ring-offset-1', vatDiscount25Active_);
+
             btn.setAttribute('aria-pressed', vatDiscount25Active_ ? 'true' : 'false');
         }
 
@@ -1376,23 +1395,29 @@
             let deliveryCost = selectedDelivery;
             let baseTotal = itemsTotal + deliveryCost;
 
-            // If 25% VAT-discount mode is active, sync discount input to formula.
-            if (vatDiscount25Active_) {
-                const discountEl = document.getElementById('discount-input');
-                if (discountEl) {
-                    const c2 = computeC2WithVat_();
-                    const discountValue = c2 > 0 ? (c2 - (c2 / 6)) * 0.25 : 0;
-                    discountEl.value = discountValue > 0 ? String(Math.round(discountValue)) : '';
-                }
-            }
+            const discountEl = document.getElementById('discount-input');
+            const markupEl = document.getElementById('markup-input');
+            const discountInput = String(discountEl?.value ?? '');
+            const markupInput = String(markupEl?.value ?? '');
 
-            const discountInput = document.getElementById('discount-input').value;
-            const markupInput = document.getElementById('markup-input').value;
-
-            const discountVal = parseInput(discountInput, baseTotal); 
+            const discountVal = parseInput(discountInput, baseTotal);
             const markupVal = parseInput(markupInput, baseTotal);
 
-            const finalTotal = baseTotal - discountVal + markupVal;
+            // "РАЗОМ" before compensation (includes discount/markup).
+            const totalBeforeComp = baseTotal - discountVal + markupVal;
+
+            // 25% mode is a VISUAL "state compensation" indicator.
+            // It must be calculated ONLY from the final total "РАЗОМ" (y) before compensation.
+            // бухгалтерськи: ПДВ = y/6; база без ПДВ = y - ПДВ; компенсація = 25% від бази.
+            let compensationVal = 0;
+            if (vatDiscount25Active_) {
+                const y = totalBeforeComp;
+                const vat = y > 0 ? (y / 6) : 0;
+                const net = y - vat;
+                compensationVal = net > 0 ? (net * 0.25) : 0;
+            }
+
+            const finalTotal = totalBeforeComp - compensationVal;
 
             document.getElementById('receipt-subtotal').innerHTML = `<span>Сума товарів:</span> <span class="font-bold">${itemsTotal.toLocaleString()} грн</span>`;
             document.getElementById('receipt-delivery').innerHTML = `<span>Доставка:</span> <span>${deliveryCost > 0 ? '+' : ''}${deliveryCost.toLocaleString()} грн</span>`;
@@ -1403,6 +1428,16 @@
                 discElem.innerHTML = `<span>Знижка:</span> <span>-${Math.round(discountVal).toLocaleString()} грн</span>`;
             } else {
                 discElem.classList.add('hidden');
+            }
+
+            const compElem = document.getElementById('receipt-compensation');
+            if (compElem) {
+                if (compensationVal > 0) {
+                    compElem.classList.remove('hidden');
+                    compElem.innerHTML = `<span>Компенсація:</span> <span>-${Math.round(compensationVal).toLocaleString()} грн</span>`;
+                } else {
+                    compElem.classList.add('hidden');
+                }
             }
 
             const markElem = document.getElementById('receipt-markup');
@@ -1421,7 +1456,6 @@
             selectedDelivery = 0;
             vatMode_ = 1;
             vatDiscount25Active_ = false;
-            vatDiscount25PrevDiscount_ = '';
             updateVatToggleUi_();
             updateVat25Ui_();
             document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
@@ -1436,6 +1470,12 @@
 
 	  function scrollToBottom() {
             document.getElementById('calculator-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function collapseAllCatalog() {
+            document.querySelectorAll('#catalog-container details[open]').forEach((d) => {
+                d.open = false;
+            });
         }
 
         // Hamburger menu toggle

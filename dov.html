@@ -192,6 +192,15 @@
         /* CRM small-screen fixes */
         #orderForm > div { min-width: 0; }
         #historyBody td { overflow-wrap: anywhere; }
+
+        /* iOS modal scroll + background scroll lock */
+        .modal-scroll {
+            max-height: calc(100vh - 170px);
+            max-height: calc(100dvh - 170px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen pb-12 text-slate-900">
@@ -456,7 +465,7 @@
                     </button>
                 </div>
 
-                <div class="p-4 sm:p-6">
+                <div class="p-4 sm:p-6 modal-scroll">
                     <form id="orderForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Дата</label>
@@ -547,7 +556,7 @@
                     </button>
                 </div>
 
-                <div class="p-4 sm:p-6">
+                <div class="p-4 sm:p-6 modal-scroll">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Дата з</label>
@@ -1740,12 +1749,56 @@
 
         document.getElementById('exportOrdersBtn')?.addEventListener('click', exportOrdersToExcel_);
 
+        let bodyScrollLocked_ = false;
+        let bodyScrollY_ = 0;
+
+        function lockBodyScroll_() {
+            if (bodyScrollLocked_) return;
+            bodyScrollY_ = window.scrollY || window.pageYOffset || 0;
+
+            // iOS-safe scroll lock: position fixed preserves viewport and prevents background scroll.
+            document.body.classList.add('overflow-hidden');
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${bodyScrollY_}px`;
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.width = '100%';
+
+            bodyScrollLocked_ = true;
+        }
+
+        function unlockBodyScroll_() {
+            if (!bodyScrollLocked_) return;
+
+            document.body.classList.remove('overflow-hidden');
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.width = '';
+
+            window.scrollTo(0, bodyScrollY_);
+            bodyScrollLocked_ = false;
+        }
+
         function syncBodyScrollLock_() {
             const orderOpen = !document.getElementById('orderModal')?.classList.contains('hidden');
             const exportOpen = !document.getElementById('exportModal')?.classList.contains('hidden');
-            if (orderOpen || exportOpen) document.body.classList.add('overflow-hidden');
-            else document.body.classList.remove('overflow-hidden');
+            if (orderOpen || exportOpen) lockBodyScroll_();
+            else unlockBodyScroll_();
         }
+
+        // Prevent background iOS scroll while allowing scroll inside modal body.
+        (function bindModalTouchGuard_() {
+            if (bindModalTouchGuard_.bound) return;
+            bindModalTouchGuard_.bound = true;
+            document.addEventListener('touchmove', (e) => {
+                if (!bodyScrollLocked_) return;
+                const inScroller = e.target && e.target.closest && e.target.closest('.modal-scroll');
+                if (inScroller) return;
+                e.preventDefault();
+            }, { passive: false });
+        })();
 
         // --- Modal: New Order ---
         function openOrderModal_() {
