@@ -1,0 +1,400 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <script>
+        (function () {
+            try {
+                document.documentElement.classList.add('pagefx');
+                window.setTimeout(function () {
+                    document.documentElement.classList.add('pagefx-ready');
+                }, 900);
+            } catch (e) {}
+        })();
+    </script>
+    <style>html.pagefx:not(.pagefx-ready) body{opacity:0}</style>
+    <link rel="stylesheet" href="assets/css/page-transitions.css">
+    <script src="assets/js/page-transitions.js" defer></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png" />
+    <meta name="theme-color" content="#F4C430" />
+    <title>General Machines — Скрипти</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header Styles (same look as existing pages) */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 0;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+        }
+
+        .logo h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: 800;
+        }
+
+        .nav {
+            display: flex;
+        }
+
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: background 0.3s, color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .bar {
+            width: 25px;
+            height: 3px;
+            background: #333;
+            margin: 3px 0;
+            transition: 0.3s;
+        }
+
+        /* Mobile header */
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 10px 15px;
+            }
+
+            .logo h1 {
+                font-size: 20px;
+            }
+
+            .nav {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                height: calc(100vh - 60px);
+                background: #fff;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                padding-top: 50px;
+                opacity: 0;
+                transform: translateY(-6px);
+                pointer-events: none;
+                transition: opacity 160ms ease, transform 160ms ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                z-index: 999;
+            }
+
+            .nav.active {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+
+            .nav-list {
+                flex-direction: column;
+                gap: 20px;
+                width: 100%;
+                align-items: center;
+            }
+
+            .nav-item {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                opacity: 0;
+                transform: translateX(-18px);
+                transition: transform 180ms ease, opacity 180ms ease;
+            }
+
+            .nav-item:nth-child(even) {
+                transform: translateX(18px);
+            }
+
+            .nav.active .nav-item {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .nav,
+                .nav-item {
+                    transition: none;
+                    transform: none;
+                }
+            }
+
+            .nav-link {
+                width: min(340px, 88vw);
+                height: 54px;
+                box-sizing: border-box;
+                justify-content: center;
+                font-size: 18px;
+                padding: 14px 18px;
+                background: #f8f9fa;
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .nav-link i {
+                width: 22px;
+                flex: 0 0 22px;
+                text-align: center;
+                margin-right: 0 !important;
+                height: 22px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+                font-size: 18px;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+        }
+
+        /* App frame */
+        .app {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #pageFrame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #f3f4f6;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        #pageFrame.is-ready {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #pageFrame.is-exiting {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #pageFrame {
+                transition: none;
+                transform: none;
+            }
+            #pageFrame.is-ready {
+                transform: none;
+            }
+            #pageFrame.is-exiting {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <h1>General Machines</h1>
+            </div>
+            <nav class="nav" id="nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#gm-script" class="nav-link" data-route="gm-script"><i class="fas fa-file-code mr-2"></i>Скрипти</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#calc" class="nav-link" data-route="calc"><i class="fas fa-calculator mr-2"></i>Прайс</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#plan" class="nav-link" data-route="plan"><i class="fas fa-calendar-check mr-2"></i>План</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#anketa" class="nav-link" data-route="anketa"><i class="fas fa-file-excel mr-2"></i>Анкета</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#education" class="nav-link" data-route="education"><i class="fas fa-graduation-cap mr-2"></i>Навчання</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="hamburger" id="hamburger" aria-label="menu" role="button" tabindex="0">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="app">
+        <iframe id="pageFrame" title="General Machines"></iframe>
+    </main>
+
+    <script>
+        const ROUTES = {
+            'gm-script': 'gm-script.html',
+            'calc': 'calc.html',
+            'plan': 'dov.html',
+            'anketa': 'generator-ankety.html',
+            'education': 'education.html'
+        };
+
+        const frame = document.getElementById('pageFrame');
+        const nav = document.getElementById('nav');
+        const hamburger = document.getElementById('hamburger');
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let loadToken = 0;
+
+        function wait(ms) {
+            return new Promise(resolve => window.setTimeout(resolve, ms));
+        }
+
+        function markFrameReady() {
+            frame.classList.add('is-ready');
+            frame.classList.remove('is-exiting');
+        }
+
+        frame.addEventListener('load', () => {
+            // Fade-in when iframe finishes loading the new route.
+            if (prefersReducedMotion) {
+                markFrameReady();
+                return;
+            }
+            requestAnimationFrame(markFrameReady);
+        });
+
+        function getRouteKeyFromHash() {
+            const raw = (location.hash || '').replace(/^#/, '').trim();
+            return ROUTES[raw] ? raw : 'gm-script';
+        }
+
+        function setActiveLink(routeKey) {
+            document.querySelectorAll('a.nav-link[data-route]').forEach(a => {
+                const isActive = a.dataset.route === routeKey;
+                a.classList.toggle('active', isActive);
+            });
+        }
+
+        function buildSrc(routeKey) {
+            const file = ROUTES[routeKey] || ROUTES['gm-script'];
+            const joiner = file.includes('?') ? '&' : '?';
+            return `${file}${joiner}embed=1`;
+        }
+
+        async function loadRoute(routeKey) {
+            const src = buildSrc(routeKey);
+            setActiveLink(routeKey);
+
+            const currentSrc = frame.getAttribute('src') || '';
+            if (currentSrc === src) {
+                nav.classList.remove('active');
+                return;
+            }
+
+            const token = ++loadToken;
+
+            if (!prefersReducedMotion) {
+                frame.classList.add('is-exiting');
+                frame.classList.remove('is-ready');
+                await wait(160);
+            }
+
+            // If a newer navigation happened while waiting, ignore this one.
+            if (token !== loadToken) return;
+
+            frame.setAttribute('src', src);
+
+            nav.classList.remove('active');
+        }
+
+        function syncFromHash() {
+            loadRoute(getRouteKeyFromHash());
+        }
+
+        window.addEventListener('hashchange', syncFromHash);
+
+        // Hamburger
+        function toggleNav() {
+            nav.classList.toggle('active');
+        }
+
+        hamburger.addEventListener('click', toggleNav);
+        hamburger.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') toggleNav();
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', (e) => {
+            if (!nav.classList.contains('active')) return;
+            const clickedInside = nav.contains(e.target) || hamburger.contains(e.target);
+            if (!clickedInside) nav.classList.remove('active');
+        });
+
+        // Initial
+        if (!location.hash || !ROUTES[location.hash.replace(/^#/, '')]) {
+            location.hash = '#gm-script';
+        } else {
+            syncFromHash();
+        }
+    </script>
+</body>
+</html>
+

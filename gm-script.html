@@ -496,6 +496,70 @@
             color: white;
         }
 
+        /* KRN: align TTX/Photo buttons neatly */
+        #krn-section .krn-actions {
+            margin-top: 12px;
+        }
+
+        #krn-section .krn-actions .btn {
+            width: 100%;
+        }
+
+        #krn-section .krn-actions .btn-ttx {
+            margin-bottom: 0;
+            max-width: none;
+        }
+
+        #krn-section .krn-actions .btn-photo {
+            margin: 0;
+        }
+
+        /* KUN: align TTX/Photo buttons neatly */
+        #kun-section .kun-actions {
+            margin-top: 12px;
+        }
+
+        #kun-section .kun-actions .btn {
+            width: 100%;
+        }
+
+        #kun-section .kun-actions .btn-ttx {
+            margin-bottom: 0;
+            max-width: none;
+        }
+
+        #kun-section .kun-actions .btn-photo {
+            margin: 0;
+        }
+
+        /* Ripper (ГРХ): align TTX/Photo buttons neatly */
+        #ripper-section .ripper-actions {
+            margin-top: 12px;
+        }
+
+        #ripper-section .ripper-actions .btn {
+            width: 100%;
+        }
+
+        #ripper-section .ripper-actions .btn-ttx {
+            margin-bottom: 0;
+            max-width: none;
+        }
+
+        #ripper-section .ripper-actions .btn-photo {
+            margin: 0;
+        }
+
+        /* Desktop-only breathing room around action buttons */
+        @media (min-width: 901px) {
+            #krn-section .krn-actions,
+            #kun-section .kun-actions,
+            #ripper-section .ripper-actions {
+                margin-top: 14px;
+                margin-bottom: 18px;
+            }
+        }
+
         /* Кнопка "Трактори" */
         .btn-tractors {
             border-color: #607D8B;
@@ -1148,18 +1212,83 @@
     max-width: 800px;
 }
 
-.image-modal .modal-content {
-    max-width: 90vw;
-    max-height: 90vh;
+/* Lightbox (single image) */
+.modal-content.image-modal {
+    width: min(920px, calc(100% - 32px));
+    max-width: 920px;
+    max-height: 78vh;
+    margin: 10vh auto;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-content.image-modal .image-stage {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 200px;
 }
 
-.image-modal img {
+.modal-content.image-modal img {
     max-width: 100%;
-    max-height: 100%;
+    max-height: 70vh;
     object-fit: contain;
+    border-radius: 10px;
+}
+
+.modal-content.image-modal .image-nav {
+    border: none;
+    height: 44px;
+    width: 44px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.10);
+    color: #111;
+    cursor: pointer;
+    font-size: 26px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.modal-content.image-modal .image-nav:hover {
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.modal-content.image-modal .image-nav:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.modal-content.image-modal .image-counter {
+    position: absolute;
+    left: 12px;
+    bottom: 10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: 0.2px;
+}
+
+@media (max-width: 520px) {
+    .modal-content.image-modal {
+        grid-template-columns: 38px 1fr 38px;
+        max-height: 72vh;
+        margin: 12vh auto;
+    }
+    .modal-content.image-modal .image-nav {
+        height: 38px;
+        width: 38px;
+        border-radius: 10px;
+        font-size: 22px;
+    }
 }
 
     </style>
@@ -1623,8 +1752,13 @@
     <!-- Модальне вікно для збільшення фото -->
     <div id="imageModal" class="modal">
         <div class="modal-content image-modal">
-            <span class="close-btn" onclick="closeImageModal()">&times;</span>
-            <img id="fullImage" src="" alt="Повне фото">
+            <button class="image-nav prev" type="button" onclick="prevImage()" aria-label="Попереднє фото">‹</button>
+            <div class="image-stage">
+                <span class="close-btn" onclick="closeImageModal()">&times;</span>
+                <img id="fullImage" src="" alt="Повне фото">
+                <div id="imageCounter" class="image-counter" style="display:none;"></div>
+            </div>
+            <button class="image-nav next" type="button" onclick="nextImage()" aria-label="Наступне фото">›</button>
         </div>
     </div>
 
@@ -1640,11 +1774,11 @@
 
             <h3>Оберіть категорію товару:</h3>
             <div class="btn-grid">
-                <button class="btn" onclick="selectProduct('cultivator')">1. Культиватори</button>
-                <button class="btn" onclick="selectProduct('husker')">2. Лущильники</button>
-                <button class="btn" onclick="selectProduct('kun')">3. КУН</button>
-                <button class="btn" onclick="selectProduct('ripper')">4. Глибокорозпушувач</button>
-                <button class="btn" onclick="selectProduct('krn')">5. КРН</button>
+                <button class="btn" data-product-btn="cultivator" onclick="selectProduct('cultivator', this)">1. Культиватори</button>
+                <button class="btn" data-product-btn="husker" onclick="selectProduct('husker', this)">2. Лущильники</button>
+                <button class="btn" data-product-btn="kun" onclick="selectProduct('kun', this)">3. КУН</button>
+                <button class="btn" data-product-btn="ripper" onclick="selectProduct('ripper', this)">4. Глибокорозпушувач</button>
+                <button class="btn" data-product-btn="krn" onclick="selectProduct('krn', this)">5. КРН</button>
                 <button class="btn" onclick="alert('Розділ в розробці')">6. Пружинні борони</button>
                 <button class="btn" onclick="alert('Розділ в розробці')">7. Кран маніпулятор</button>
                 <button class="btn" onclick="alert('Розділ в розробці')">8. Компактор</button>
@@ -2217,13 +2351,11 @@
         <!-- Секція КУН (Готовий розділ) -->
         <div id="kun-section" class="hidden">
             <div class="script-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap:8px;">
-                    <h3>Фронтальні навантажувачі (General X / XL)</h3>
-                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button class="btn btn-ttx" onclick="openTTX('kun')">📊 КУН ТТХ</button>
-                        <button class="btn btn-photo" onclick="openKunHPhotos()">📸 ФОТО Х</button>
-                        <button class="btn btn-photo" onclick="openKunHLPhotos()">📸 ФОТО ХЛ</button>
-                    </div>
+                <h3>Фронтальні навантажувачі (General X / XL)</h3>
+                <div class="btn-grid kun-actions">
+                    <button class="btn btn-ttx" onclick="openTTX('kun')">📊 КУН ТТХ</button>
+                    <button class="btn btn-photo" onclick="openKunHPhotos()">📸 ФОТО Х</button>
+                    <button class="btn btn-photo" onclick="openKunHLPhotos()">📸 ФОТО ХЛ</button>
                 </div>
 
                 <div class="client-text">
@@ -2324,13 +2456,11 @@
         <!-- Секція Глибокорозпушувачів (Готовий розділ) -->
         <div id="ripper-section" class="hidden">
             <div class="script-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap:8px;">
-                    <h3>Глибокорозпушувачі (ГРХ)</h3>
-                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button class="btn btn-ttx" onclick="openTTX('ripper')">📊 ГРХ ТТХ</button>
-                        <button class="btn btn-photo" onclick="openRipperGRH20Photos()">📸 ФОТО ГРХ 2м</button>
-                        <button class="btn btn-photo" onclick="openRipperGRH25Photos()">📸 ФОТО ГРХ 2.5м</button>
-                    </div>
+                <h3>Глибокорозпушувачі (ГРХ)</h3>
+                <div class="btn-grid ripper-actions">
+                    <button class="btn btn-ttx" onclick="openTTX('ripper')">📊 ГРХ ТТХ</button>
+                    <button class="btn btn-photo" onclick="openRipperGRH20Photos()">📸 ФОТО ГРХ 2м</button>
+                    <button class="btn btn-photo" onclick="openRipperGRH25Photos()">📸 ФОТО ГРХ 2.5м</button>
                 </div>
                 
                 <div class="manager-text">
@@ -2539,15 +2669,13 @@
         <!-- Секція КРН (Новий розділ) -->
         <div id="krn-section" class="hidden">
             <div class="script-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap:8px;">
-                    <h3>Культиватори міжрядні (КРН)</h3>
-                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button class="btn btn-ttx" onclick="openTTX('krn')">📊 КРН ТТХ</button>
-                        <button class="btn btn-photo" onclick="openKrnSolid56Photos()">📸 КРН 5.6 суцільна</button>
-                        <button class="btn btn-photo" onclick="openKrnFoldable56Photos()">📸 КРН 5.6 розкладна</button>
-                        <button class="btn btn-photo" onclick="openKrnSolidTank56Photos()">📸 КРН 5.6 суцільна+бочка</button>
-                        <button class="btn btn-photo" onclick="openKrnFoldableTank56Photos()">📸 КРН 5.6 розкладна+бочка</button>
-                    </div>
+                <h3>Культиватори міжрядні (КРН)</h3>
+                <div class="btn-grid krn-actions">
+                    <button class="btn btn-ttx" onclick="openTTX('krn')">📊 КРН ТТХ</button>
+                    <button class="btn btn-photo" onclick="openKrnSolid56Photos()">📸 КРН 5.6 суцільна</button>
+                    <button class="btn btn-photo" onclick="openKrnFoldable56Photos()">📸 КРН 5.6 розкладна</button>
+                    <button class="btn btn-photo" onclick="openKrnSolidTank56Photos()">📸 КРН 5.6 суцільна+бочка</button>
+                    <button class="btn btn-photo" onclick="openKrnFoldableTank56Photos()">📸 КРН 5.6 розкладна+бочка</button>
                 </div>
                 
                 <div class="manager-text">
@@ -2753,30 +2881,49 @@
     </div>
 
     <script>
-        function selectProduct(productType) {
-            // Hide all main sections
+        let __activeProductType = null;
+
+        function __hideAllProductSections_() {
             document.getElementById('cultivator-section').classList.add('hidden');
-            document.getElementById('husker-section').classList.add('hidden'); 
+            document.getElementById('husker-section').classList.add('hidden');
             document.getElementById('kun-section').classList.add('hidden');
-            document.getElementById('ripper-section').classList.add('hidden'); 
-            document.getElementById('krn-section').classList.add('hidden'); // New KRN section
-            
-            // Show the selected section
-            let sectionToShow = null;
-            if (productType === 'cultivator') {
-                sectionToShow = document.getElementById('cultivator-section');
-            } else if (productType === 'husker') { 
-                sectionToShow = document.getElementById('husker-section');
-            } else if (productType === 'kun') { 
-                sectionToShow = document.getElementById('kun-section');
-            } else if (productType === 'ripper') { 
-                sectionToShow = document.getElementById('ripper-section');
-            } else if (productType === 'krn') {
-                sectionToShow = document.getElementById('krn-section');
+            document.getElementById('ripper-section').classList.add('hidden');
+            document.getElementById('krn-section').classList.add('hidden');
+        }
+
+        function __getProductSection_(productType) {
+            if (productType === 'cultivator') return document.getElementById('cultivator-section');
+            if (productType === 'husker') return document.getElementById('husker-section');
+            if (productType === 'kun') return document.getElementById('kun-section');
+            if (productType === 'ripper') return document.getElementById('ripper-section');
+            if (productType === 'krn') return document.getElementById('krn-section');
+            return null;
+        }
+
+        function __setActiveProductBtn_(btnElement, productType) {
+            document.querySelectorAll('[data-product-btn]').forEach(btn => btn.classList.remove('active'));
+            const btn = btnElement || (productType ? document.querySelector(`[data-product-btn="${productType}"]`) : null);
+            if (btn) btn.classList.add('active');
+        }
+
+        function selectProduct(productType, btnElement) {
+            const sectionToShow = __getProductSection_(productType);
+            const isSameOpen = (__activeProductType === productType) && sectionToShow && !sectionToShow.classList.contains('hidden');
+
+            // Toggle off when clicking the same category again
+            if (isSameOpen) {
+                sectionToShow.classList.add('hidden');
+                __activeProductType = null;
+                __setActiveProductBtn_(null, null);
+                return;
             }
+
+            __hideAllProductSections_();
 
             if (sectionToShow) {
                 sectionToShow.classList.remove('hidden');
+                __activeProductType = productType;
+                __setActiveProductBtn_(btnElement, productType);
                 sectionToShow.scrollIntoView({ behavior: 'smooth' });
             }
         }
@@ -3303,14 +3450,140 @@ function closeKrnFoldableTank56Photos() {
     document.getElementById('krnFoldableTank56PhotosModal').style.display = 'none';
 }
 
+let __imageGallery = [];
+let __imageIndex = 0;
+
+function __isModalOpen_(el) {
+    if (!el) return false;
+    return getComputedStyle(el).display !== 'none';
+}
+
+function __renderImage_() {
+    const img = document.getElementById('fullImage');
+    const modal = document.getElementById('imageModal');
+    const prevBtn = modal ? modal.querySelector('.image-nav.prev') : null;
+    const nextBtn = modal ? modal.querySelector('.image-nav.next') : null;
+    const counter = document.getElementById('imageCounter');
+
+    if (!img) return;
+    const hasGallery = Array.isArray(__imageGallery) && __imageGallery.length > 0;
+    const total = hasGallery ? __imageGallery.length : 0;
+    if (hasGallery) {
+        __imageIndex = ((__imageIndex % total) + total) % total;
+        img.src = __imageGallery[__imageIndex];
+    }
+
+    const canNav = total > 1;
+    if (prevBtn) prevBtn.disabled = !canNav;
+    if (nextBtn) nextBtn.disabled = !canNav;
+    if (counter) {
+        if (canNav) {
+            counter.style.display = 'block';
+            counter.textContent = `${__imageIndex + 1} / ${total}`;
+        } else {
+            counter.style.display = 'none';
+            counter.textContent = '';
+        }
+    }
+}
+
 function openImageModal(src) {
-    document.getElementById('fullImage').src = src;
-    document.getElementById('imageModal').style.display = 'block';
+    const modal = document.getElementById('imageModal');
+    const imgEl = document.getElementById('fullImage');
+    if (!modal || !imgEl) return;
+
+    // Try to infer gallery from the clicked thumbnail (works with inline onclick).
+    const clicked = (typeof src !== 'string')
+        ? src
+        : (window.event && window.event.target && window.event.target.tagName === 'IMG')
+            ? window.event.target
+            : null;
+
+    if (clicked) {
+        const galleryRoot = clicked.closest('.photo-gallery') || clicked.closest('.photo-modal') || clicked.parentElement;
+        const imgs = galleryRoot ? Array.from(galleryRoot.querySelectorAll('img')) : [clicked];
+        __imageGallery = imgs.map(i => i.src).filter(Boolean);
+        __imageIndex = Math.max(0, __imageGallery.indexOf(clicked.src));
+    } else {
+        __imageGallery = [String(src || '')].filter(Boolean);
+        __imageIndex = 0;
+    }
+
+    modal.style.display = 'block';
+    __renderImage_();
 }
 
 function closeImageModal() {
-    document.getElementById('imageModal').style.display = 'none';
+    const modal = document.getElementById('imageModal');
+    if (modal) modal.style.display = 'none';
+    __imageGallery = [];
+    __imageIndex = 0;
 }
+
+function nextImage() {
+    if (!__imageGallery || __imageGallery.length < 2) return;
+    __imageIndex += 1;
+    __renderImage_();
+}
+
+function prevImage() {
+    if (!__imageGallery || __imageGallery.length < 2) return;
+    __imageIndex -= 1;
+    __renderImage_();
+}
+
+// Keyboard navigation for the lightbox
+document.addEventListener('keydown', function (e) {
+    const modal = document.getElementById('imageModal');
+    if (!__isModalOpen_(modal)) return;
+    if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextImage();
+    } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevImage();
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeImageModal();
+    }
+});
+
+// Swipe navigation (mobile)
+(function initLightboxSwipe_() {
+    const modal = document.getElementById('imageModal');
+    const stage = modal ? modal.querySelector('.image-stage') : null;
+    if (!stage) return;
+
+    let startX = null;
+    let startY = null;
+    let startT = 0;
+
+    stage.addEventListener('touchstart', function (e) {
+        if (!e.touches || e.touches.length !== 1) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startT = Date.now();
+    }, { passive: true });
+
+    stage.addEventListener('touchend', function (e) {
+        if (startX === null || startY === null) return;
+        const touch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+        if (!touch) return;
+
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        const dt = Date.now() - startT;
+
+        startX = null;
+        startY = null;
+
+        // Horizontal swipe: enough distance, small vertical movement, quick-ish.
+        if (Math.abs(dx) > 45 && Math.abs(dy) < 35 && dt < 650) {
+            if (dx < 0) nextImage();
+            else prevImage();
+        }
+    }, { passive: true });
+})();
 
 function openTractors() {
     document.getElementById('tractorsModal').style.display = 'block';
