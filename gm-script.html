@@ -11,7 +11,7 @@
             } catch (e) {}
         })();
     </script>
-    <style>html.pagefx body{opacity:0}</style>
+    <style>html.pagefx:not(.pagefx-ready) body{opacity:0}</style>
     <link rel="stylesheet" href="assets/page-transitions.css">
     <script src="assets/page-transitions.js" defer></script>
     <meta charset="UTF-8">
@@ -35,6 +35,12 @@
 
                 if (isEmbed && inIframe) {
                     document.documentElement.classList.add('embed');
+                    return;
+                }
+
+                // When opened locally (file://), redirecting to /#gm-script can land on a folder URL
+                // and show a blank page. Keep the file directly open.
+                if (location.protocol === 'file:') {
                     return;
                 }
 
@@ -533,21 +539,26 @@
         /* Make tractors popup compact (do not affect other modals) */
         #tractorsModal {
             z-index: 5000;
+            contain: none;
+            width: 100dvw;
+            height: 100dvh;
         }
 
         #tractorsModal .modal-content {
             width: min(420px, calc(100% - 28px)) !important;
             max-width: 420px;
-            max-height: 70vh;
-            overflow: hidden;
-            margin: 10vh auto;
+            max-height: calc(100dvh - 28px);
+            overflow: auto;
+            margin: 14px auto;
             padding: 14px;
             display: flex;
             flex-direction: column;
+            contain: none;
         }
 
         #tractorsModal .tractors-modal-header {
-            position: relative;
+            position: sticky;
+            top: 0;
             z-index: 3;
             background: #fefefe;
             padding: 12px 56px 12px 0;
@@ -588,9 +599,9 @@
         }
 
         #tractorsModal .tractors-table-wrap {
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow: auto;
+            flex: 0 0 auto;
+            min-height: auto;
+            overflow: visible;
             padding-top: 10px;
         }
 

@@ -1,35 +1,18 @@
-/* Simple cross-page fade transitions for header navigation.
-   Enabled by adding `pagefx` class to <html>. */
-
-@media (prefers-reduced-motion: reduce) {
-  html.pagefx body {
-    opacity: 1 !important;
-    transform: none !important;
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/* Minimal page transition helpers.
+   Important: pages include an inline rule that may hide the body.
+   This file restores visibility once .pagefx-ready is applied. */
 
 html.pagefx body {
   opacity: 0;
 }
 
-@keyframes pagefx-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pagefx-out {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-6px); }
-}
-
 html.pagefx.pagefx-ready body {
   opacity: 1;
-  animation: pagefx-in 180ms ease-out both;
+  transition: opacity 220ms ease;
 }
 
-html.pagefx.pagefx-exit body {
-  opacity: 0;
-  animation: pagefx-out 150ms ease-in both;
+@media (prefers-reduced-motion: reduce) {
+  html.pagefx.pagefx-ready body {
+    transition: none;
+  }
 }

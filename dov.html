@@ -11,7 +11,7 @@
             } catch (e) {}
         })();
     </script>
-    <style>html.pagefx body{opacity:0}</style>
+    <style>html.pagefx:not(.pagefx-ready) body{opacity:0}</style>
     <link rel="stylesheet" href="assets/page-transitions.css">
     <script src="assets/page-transitions.js" defer></script>
     <meta charset="UTF-8">
@@ -38,6 +38,9 @@
                     document.documentElement.classList.add('embed');
                     return;
                 }
+                    if (location.protocol === 'file:') {
+                        return;
+                    }
 
                 const target = new URL(location.href);
                 target.search = '';
