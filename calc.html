@@ -322,7 +322,9 @@
                                 <span>Останні зміни</span>
                                 </button>
                             </div>
-                            <div class="hidden" id="priceAdminControls">
+                            <div class="hidden flex flex-wrap items-center gap-2 justify-end" id="priceAdminControls">
+                                <button type="button" id="priceAddCategoryBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap w-full sm:w-44"><i class="fas fa-folder-plus"></i>Категорія</button>
+                                <button type="button" id="priceAddItemBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap w-full sm:w-44"><i class="fas fa-plus"></i>Позиція</button>
                                 <button type="button" id="priceApplyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap w-full sm:w-44"><i class="fas fa-save"></i>Зберегти</button>
                             </div>
                         </div>
@@ -348,7 +350,7 @@
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="calculator-section">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Калькулятор</h2>
 		 <!-- Кнопка "Калькулятор" (скрол до низу) -->
-    <div class="fixed bottom-4 right-4 z-40 md:hidden">
+    <div class="fixed bottom-4 right-4 z-40 md:hidden" id="calc-fab">
         <button onclick="scrollToBottom()" class="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
             <i class="fas fa-calculator"></i> Калькулятор
         </button>
@@ -375,11 +377,8 @@
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-[10px] text-gray-500 uppercase tracking-wide">Ціни</span>
                             <div class="flex items-center gap-2">
-                                <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden" id="vat-toggle">
-                                    <button type="button" id="vatModeNoBtn" class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white">Без ПДВ</button>
-                                    <button type="button" id="vatModeYesBtn" class="px-3 py-1.5 text-xs font-bold bg-white text-gray-700">З ПДВ</button>
-                                </div>
-                                <button type="button" id="vatDiscount25Btn" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition" title="25% від бази (без ПДВ), але від ціни з ПДВ">25%</button>
+                                <span class="px-3 py-1.5 text-xs font-bold rounded-lg bg-green-50 text-green-700 border border-green-200">З ПДВ</span>
+                                <button type="button" id="vatDiscount25Btn" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition" title="Компенсація: 25% від бази (розрахунок від суми з ПДВ)">25%</button>
                             </div>
                         </div>
                         <div id="receipt-items" class="space-y-2 mb-4">
@@ -495,7 +494,15 @@
                 const sortCategory = Number.isFinite(Number(data.sortCategory)) ? Number(data.sortCategory) : null;
                 const sortItem = Number.isFinite(Number(data.sortItem)) ? Number(data.sortItem) : null;
 
-                if (!byCat.has(category)) byCat.set(category, { category, sortCategory, items: [] });
+                if (!byCat.has(category)) {
+                    byCat.set(category, { category, sortCategory, items: [] });
+                } else {
+                    // Make category sort deterministic: keep the smallest provided sortCategory.
+                    const cur = byCat.get(category).sortCategory;
+                    if (cur == null) byCat.get(category).sortCategory = sortCategory;
+                    else if (sortCategory != null && sortCategory < cur) byCat.get(category).sortCategory = sortCategory;
+                }
+
                 byCat.get(category).items.push({ id: docId, name, price1, price2, sortItem });
             }
 
@@ -518,8 +525,8 @@
                     if (as == null && bs != null) return 1;
                     return String(a.name).localeCompare(String(b.name), 'uk');
                 });
-                c.items = c.items.map(({ id, name, price1, price2 }) => ({ id, name, price1, price2 }));
-                delete c.sortCategory;
+                // Keep sortItem in-memory so edit UI can show it.
+                c.items = c.items.map(({ id, name, price1, price2, sortItem }) => ({ id, name, price1, price2, sortItem }));
             }
             return cats;
         }
@@ -556,38 +563,39 @@
             {
                 category: "Куни",
                 items: [
-                    { name: "GENERAL-X (без ковша)", price1: 165000, price2: 190000 },
-                    { name: "GENERAL-X (з ковшем в комплекті)", price1: 185000, price2: 210000 },
-                    { name: "GENERAL-XL (без ковша)", price1: 185000, price2: 210000 },
-                    { name: "GENERAL-XL (з ковшем в комплекті)", price1: 205000, price2: 230000 },
-                    { name: "GENERAL-EURO (без ковша)", price1: 185000, price2: 210000 },
-                    { name: "GENERAL-EURO (з ковшем комплекті)", price1: 205000, price2: 230000 },
-                    { name: "Джойстик 2Р-40", price1: 10000, price2: 12000 },
-                    { name: "Джойстик 2Р-80", price1: 15000, price2: 17000 },
-                    { name: "Комплект третьої секції", price1: 5000, price2: 6000 }
+                    { name: "GENERAL-X (без ковша)", price1: 170000, price2: 204000 },
+                    { name: "GENERAL-XL (без ковша)", price1: 175000, price2: 210000 },
+                    { name: "GENERAL-EURO (без ковша)", price1: 194167, price2: 233000 },
+                    { name: "GENERAL-XL 1221 (без ковша)", price1: 183333, price2: 220000 },
+                    { name: "GENERAL-EURO + 3-тя секція (без ковша) МТЗ", price1: 179167, price2: 215000 },
+                    { name: "GENERAL-X (з ковшем в комплекті)", price1: 188333, price2: 226000 },
+                    { name: "GENERAL-XL (з ковшем в комплекті)", price1: 193333, price2: 232000 },
+                    { name: "GENERAL-EURO (з ковшем в комплекті)", price1: 212500, price2: 255000 },
+                    { name: "Комплект для керування гідравлікою на дві секції (Джойстик) 2Р-40", price1: 11667, price2: 14000 },
+                    { name: "Комплект для керування гідравлікою на дві секції (Джойстик) 2Р-80", price1: 15000, price2: 18000 },
+                    { name: "Електро-магнітний клапан", price1: 5000, price2: 6000 }
                 ]
             },
             {
                 category: "Навісне до кунів",
                 items: [
-                    { name: "Ківш STANDART 2 м. 1.1 куб", price1: 30000, price2: 35000 },
-                    { name: "Ківш STANDART 2.2м 1.3 куб.", price1: 32000, price2: 37000 },
-                    { name: "Ківш збільшений 2.4 м на 1.5 куб", price1: 335000, price2: 40000 },
-                    { name: "Ківш будівельний 1.6 м.", price1: 30000, price2: 35000 },
-                    { name: "Ківш ЩЕЛЕПНИЙ 1.8 м.", price1: 60000, price2: 70000 },
-                    { name: "Ківш ЩЕЛЕПНИЙ 2 м.", price1: 65000, price2: 75000 },
-                    { name: "Ківш із ЗАХОПЛЕННЯМ", price1: 65000, price2: 75000 },
-                    { name: "Ківш для БЕГІВ", price1: 95000, price2: 105000 },
-                    { name: "Ківш для БЕГІВ (автоматичний)", price1: 100000, price2: 110000 },
-                    { name: "Гак для бегів", price1: 25000, price2: 30000 },
+                    { name: "Ківш STANDART 2 м.", price1: 29167, price2: 35000 },
+                    { name: "Ківш 2.2 м.", price1: 31667, price2: 38000 },
+                    { name: "Ківш будівельний 1.6 м.", price1: 29167, price2: 35000 },
+                    { name: "Ківш ЩЕЛЕПА 1.8 м.", price1: 59167, price2: 71000 },
+                    { name: "Ківш ЩЕЛЕПА 2 м.", price1: 62500, price2: 75000 },
+                    { name: "Збільшений Ківш на 1.5 м3", price1: 33333, price2: 40000 },
+                    { name: "Ківш із ЗАХОПЛЕННЯМ", price1: 62500, price2: 75000 },
+                    { name: "Ківш для БЕГІВ", price1: 87500, price2: 105000 },
+                    { name: "Ківш для БЕГІВ (автоматичний)", price1: 91667, price2: 110000 },
+                    { name: "Гак для бігбегів", price1: 25000, price2: 30000 },
                     { name: "Вила для піддонів", price1: 25000, price2: 30000 },
                     { name: "Вила для ТЮКІВ", price1: 25000, price2: 30000 },
-                    { name: "Вила - Гак (3 в 1)", price1: 35000, price2: 40000 },
-                    { name: "Вила - Гак (2 в 1)", price1: 33000, price2: 36000 },
-                    { name: "Вила сінажні", price1: 60000, price2: 70000 },
-                    { name: "Захват для ТЮКІВ", price1: 60000, price2: 70000 },
-                    { name: "Захват для КОЛОД", price1: 40000, price2: 45000 },
-                    { name: "Корчувач", price1: 55000, price2: 66000 }
+                    { name: "Вила - Гак (2 в1)", price1: 30000, price2: 36000 },
+                    { name: "Вила - Гак (3 в1)", price1: 33333, price2: 40000 },
+                    { name: "Вила СІНАЖНІ", price1: 58333, price2: 70000 },
+                    { name: "Захват для ТЮКІВ", price1: 58333, price2: 70000 },
+                    { name: "Захват для КОЛОД", price1: 37500, price2: 45000 }
                 ]
             },
             {
@@ -665,12 +673,12 @@
             {
                 category: "Відвали",
                 items: [
-                    { name: "Грейдерний відвал", price1: 60000, price2: 70000 },
-                    { name: "Відвал Універсальний (Двосторонній) на СТРІЛУ", price1: 25000, price2: 60000 },
+                    { name: "Грейдерний відвал", price1: 58333, price2: 70000 },
+                    { name: "Відвал Універсальний (Двосторонній) на СТРІЛУ", price1: 25000, price2: 30000 },
                     { name: "Відвал Універсальний (Двосторонній)", price1: 50000, price2: 60000 },
-                    { name: "Відвал Універсальний (Двосторонній) гідро-поворотний", price1: 65000, price2: 75000 },
-                    { name: "Відвал Універсальний (Двосторонній) гідро-поворотний EURO", price1: 70000, price2: 80000 },
-                    { name: "Відвал для буртування зерна", price1: 27000, price2: 35000 }
+                    { name: "Відвал Універсальний (Двосторонній) гідро-поворотний", price1: 62500, price2: 75000 },
+                    { name: "Відвал Універсальний (Двосторонній) гідро-поворотний EURO", price1: 66667, price2: 80000 },
+                    { name: "Відвал для буртування зерна", price1: 29167, price2: 35000 }
                 ]
             },
             {
@@ -697,7 +705,7 @@
         // --- Стан ---
         let cart = {}; 
         let selectedDelivery = 0;
-        let vatMode_ = 1; // 1 = Без ПДВ, 2 = З ПДВ
+        let vatMode_ = 2; // only: 2 = З ПДВ
         let vatDiscount25Active_ = false;
         // --- LocalStorage: persist calculator state across tab switches ---
         const CALC_STATE_KEY_ = 'gm_calc_state_v1';
@@ -721,7 +729,7 @@
                     return {
                         category: String(it.category || ''),
                         name: String(it.name || ''),
-                        type: Number(it.type) === 2 ? 2 : 1,
+                        type: 2,
                         qty: Math.max(1, Math.floor(Number(it.qty) || 1)),
                         docId: String(it.docId || '')
                     };
@@ -731,7 +739,7 @@
                     v: 1,
                     t: Date.now(),
                     selectedDelivery: Number(selectedDelivery) || 0,
-                    vatMode: Number(vatMode_) === 2 ? 2 : 1,
+                    vatMode: 2,
                     vatDiscount25Active: !!vatDiscount25Active_,
                     discountInput: String(discountEl?.value ?? ''),
                     markupInput: String(markupEl?.value ?? ''),
@@ -799,8 +807,8 @@
             applyDeliveryUiFromState_();
             setDeliveryMenuCollapsed(false);
 
-            // VAT / 25%
-            vatMode_ = Number(st.vatMode) === 2 ? 2 : 1;
+            // VAT / 25% (VAT mode is fixed: only "З ПДВ")
+            vatMode_ = 2;
             vatDiscount25Active_ = !!st.vatDiscount25Active;
             updateVatToggleUi_();
             updateVat25Ui_();
@@ -808,16 +816,10 @@
             // Cart
             cart = {};
             const saved = Array.isArray(st.cartItems) ? st.cartItems : [];
-            let enforcedType = null;
+            const enforcedType = 2;
             for (const ref of saved) {
                 const found = findCatalogItemByRef_(ref);
                 if (!found) continue;
-                const t = Number(ref?.type) === 2 ? 2 : 1;
-                if (enforcedType == null) {
-                    enforcedType = t;
-                    vatMode_ = enforcedType;
-                }
-                if (enforcedType !== t) continue; // enforce single VAT mode
 
                 const id = `${found.catIdx}_${found.itemIdx}`;
                 const qty = Math.max(1, Math.floor(Number(ref?.qty) || 1));
@@ -830,7 +832,7 @@
                     price1,
                     price2,
                     type: enforcedType,
-                    price: enforcedType === 1 ? price1 : price2,
+                    price: price2,
                     qty,
                 };
             }
@@ -846,8 +848,9 @@
         const PRICE_ADMIN_PASSWORD = '123456';
         let priceEditUnlocked_ = false;
         let priceEditMode_ = false;
-        const priceEdits_ = new Map(); // docId -> { price1, price2 }
-        const priceDocSnapshot_ = new Map(); // docId -> { price1, price2 } (current values from catalog)
+        const priceEdits_ = new Map(); // docId -> { price1, price2, sortItem? }
+        const categorySortEdits_ = new Map(); // category -> sortCategory|null
+        const priceDocSnapshot_ = new Map(); // docId -> { price1, price2, sortItem, category } (current values from catalog)
 
         // --- Останні зміни (updatedAt) ---
         let priceLastChanges_ = []; // [{ category, name, updatedAt: Date|null, fromPrice1, fromPrice2, toPrice1, toPrice2 }]
@@ -947,9 +950,6 @@
                 li.className = 'py-2 flex items-start justify-between gap-3';
 
                 const hasFrom = Number.isFinite(Number(it.fromPrice1)) || Number.isFinite(Number(it.fromPrice2));
-                const p1Line = hasFrom && Number.isFinite(Number(it.fromPrice1))
-                    ? `Без ПДВ: ${formatMoney_(it.fromPrice1)} → ${formatMoney_(it.toPrice1)}${formatDelta_(it.fromPrice1, it.toPrice1)} грн`
-                    : `Без ПДВ: ${formatMoney_(it.toPrice1)} грн`;
                 const p2Line = hasFrom && Number.isFinite(Number(it.fromPrice2))
                     ? `З ПДВ: ${formatMoney_(it.fromPrice2)} → ${formatMoney_(it.toPrice2)}${formatDelta_(it.fromPrice2, it.toPrice2)} грн`
                     : `З ПДВ: ${formatMoney_(it.toPrice2)} грн`;
@@ -958,8 +958,7 @@
                     <div class="min-w-0">
                         <div class="text-gray-800 font-medium truncate">${it.name}</div>
                         <div class="text-xs text-gray-500 truncate">${it.category}</div>
-                        <div class="text-xs text-gray-700 mt-1">${p1Line}</div>
-                        <div class="text-xs text-gray-700">${p2Line}</div>
+                        <div class="text-xs text-gray-700 mt-1">${p2Line}</div>
                     </div>
                     <div class="text-xs font-semibold text-gray-700 whitespace-nowrap">${formatUaDateTime_(it.updatedAt)}</div>
                 `;
@@ -977,18 +976,7 @@
 
             updateStickyCalcOffset_();
 
-            // VAT mode toggle in receipt
-            const vatNo = document.getElementById('vatModeNoBtn');
-            const vatYes = document.getElementById('vatModeYesBtn');
             const vat25 = document.getElementById('vatDiscount25Btn');
-            if (vatNo) vatNo.addEventListener('click', () => {
-                setVatMode_(1, true);
-                calculateTotal();
-            });
-            if (vatYes) vatYes.addEventListener('click', () => {
-                setVatMode_(2, true);
-                calculateTotal();
-            });
             if (vat25) vat25.addEventListener('click', () => {
                 if (!vatDiscount25Active_) {
                     // Toggle ON
@@ -1016,10 +1004,14 @@
             // Адмін панель
             const editBtn = document.getElementById('priceEditToggle');
             const applyBtn = document.getElementById('priceApplyBtn');
+            const addCatBtn = document.getElementById('priceAddCategoryBtn');
+            const addItemBtn = document.getElementById('priceAddItemBtn');
             const changesBtn = document.getElementById('priceLastChangesBtn');
             const clearChangesBtn = document.getElementById('priceClearChangesBtn');
             if (editBtn) editBtn.addEventListener('click', onPriceEditToggle_);
             if (applyBtn) applyBtn.addEventListener('click', onPriceApply_);
+            if (addCatBtn) addCatBtn.addEventListener('click', onPriceAddCategory_);
+            if (addItemBtn) addItemBtn.addEventListener('click', () => onPriceAddItem_(null));
             setAdminUi_();
             if (changesBtn) {
                 changesBtn.addEventListener('click', () => {
@@ -1040,7 +1032,39 @@
                 if (!isMobileViewport()) setDeliveryMenuCollapsed(false);
                 updateStickyCalcOffset_();
             });
+
+            setupCalcFabVisibility_();
         });
+
+        function setupCalcFabVisibility_() {
+            const fab = document.getElementById('calc-fab');
+            const target = document.getElementById('calculator-section');
+            if (!fab || !target) return;
+
+            const setHidden = (hidden) => {
+                fab.classList.toggle('hidden', !!hidden);
+            };
+
+            // Prefer IntersectionObserver; fallback to scroll handler.
+            if (typeof IntersectionObserver === 'function') {
+                const obs = new IntersectionObserver((entries) => {
+                    const e = entries && entries[0];
+                    setHidden(!!e && (e.isIntersecting || (typeof e.intersectionRatio === 'number' && e.intersectionRatio > 0)));
+                }, { root: null, threshold: [0, 0.05, 0.15] });
+                obs.observe(target);
+                return;
+            }
+
+            const onScroll = () => {
+                const r = target.getBoundingClientRect();
+                const vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+                const visible = r.top < vh * 0.95 && r.bottom > vh * 0.05;
+                setHidden(visible);
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('resize', onScroll);
+            onScroll();
+        }
 
         function updateStickyCalcOffset_() {
             try {
@@ -1123,6 +1147,7 @@
             catalogData.forEach((cat, catIdx) => {
                 const details = document.createElement('details');
                 details.className = "group mb-4 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200";
+                details.setAttribute('data-cat-name', String(cat.category || ''));
                 
                 const summary = document.createElement('summary');
                 summary.className = "flex justify-between items-center p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition";
@@ -1132,8 +1157,58 @@
                         <div class="w-3 h-3 rounded-full ${color} mr-3"></div>
                         <span class="font-bold text-lg text-gray-800">${cat.category}</span>
                     </span>
-                    <span class="chevron text-gray-400"><i class="fas fa-chevron-down"></i></span>
+                    <span class="cat-actions flex items-center gap-2 justify-end">
+                        <span class="chevron text-gray-400"><i class="fas fa-chevron-down"></i></span>
+                    </span>
                 `;
+
+                if (priceEditMode_) {
+                    const actions = summary.querySelector('.cat-actions');
+
+                    const dragBtn = document.createElement('button');
+                    dragBtn.type = 'button';
+                    dragBtn.className = 'inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-move';
+                    dragBtn.title = 'Перетягніть, щоб змінити порядок категорій';
+                    dragBtn.setAttribute('aria-label', 'Перетягнути категорію');
+                    dragBtn.setAttribute('data-cat-drag-handle', String(cat.category || ''));
+                    dragBtn.setAttribute('draggable', 'true');
+                    dragBtn.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+
+                    const sortVal = categorySortEdits_.has(String(cat.category || ''))
+                        ? categorySortEdits_.get(String(cat.category || ''))
+                        : (Number.isFinite(Number(cat.sortCategory)) ? Number(cat.sortCategory) : null);
+
+                    const sortInp = document.createElement('input');
+                    sortInp.type = 'number';
+                    sortInp.inputMode = 'numeric';
+                    sortInp.step = '1';
+                    sortInp.min = '0';
+                    sortInp.value = (sortVal == null ? '' : String(sortVal));
+                    sortInp.className = 'w-16 px-2 py-1 border border-gray-300 rounded text-xs text-right outline-none focus:ring-2 focus:ring-gray-300 bg-white';
+                    sortInp.title = 'Сортування категорії (менше = вище)';
+                    sortInp.setAttribute('aria-label', 'Сортування категорії');
+                    sortInp.setAttribute('data-cat-sort', String(cat.category || ''));
+
+                    const delCat = document.createElement('button');
+                    delCat.type = 'button';
+                    delCat.className = 'inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 transition';
+                    delCat.title = 'Видалити категорію';
+                    delCat.setAttribute('aria-label', 'Видалити категорію');
+                    delCat.innerHTML = '<i class="fas fa-trash"></i>';
+                    delCat.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onPriceDeleteCategory_(String(cat.category || ''));
+                    });
+
+                    if (actions) {
+                        // Place controls on the right, before the chevron.
+                        const chevronEl = actions.querySelector('.chevron');
+                        actions.insertBefore(dragBtn, chevronEl);
+                        actions.insertBefore(sortInp, chevronEl);
+                        actions.insertBefore(delCat, chevronEl);
+                    }
+                }
                 
                 const content = document.createElement('div');
                 content.className = "p-4 space-y-4";
@@ -1141,6 +1216,7 @@
                 cat.items.forEach((item, itemIdx) => {
                     const itemRow = document.createElement('div');
                     itemRow.className = "flex flex-col md:flex-row md:justify-between md:items-center border-b border-gray-100 last:border-0 pb-3 last:pb-0 gap-2";
+                    itemRow.setAttribute('data-cat-name', String(cat.category || ''));
                     
                     const id = `${catIdx}_${itemIdx}`;
 
@@ -1148,20 +1224,26 @@
                     const pending = docId && priceEdits_.has(docId) ? priceEdits_.get(docId) : null;
                     const p1 = pending && Number.isFinite(Number(pending.price1)) ? Number(pending.price1) : item.price1;
                     const p2 = pending && Number.isFinite(Number(pending.price2)) ? Number(pending.price2) : item.price2;
+                    const sItem = pending && Number.isFinite(Number(pending.sortItem)) ? Number(pending.sortItem) : (Number.isFinite(Number(item.sortItem)) ? Number(item.sortItem) : null);
 
                     if (docId && !priceDocSnapshot_.has(docId)) {
-                        priceDocSnapshot_.set(docId, { price1: item.price1, price2: item.price2 });
+                        priceDocSnapshot_.set(docId, { price1: item.price1, price2: item.price2, sortItem: Number.isFinite(Number(item.sortItem)) ? Number(item.sortItem) : null, category: String(cat.category || '') });
                     }
                     
                     if (priceEditMode_) {
+                        itemRow.setAttribute('data-doc-id', docId);
                         itemRow.innerHTML = `
-                            <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
-                            <div class="flex gap-2 md:w-1/2 justify-end">
-                                <div class="w-full md:w-auto border border-gray-300 rounded px-3 py-2 bg-white min-w-[120px]">
-                                    <span class="text-xs text-gray-500 mb-1 block">Без ПДВ</span>
-                                    <input data-price-doc="${docId}" data-price-field="price1" type="number" inputmode="numeric" step="1" min="0"
-                                           class="w-full outline-none font-bold text-sm"
-                                           value="${Number.isFinite(Number(p1)) ? Number(p1) : ''}" ${docId ? '' : 'disabled'} />
+                            <div class="font-medium text-gray-700 md:w-1/2 min-w-0">${item.name}</div>
+                            <div class="flex items-end gap-2 md:w-1/2 justify-end">
+                                <button type="button" data-item-drag-handle="${docId}" ${docId ? '' : 'disabled'}
+                                        class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-move disabled:opacity-30 disabled:cursor-not-allowed" title="Перетягнути" aria-label="Перетягнути" draggable="${docId ? 'true' : 'false'}">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </button>
+                                <div class="w-20 border border-gray-300 rounded px-2 py-2 bg-white">
+                                    <span class="text-xs text-gray-500 mb-1 block">Сорт</span>
+                                    <input data-sort-doc="${docId}" type="number" inputmode="numeric" step="1" min="0"
+                                           class="w-full outline-none font-bold text-sm text-right"
+                                           value="${sItem == null ? '' : String(sItem)}" ${docId ? '' : 'disabled'} />
                                 </div>
                                 <div class="w-full md:w-auto border border-gray-300 rounded px-3 py-2 bg-white min-w-[120px]">
                                     <span class="text-xs text-gray-500 mb-1 block">З ПДВ</span>
@@ -1169,19 +1251,17 @@
                                            class="w-full outline-none font-bold text-sm"
                                            value="${Number.isFinite(Number(p2)) ? Number(p2) : ''}" ${docId ? '' : 'disabled'} />
                                 </div>
+                                <button type="button" data-delete-doc="${docId}" ${docId ? '' : 'disabled'}
+                                        class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-30 disabled:hover:bg-transparent" title="Видалити позицію" aria-label="Видалити позицію">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         `;
                     } else {
-                            const active1 = !!(cart[id] && cart[id].type === 1);
                             const active2 = !!(cart[id] && cart[id].type === 2);
                         itemRow.innerHTML = `
                             <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
                             <div class="flex gap-2 md:w-1/2 justify-end">
-                                    <button data-item-id="${id}" data-item-type="1" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 1, this, '${item.id ? String(item.id) : ''}', '${cat.category}')" 
-                                            class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active1 ? 'active' : ''}">
-                                    <span class="text-xs text-gray-500 mb-1">Без ПДВ</span>
-                                    <span class="font-bold">${item.price1.toLocaleString()} грн</span>
-                                </button>
                                     <button data-item-id="${id}" data-item-type="2" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 2, this, '${item.id ? String(item.id) : ''}', '${cat.category}')" 
                                             class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active2 ? 'active' : ''}">
                                     <span class="text-xs text-gray-500 mb-1">З ПДВ</span>
@@ -1199,6 +1279,23 @@
             });
 
             if (priceEditMode_) {
+                container.querySelectorAll('input[data-cat-sort]').forEach((inp) => {
+                    inp.addEventListener('input', (e) => {
+                        const el = e.target;
+                        const cat = String(el.getAttribute('data-cat-sort') || '').trim();
+                        if (!cat) return;
+
+                        const raw = String(el.value ?? '').trim();
+                        if (!raw) {
+                            categorySortEdits_.set(cat, null);
+                            return;
+                        }
+                        const v = Math.floor(Number(raw));
+                        if (!Number.isFinite(v) || v < 0) return;
+                        categorySortEdits_.set(cat, v);
+                    });
+                });
+
                 container.querySelectorAll('input[data-price-doc][data-price-field]').forEach((inp) => {
                     inp.addEventListener('input', (e) => {
                         const el = e.target;
@@ -1207,8 +1304,8 @@
                         if (!docId) return;
 
                         const raw = String(el.value ?? '');
-                        const base = priceDocSnapshot_.get(docId) || { price1: null, price2: null };
-                        const prev = priceEdits_.get(docId) || { price1: base.price1, price2: base.price2 };
+                        const base = priceDocSnapshot_.get(docId) || { price1: null, price2: null, sortItem: null, category: '' };
+                        const prev = priceEdits_.get(docId) || { price1: base.price1, price2: base.price2, sortItem: base.sortItem };
                         const next = { ...prev };
 
                         // Empty input = don't overwrite; keep fallback to base on save.
@@ -1226,11 +1323,198 @@
                         priceEdits_.set(docId, next);
                     });
                 });
+
+                container.querySelectorAll('input[data-sort-doc]').forEach((inp) => {
+                    inp.addEventListener('input', (e) => {
+                        const el = e.target;
+                        const docId = String(el.getAttribute('data-sort-doc') || '');
+                        if (!docId) return;
+
+                        const raw = String(el.value ?? '').trim();
+                        const base = priceDocSnapshot_.get(docId) || { price1: null, price2: null, sortItem: null, category: '' };
+                        const prev = priceEdits_.get(docId) || { price1: base.price1, price2: base.price2, sortItem: base.sortItem };
+                        const next = { ...prev };
+
+                        if (!raw) {
+                            next.sortItem = null;
+                            priceEdits_.set(docId, next);
+                            return;
+                        }
+
+                        const v = Math.floor(Number(raw));
+                        if (!Number.isFinite(v) || v < 0) return;
+                        next.sortItem = v;
+                        priceEdits_.set(docId, next);
+                    });
+                });
+
+                container.querySelectorAll('button[data-delete-doc]').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        const el = e.currentTarget;
+                        const docId = String(el.getAttribute('data-delete-doc') || '');
+                        if (!docId) return;
+                        onPriceDeleteItem_(docId);
+                    });
+                });
+
+                setupDragSort_();
             }
         }
 
+        function moveArrayItem_(arr, fromIndex, toIndex) {
+            if (!Array.isArray(arr)) return;
+            const from = Number(fromIndex);
+            const to = Number(toIndex);
+            if (!Number.isInteger(from) || !Number.isInteger(to)) return;
+            if (from < 0 || from >= arr.length) return;
+            const clampedTo = Math.max(0, Math.min(arr.length - 1, to));
+            if (from === clampedTo) return;
+            const [it] = arr.splice(from, 1);
+            arr.splice(clampedTo, 0, it);
+        }
+
+        function applyAutoSortFromCurrentOrder_() {
+            // Categories
+            const step = 10;
+            for (let i = 0; i < catalogData.length; i++) {
+                const cat = catalogData[i];
+                const name = String(cat?.category || '').trim();
+                if (!name) continue;
+                const v = (i + 1) * step;
+                categorySortEdits_.set(name, v);
+                cat.sortCategory = v;
+
+                // Items
+                const items = Array.isArray(cat.items) ? cat.items : [];
+                for (let j = 0; j < items.length; j++) {
+                    const item = items[j];
+                    const docId = String(item?.id || '').trim();
+                    const iv = (j + 1) * step;
+                    item.sortItem = iv;
+                    if (!docId) continue;
+                    const base = priceDocSnapshot_.get(docId) || { price1: null, price2: null, sortItem: null, category: name };
+                    const prev = priceEdits_.get(docId) || { price1: base.price1, price2: base.price2, sortItem: base.sortItem };
+                    priceEdits_.set(docId, { ...prev, sortItem: iv });
+                }
+            }
+        }
+
+        function setupDragSort_() {
+            const container = document.getElementById('catalog-container');
+            if (!container) return;
+
+            const dragState = window.__gmPriceDragState || (window.__gmPriceDragState = { type: null, cat: null, docId: null });
+
+            // --- Categories ---
+            container.querySelectorAll('button[data-cat-drag-handle]').forEach((h) => {
+                h.addEventListener('click', (e) => {
+                    // Prevent toggling the <details> when clicking the handle.
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+                h.addEventListener('dragstart', (e) => {
+                    const cat = String(h.getAttribute('data-cat-drag-handle') || '').trim();
+                    if (!cat) return;
+                    dragState.type = 'cat';
+                    dragState.cat = cat;
+                    dragState.docId = null;
+                    try {
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', 'cat:' + cat);
+                    } catch (err) {}
+                });
+            });
+
+            container.querySelectorAll('details[data-cat-name]').forEach((d) => {
+                d.addEventListener('dragover', (e) => {
+                    if (dragState.type !== 'cat') return;
+                    e.preventDefault();
+                    d.classList.add('ring-2', 'ring-blue-300');
+                });
+                d.addEventListener('dragleave', () => {
+                    d.classList.remove('ring-2', 'ring-blue-300');
+                });
+                d.addEventListener('drop', (e) => {
+                    if (dragState.type !== 'cat') return;
+                    e.preventDefault();
+                    d.classList.remove('ring-2', 'ring-blue-300');
+                    const fromCat = String(dragState.cat || '').trim();
+                    const toCat = String(d.getAttribute('data-cat-name') || '').trim();
+                    if (!fromCat || !toCat || fromCat === toCat) return;
+
+                    const fromIndex = catalogData.findIndex((c) => String(c?.category || '').trim() === fromCat);
+                    const toIndex = catalogData.findIndex((c) => String(c?.category || '').trim() === toCat);
+                    if (fromIndex < 0 || toIndex < 0) return;
+
+                    moveArrayItem_(catalogData, fromIndex, toIndex);
+                    applyAutoSortFromCurrentOrder_();
+                    renderCatalog();
+                });
+            });
+
+            // --- Items ---
+            container.querySelectorAll('button[data-item-drag-handle]').forEach((h) => {
+                h.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+                h.addEventListener('dragstart', (e) => {
+                    const docId = String(h.getAttribute('data-item-drag-handle') || '').trim();
+                    if (!docId) return;
+                    dragState.type = 'item';
+                    dragState.docId = docId;
+                    dragState.cat = null;
+                    try {
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', 'item:' + docId);
+                    } catch (err) {}
+                });
+            });
+
+            container.querySelectorAll('div[data-doc-id][data-cat-name]').forEach((row) => {
+                row.addEventListener('dragover', (e) => {
+                    if (dragState.type !== 'item') return;
+                    const docId = String(row.getAttribute('data-doc-id') || '').trim();
+                    if (!docId) return;
+                    e.preventDefault();
+                    row.classList.add('ring-2', 'ring-blue-200');
+                });
+                row.addEventListener('dragleave', () => {
+                    row.classList.remove('ring-2', 'ring-blue-200');
+                });
+                row.addEventListener('drop', (e) => {
+                    if (dragState.type !== 'item') return;
+                    e.preventDefault();
+                    row.classList.remove('ring-2', 'ring-blue-200');
+
+                    const fromDocId = String(dragState.docId || '').trim();
+                    const toDocId = String(row.getAttribute('data-doc-id') || '').trim();
+                    const catName = String(row.getAttribute('data-cat-name') || '').trim();
+                    if (!fromDocId || !toDocId || !catName || fromDocId === toDocId) return;
+
+                    const cat = catalogData.find((c) => String(c?.category || '').trim() === catName);
+                    const items = cat && Array.isArray(cat.items) ? cat.items : null;
+                    if (!items) return;
+
+                    const fromIndex = items.findIndex((it) => String(it?.id || '').trim() === fromDocId);
+                    const targetIndex = items.findIndex((it) => String(it?.id || '').trim() === toDocId);
+                    if (fromIndex < 0 || targetIndex < 0) return;
+
+                    const r = row.getBoundingClientRect();
+                    const after = e.clientY > (r.top + r.height / 2);
+                    let toIndex = after ? (targetIndex + 1) : targetIndex;
+                    if (fromIndex < toIndex) toIndex -= 1;
+                    toIndex = Math.max(0, Math.min(items.length - 1, toIndex));
+
+                    moveArrayItem_(items, fromIndex, toIndex);
+                    applyAutoSortFromCurrentOrder_();
+                    renderCatalog();
+                });
+            });
+        }
+
         function toggleItem(id, name, price1, price2, type, btn, docId, category) {
-            const targetType = type === 2 ? 2 : 1;
+            const targetType = 2; // fixed: only "З ПДВ"
             const exists = cart[id];
 
             const keysNow = Object.keys(cart);
@@ -1260,7 +1544,7 @@
                     price1,
                     price2,
                     type: targetType,
-                    price: targetType === 1 ? price1 : price2,
+                    price: price2,
                     qty: Math.max(1, Math.floor(Number(exists?.qty) || 1)),
                 };
                 syncCatalogActiveStates_();
@@ -1287,7 +1571,7 @@
                 price1,
                 price2,
                 type: targetType,
-                price: targetType === 1 ? price1 : price2,
+                price: price2,
                 qty: Math.max(1, Math.floor(prevQty)),
             };
             syncCatalogActiveStates_();
@@ -1296,7 +1580,7 @@
         }
 
         function setVatMode_(mode, applyToCart) {
-            vatMode_ = mode === 2 ? 2 : 1;
+            vatMode_ = 2;
             updateVatToggleUi_();
             updateVat25Ui_();
             if (applyToCart) {
@@ -1305,7 +1589,7 @@
                     it.type = vatMode_;
                     const p1 = Number(it.price1);
                     const p2 = Number(it.price2);
-                    it.price = vatMode_ === 1 ? p1 : p2;
+                    it.price = Number.isFinite(p2) ? p2 : (Number.isFinite(p1) ? p1 * 1.2 : 0);
                 }
                 syncCatalogActiveStates_();
             }
@@ -1343,20 +1627,8 @@
         }
 
         function updateVatToggleUi_() {
-            const b1 = document.getElementById('vatModeNoBtn');
-            const b2 = document.getElementById('vatModeYesBtn');
-            if (!b1 || !b2) return;
-            const on1 = vatMode_ === 1;
-            b1.classList.toggle('bg-green-600', on1);
-            b1.classList.toggle('text-white', on1);
-            b1.classList.toggle('bg-white', !on1);
-            b1.classList.toggle('text-gray-700', !on1);
-
-            const on2 = vatMode_ === 2;
-            b2.classList.toggle('bg-green-600', on2);
-            b2.classList.toggle('text-white', on2);
-            b2.classList.toggle('bg-white', !on2);
-            b2.classList.toggle('text-gray-700', !on2);
+            // VAT mode toggle UI was removed; mode is fixed to "З ПДВ".
+            vatMode_ = 2;
         }
 
         function syncCatalogActiveStates_() {
@@ -1377,6 +1649,11 @@
             // Clear-history button is admin-only and only in edit mode.
             const clearBtn = document.getElementById('priceClearChangesBtn');
             if (clearBtn) clearBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
+
+            const addCatBtn = document.getElementById('priceAddCategoryBtn');
+            const addItemBtn = document.getElementById('priceAddItemBtn');
+            if (addCatBtn) addCatBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
+            if (addItemBtn) addItemBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
         }
 
         async function onPriceEditToggle_() {
@@ -1462,7 +1739,7 @@
 
         async function onPriceApply_() {
             if (!priceEditUnlocked_ || !priceEditMode_) return;
-            if (!priceEdits_.size) {
+            if (!priceEdits_.size && !categorySortEdits_.size) {
                 alert('Немає змін');
                 return;
             }
@@ -1482,16 +1759,18 @@
                     const batch = api.writeBatch(api.db);
 
                     for (const [docId, v] of chunk) {
-                        const base = priceDocSnapshot_.get(String(docId)) || { price1: null, price2: null };
+                        const base = priceDocSnapshot_.get(String(docId)) || { price1: null, price2: null, sortItem: null, category: '' };
                         const p1 = v?.price1 == null ? Number(base.price1) : Number(v.price1);
                         const p2 = v?.price2 == null ? Number(base.price2) : Number(v.price2);
                         if (!Number.isFinite(p1) || !Number.isFinite(p2)) continue;
+                        const sortItem = v?.sortItem == null ? null : Number(v.sortItem);
                         const ref = api.doc(api.db, 'priceItems', String(docId));
                         const from1 = Number(base.price1);
                         const from2 = Number(base.price2);
-                        batch.set(ref, {
+                        const payload = {
                             price1: p1,
                             price2: p2,
+                            ...(sortItem == null ? { sortItem: api.deleteField() } : { sortItem }),
                             updatedAt: api.serverTimestamp(),
                             lastChange: {
                                 at: api.serverTimestamp(),
@@ -1500,7 +1779,8 @@
                                 toPrice1: p1,
                                 toPrice2: p2,
                             }
-                        }, { merge: true });
+                        };
+                        batch.set(ref, payload, { merge: true });
                     }
 
                     await batch.commit();
@@ -1508,7 +1788,40 @@
                     console.info('[calc] priceItems updated', done, '/', updates.length);
                 }
 
+                // Apply category sorting (set sortCategory on all docs within the category).
+                if (categorySortEdits_.size) {
+                    const snap = await api.getDocs(api.collection(api.db, 'priceItems'));
+                    const allDocs = snap && snap.docs ? snap.docs : [];
+                    const edits = Array.from(categorySortEdits_.entries());
+                    for (const [catName, sortCategory] of edits) {
+                        const cat = String(catName || '').trim();
+                        if (!cat) continue;
+
+                        const docs = allDocs.filter((d) => {
+                            const data = d && typeof d.data === 'function' ? d.data() : null;
+                            if (!data) return false;
+                            if (data.active === false) return false;
+                            return String(data.category || '').trim() === cat;
+                        });
+                        if (!docs.length) continue;
+
+                        for (let i = 0; i < docs.length; i += 450) {
+                            const chunk = docs.slice(i, i + 450);
+                            const batch = api.writeBatch(api.db);
+                            for (const d of chunk) {
+                                const ref = api.doc(api.db, 'priceItems', String(d.id));
+                                batch.set(ref, {
+                                    sortCategory: sortCategory == null ? api.deleteField() : Number(sortCategory),
+                                    updatedAt: api.serverTimestamp(),
+                                }, { merge: true });
+                            }
+                            await batch.commit();
+                        }
+                    }
+                }
+
                 priceEdits_.clear();
+                categorySortEdits_.clear();
                 await loadCatalogFromFirestore_();
                 renderCatalog();
                 alert('Збережено');
@@ -1519,6 +1832,198 @@
                 setAdminUi_();
                 renderCatalog();
                 alert('Не вдалося зберегти. Перевір Firestore Rules для /priceItems (write) та доступ користувача.');
+            }
+        }
+
+        function parsePriceNumber_(raw) {
+            const s = String(raw ?? '').trim();
+            if (!s) return NaN;
+            const cleaned = s.replace(/\s+/g, '').replace(',', '.');
+            const v = Number(cleaned);
+            return Number.isFinite(v) ? v : NaN;
+        }
+
+        function computeNetFromVat_(price2) {
+            const p2 = Number(price2);
+            if (!Number.isFinite(p2)) return NaN;
+            return Math.round(p2 / 1.2);
+        }
+
+        function getActiveDocIdSet_() {
+            const s = new Set();
+            for (const c of (Array.isArray(catalogData) ? catalogData : [])) {
+                const items = Array.isArray(c?.items) ? c.items : [];
+                for (const it of items) {
+                    if (it && it.id) s.add(String(it.id));
+                }
+            }
+            return s;
+        }
+
+        function purgeCartByDocIdSet_(allowedDocIds) {
+            if (!allowedDocIds || typeof allowedDocIds.has !== 'function') return;
+            let changed = false;
+            for (const k of Object.keys(cart)) {
+                const docId = String(cart[k]?.docId || '');
+                if (docId && !allowedDocIds.has(docId)) {
+                    delete cart[k];
+                    changed = true;
+                }
+            }
+            if (changed) {
+                calculateTotal();
+                scheduleCalcSave_();
+            }
+        }
+
+        async function onPriceAddCategory_() {
+            const ok = await ensurePriceAdmin_();
+            if (!ok) return;
+
+            const cat = prompt('Назва нової категорії');
+            if (!cat || !cat.trim()) return;
+
+            // Category exists only through items, so we add the first item immediately.
+            await onPriceAddItem_(String(cat).trim());
+        }
+
+        async function onPriceAddItem_(prefillCategory) {
+            const ok = await ensurePriceAdmin_();
+            if (!ok) return;
+
+            if (!priceEditMode_) {
+                priceEditMode_ = true;
+                setAdminUi_();
+                renderCatalog();
+            }
+
+            const cats = (Array.isArray(catalogData) ? catalogData : []).map((c) => String(c?.category || '')).filter(Boolean);
+            const defaultCat = prefillCategory || cats[0] || '';
+            const cat = prompt('Категорія (можна ввести нову)\n\nІснуючі: ' + (cats.join(', ') || '—'), defaultCat);
+            if (!cat || !cat.trim()) return;
+
+            const name = prompt('Назва позиції', 'Нова позиція');
+            if (!name || !name.trim()) return;
+
+            const p2Raw = prompt('Ціна З ПДВ (грн)', '0');
+            if (p2Raw == null) return;
+            const p2 = Math.round(parsePriceNumber_(p2Raw));
+            if (!Number.isFinite(p2) || p2 < 0) {
+                alert('Некоректна ціна');
+                return;
+            }
+            const p1 = computeNetFromVat_(p2);
+            if (!Number.isFinite(p1) || p1 < 0) {
+                alert('Не вдалося розрахувати базову ціну');
+                return;
+            }
+
+            try {
+                const api = await initFirebaseForPrice_();
+                const col = api.collection(api.db, 'priceItems');
+                if (!api.addDoc) throw new Error('Firestore addDoc not available');
+                await api.addDoc(col, {
+                    category: String(cat).trim(),
+                    name: String(name).trim(),
+                    price1: p1,
+                    price2: p2,
+                    active: true,
+                    updatedAt: api.serverTimestamp(),
+                    lastChange: {
+                        at: api.serverTimestamp(),
+                        fromPrice1: null,
+                        fromPrice2: null,
+                        toPrice1: p1,
+                        toPrice2: p2,
+                    }
+                });
+
+                await loadCatalogFromFirestore_();
+                renderCatalog();
+                purgeCartByDocIdSet_(getActiveDocIdSet_());
+            } catch (e) {
+                console.warn('[calc] add price item failed', e);
+                alert('Не вдалося додати позицію. Перевір Firestore Rules для /priceItems (write) та доступ користувача.');
+            }
+        }
+
+        async function onPriceDeleteItem_(docId) {
+            const ok = await ensurePriceAdmin_();
+            if (!ok) return;
+
+            const sure = confirm('Видалити позицію? Вона зникне з прайсу.');
+            if (!sure) return;
+
+            try {
+                const api = await initFirebaseForPrice_();
+                const ref = api.doc(api.db, 'priceItems', String(docId));
+                if (!api.setDoc) throw new Error('Firestore setDoc not available');
+                await api.setDoc(ref, {
+                    active: false,
+                    updatedAt: api.serverTimestamp(),
+                }, { merge: true });
+
+                await loadCatalogFromFirestore_();
+                renderCatalog();
+                purgeCartByDocIdSet_(getActiveDocIdSet_());
+            } catch (e) {
+                console.warn('[calc] delete price item failed', e);
+                alert('Не вдалося видалити. Перевір Firestore Rules для /priceItems (write) та доступ користувача.');
+            }
+        }
+
+        async function onPriceDeleteCategory_(categoryName) {
+            const ok = await ensurePriceAdmin_();
+            if (!ok) return;
+
+            const cat = String(categoryName || '').trim();
+            if (!cat) return;
+
+            const sure = confirm('Видалити категорію "' + cat + '"? Це прибере всі позиції в цій категорії.');
+            if (!sure) return;
+
+            try {
+                const api = await initFirebaseForPrice_();
+                const snap = await api.getDocs(api.collection(api.db, 'priceItems'));
+                if (!snap || snap.empty) {
+                    alert('Немає даних');
+                    return;
+                }
+
+                const docs = snap.docs.filter((d) => {
+                    const data = d && typeof d.data === 'function' ? d.data() : null;
+                    if (!data) return false;
+                    if (data.active === false) return false;
+                    return String(data.category || '').trim() === cat;
+                });
+
+                if (!docs.length) {
+                    alert('У категорії немає активних позицій');
+                    return;
+                }
+
+                let done = 0;
+                for (let i = 0; i < docs.length; i += 450) {
+                    const chunk = docs.slice(i, i + 450);
+                    const batch = api.writeBatch(api.db);
+                    for (const d of chunk) {
+                        const ref = api.doc(api.db, 'priceItems', String(d.id));
+                        batch.set(ref, {
+                            active: false,
+                            updatedAt: api.serverTimestamp(),
+                        }, { merge: true });
+                    }
+                    await batch.commit();
+                    done += chunk.length;
+                    console.info('[calc] category deactivated', cat, done, '/', docs.length);
+                }
+
+                await loadCatalogFromFirestore_();
+                renderCatalog();
+                purgeCartByDocIdSet_(getActiveDocIdSet_());
+            } catch (e) {
+                console.warn('[calc] delete category failed', e);
+                alert('Не вдалося видалити категорію. Перевір Firestore Rules для /priceItems (write) та доступ користувача.');
             }
         }
 
@@ -1554,7 +2059,7 @@
                 itemDiv.className = "flex items-start justify-between text-gray-700 gap-2";
                 itemDiv.innerHTML = `
                     <div class="min-w-0 flex-1">
-                        <div class="truncate pr-2">${item.name} <span class="text-[10px] text-gray-400">(${item.type === 1 ? 'Без ПДВ' : 'З ПДВ'})</span></div>
+                        <div class="truncate pr-2">${item.name}</div>
                         <div class="mt-1 flex items-center gap-2">
                             <span class="text-[10px] text-gray-500 uppercase tracking-wide">К-сть</span>
                             <input type="number" min="1" step="1" value="${qty}" data-qty-key="${key}"
@@ -1595,13 +2100,12 @@
                     // Clear active state on catalog buttons for this item id
                     document.querySelectorAll(`.price-btn[data-item-id="${CSS.escape(k)}"]`).forEach((b) => b.classList.remove('active'));
 
-                    // If cart still has items, keep VAT mode aligned with them; otherwise default to Без ПДВ.
+                    // VAT mode is fixed to "З ПДВ".
                     const keys = Object.keys(cart);
                     if (keys.length) {
-                        const t = Number(cart[keys[0]]?.type) === 2 ? 2 : 1;
-                        setVatMode_(t, true);
+                        setVatMode_(2, true);
                     } else {
-                        setVatMode_(1, false);
+                        setVatMode_(2, false);
                     }
                     calculateTotal();
                     scheduleCalcSave_();
@@ -1673,7 +2177,7 @@
         function clearCart() {
             cart = {};
             selectedDelivery = 0;
-            vatMode_ = 1;
+            vatMode_ = 2;
             vatDiscount25Active_ = false;
             updateVatToggleUi_();
             updateVat25Ui_();
