@@ -195,11 +195,11 @@
     }
 
     html.gm-bottom-nav-enabled .gm-bottom-nav__item {
-      transform: translateY(-5px);
+      transform: translateY(-10px);
     }
 
     html.gm-bottom-nav-enabled .gm-bottom-nav__item:active {
-      transform: translateY(-5px) scale(0.98);
+      transform: translateY(-10px) scale(0.98);
     }
   }
 }
