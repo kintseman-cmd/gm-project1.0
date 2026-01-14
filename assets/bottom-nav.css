@@ -1,0 +1,185 @@
+:root {
+  --gm-bottom-nav-height: 64px;
+  --gm-bottom-nav-radius: 18px;
+  --gm-bottom-nav-space: calc(var(--gm-bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 768px) {
+  /* Let content scroll under the bottom nav (no reserved space). */
+  html.gm-bottom-nav-enabled body:not(.gm-safe-bottom) {
+    padding-bottom: 0 !important;
+  }
+
+  /* Pages that must never end under the bottom bar (e.g. План) */
+  body.gm-safe-bottom::after {
+    content: "";
+    display: block;
+    height: var(--gm-bottom-nav-space);
+  }
+
+  /* With bottom nav enabled, top burger navigation is redundant */
+  html.gm-bottom-nav-enabled .header .hamburger {
+    display: none !important;
+  }
+
+  html.gm-bottom-nav-enabled .header .nav {
+    display: none !important;
+  }
+
+  /* Optionally hide the entire top header to maximize content area */
+  html.gm-bottom-nav-enabled .header {
+    display: none !important;
+  }
+
+  /* Many pages reserve 60px for the fixed header */
+  html.gm-bottom-nav-enabled body {
+    padding-top: 0 !important;
+  }
+
+  /* index.html uses a fixed app frame starting at 60px */
+  html.gm-bottom-nav-enabled .app {
+    top: 0 !important;
+  }
+
+  /* index.html uses an app frame that is fixed; allow it under the nav */
+  html.gm-bottom-nav-enabled .app {
+    bottom: 0 !important;
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    height: var(--gm-bottom-nav-height);
+    z-index: 1100;
+    pointer-events: auto;
+  }
+
+  /* Keep page-specific floating buttons above the bottom nav */
+  html.gm-bottom-nav-enabled #calc-fab {
+    bottom: calc(var(--gm-bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 1200 !important;
+  }
+
+  html.gm-bottom-nav-enabled #notepad-toggle-mobile,
+  html.gm-bottom-nav-enabled .notepad-btn-mobile,
+  html.gm-bottom-nav-enabled #notepad-toggle,
+  html.gm-bottom-nav-enabled #calc-toggle {
+    bottom: calc(var(--gm-bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 1200 !important;
+  }
+
+  /* When running inside index.html iframe, the parent bottom nav can cover content.
+     Add room for scrolling and lift fixed buttons inside the iframe. */
+  html.gm-in-iframe body {
+    padding-bottom: 0 !important;
+  }
+
+  html.gm-in-iframe body:not(.gm-safe-bottom)::after {
+    content: "";
+    display: block;
+    height: var(--gm-bottom-nav-space);
+  }
+
+  html.gm-in-iframe #calc-fab,
+  html.gm-in-iframe #notepad-toggle-mobile,
+  html.gm-in-iframe .notepad-btn-mobile,
+  html.gm-in-iframe #notepad-toggle,
+  html.gm-in-iframe #calc-toggle {
+    bottom: calc(var(--gm-bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Fixed full-screen modals: keep them above the bottom bar */
+  html.gm-in-iframe #orderModal > div.relative,
+  html.gm-in-iframe #exportModal > div.relative,
+  html.gm-bottom-nav-enabled #orderModal > div.relative,
+  html.gm-bottom-nav-enabled #exportModal > div.relative {
+    padding-bottom: calc(var(--gm-bottom-nav-space) + 8px) !important;
+  }
+
+  html.gm-in-iframe #gift-info-modal,
+  html.gm-bottom-nav-enabled #gift-info-modal {
+    padding-bottom: var(--gm-bottom-nav-space) !important;
+    box-sizing: border-box;
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__inner {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(17, 24, 39, 0.10);
+    border-radius: var(--gm-bottom-nav-radius);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__item {
+    flex: 1 1 0;
+    min-width: 0;
+    height: calc(var(--gm-bottom-nav-height) - 12px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 14px;
+    text-decoration: none;
+    color: #6b7280;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.01em;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__item:active {
+    transform: scale(0.98);
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__icon {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__icon svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+    fill: currentColor;
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__label {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html.gm-bottom-nav-enabled .gm-bottom-nav__item[aria-current="page"] {
+    color: #16a34a;
+    background: rgba(34, 197, 94, 0.14);
+  }
+
+  /* When embedded inside index.html, never show bottom nav */
+  html.embed .gm-bottom-nav {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .gm-bottom-nav {
+    display: none !important;
+  }
+}
