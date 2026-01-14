@@ -176,6 +176,32 @@
   html.embed .gm-bottom-nav {
     display: none !important;
   }
+
+  /* iOS: full-width bar (no side gutters) + lift icons a bit */
+  @supports (-webkit-touch-callout: none) {
+    html.gm-bottom-nav-enabled .gm-bottom-nav {
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      height: calc(var(--gm-bottom-nav-height) + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    html.gm-bottom-nav-enabled .gm-bottom-nav__inner {
+      height: 100%;
+      border-radius: 0 !important;
+      padding-left: 16px;
+      padding-right: 16px;
+      padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    }
+
+    html.gm-bottom-nav-enabled .gm-bottom-nav__item {
+      transform: translateY(-5px);
+    }
+
+    html.gm-bottom-nav-enabled .gm-bottom-nav__item:active {
+      transform: translateY(-5px) scale(0.98);
+    }
+  }
 }
 
 @media (min-width: 769px) {
