@@ -1,7 +1,7 @@
 :root {
   --gm-bottom-nav-height: 64px;
   --gm-bottom-nav-radius: 18px;
-  --gm-bottom-nav-space: calc(var(--gm-bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px));
+  --gm-bottom-nav-space: calc(var(--gm-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 768px) {
@@ -50,7 +50,7 @@
     position: fixed;
     left: 12px;
     right: 12px;
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
     height: var(--gm-bottom-nav-height);
     z-index: 1100;
     pointer-events: auto;
