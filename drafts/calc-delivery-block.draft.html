@@ -1,0 +1,140 @@
+<!--
+DRAFT / ЧЕРНЕТКА: Блок "Вартість доставки" з calc.html.
+
+Задача: "прибери зовсім блок з вартістю доставки".
+Цей файл зберігає повний набір шматків (HTML/CSS/JS), щоб колись можна було швидко повернути функціонал.
+
+Що саме було прибрано з calc.html:
+1) Верхня панель доставки (кнопки + "Змінити доставку")
+2) Рядок "Доставка" в чеку
+3) JS-логіка: selectedDelivery, deliveryOptions, рендер/тогл доставки, localStorage поле, clearCart(), calculateTotal()
+4) CSS правило для embed-режиму (#delivery-panel)
+
+Повернення: копіюйте потрібні секції назад у calc.html у відповідні місця.
+-->
+
+<!-- 1) HTML: верхня панель доставки (стояла одразу після <header> ) -->
+<!-- Верхня панель: Доставка -->
+<div class="bg-white shadow-md sticky top-16 z-50 p-4 mb-4" id="delivery-panel">
+  <div class="max-w-7xl mx-auto">
+    <div id="delivery-menu">
+      <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Вартість доставки:</h3>
+      <div class="flex flex-wrap gap-2" id="delivery-buttons">
+        <!-- Кнопки генеруються JS -->
+      </div>
+    </div>
+
+    <button id="delivery-reopen" type="button"
+      class="hidden mt-2 w-full md:w-auto px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition">
+      Змінити доставку
+    </button>
+  </div>
+</div>
+
+<!-- 2) HTML: рядок "Доставка" в чеку (стояв під subtotal) -->
+<div class="flex justify-between text-blue-600" id="receipt-delivery">
+  <span>Доставка:</span>
+  <span>0 грн</span>
+</div>
+
+<!-- 3) CSS: правило для embed-режиму -->
+<style>
+  /* Embedded mode (inside index.html) */
+  html.embed #delivery-panel { top: 0 !important; }
+</style>
+
+<!-- 4) JS: змінні/функції доставки -->
+<script>
+  // --- Дані (незмінні) ---
+  const deliveryOptions = [3000, 4000, 5000, 7000, 8000, 10000, 12000, 15000];
+
+  // --- Стан ---
+  let selectedDelivery = 0;
+
+  function applyDeliveryUiFromState_() {
+    const buttonsHost = document.getElementById('delivery-buttons');
+    if (!buttonsHost) return;
+    const kids = buttonsHost.querySelectorAll('button[data-delivery-price]');
+    kids.forEach((b) => {
+      const p = Number(b.getAttribute('data-delivery-price'));
+      b.classList.toggle('active', p === Number(selectedDelivery));
+    });
+  }
+
+  function isMobileViewport() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  function setDeliveryMenuCollapsed(collapsed) {
+    const menu = document.getElementById('delivery-menu');
+    const reopenBtn = document.getElementById('delivery-reopen');
+    if (!menu || !reopenBtn) return;
+
+    if (collapsed) {
+      menu.classList.add('hidden');
+      reopenBtn.classList.remove('hidden');
+    } else {
+      menu.classList.remove('hidden');
+      reopenBtn.classList.add('hidden');
+    }
+  }
+
+  function renderDeliveryButtons() {
+    const container = document.getElementById('delivery-buttons');
+    deliveryOptions.forEach(price => {
+      const btn = document.createElement('button');
+      btn.setAttribute('data-delivery-price', String(price));
+      btn.className = 'price-btn px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition';
+      btn.textContent = `+${price.toLocaleString()} грн`;
+      btn.onclick = () => toggleDelivery(price, btn);
+      container.appendChild(btn);
+    });
+  }
+
+  function toggleDelivery(price, btn) {
+    const buttons = document.getElementById('delivery-buttons').children;
+    for (let b of buttons) {
+      if (b !== btn) b.classList.remove('active');
+    }
+
+    if (selectedDelivery === price) {
+      selectedDelivery = 0;
+      btn.classList.remove('active');
+      // якщо доставку зняли — показуємо меню назад
+      setDeliveryMenuCollapsed(false);
+    } else {
+      selectedDelivery = price;
+      btn.classList.add('active');
+
+      // На мобільному після вибору доставки ховаємо меню, але залишаємо кнопку для повторного відкриття
+      if (isMobileViewport()) {
+        setDeliveryMenuCollapsed(true);
+      }
+    }
+    calculateTotal();
+    scheduleCalcSave_();
+  }
+
+  // localStorage save:
+  // selectedDelivery: Number(selectedDelivery) || 0,
+
+  // restore:
+  // selectedDelivery = Number(st.selectedDelivery) || 0;
+  // applyDeliveryUiFromState_();
+  // setDeliveryMenuCollapsed(false);
+
+  // DOMContentLoaded:
+  // renderDeliveryButtons();
+  // const reopenBtn = document.getElementById('delivery-reopen'); reopenBtn.addEventListener('click', ...)
+  // window.resize: if (!isMobileViewport()) setDeliveryMenuCollapsed(false)
+
+  // calculateTotal:
+  // let deliveryCost = selectedDelivery;
+  // let baseTotal = itemsTotal + deliveryCost;
+  // document.getElementById('receipt-delivery').innerHTML = ...
+
+  // clearCart:
+  // selectedDelivery = 0;
+  // document.querySelectorAll('#delivery-buttons button')...
+  // setDeliveryMenuCollapsed(false);
+</script>

@@ -55,7 +55,7 @@
     </script>
     <style>
         html { overflow-y: scroll; scrollbar-gutter: stable; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: var(--header-pad-top, 60px); }
         .price-btn.active {
             background-color: #22c55e; /* green-500 */
             color: rgb(255, 255, 255);
@@ -78,6 +78,17 @@
         }
         details[open] .chevron {
             transform: rotate(180deg);
+        }
+
+        /* Floating calculator FAB (mobile) */
+        #calc-fab {
+            transition: opacity 220ms ease, transform 220ms ease;
+            will-change: opacity, transform;
+        }
+        #calc-fab.calc-fab--hidden {
+            opacity: 0;
+            transform: translateY(6px) scale(0.92);
+            pointer-events: none;
         }
         /* Header Styles */
         .header {
@@ -102,8 +113,18 @@
 
         /* Embedded mode (inside index.html) */
         html.embed .header { display: none !important; }
-        html.embed body { padding-top: 0 !important; }
-        html.embed #delivery-panel { top: 0 !important; }
+        html.embed body { padding-top: var(--header-pad-top, 1rem) !important; }
+
+        /* Tablets/phones: add top padding to main container so the first category doesn't stick to the top.
+           (Works both with and without a visible header.) */
+        @media (max-width: 1023px) {
+            .max-w-7xl.mx-auto.px-4 { padding-top: 1rem; }
+        }
+
+        /* Non-desktop: keep a small top offset before the first category card. */
+        @media (max-width: 1023px) {
+            #catalog-container { padding-top: 20px; }
+        }
 
         .logo h1 {
             margin: 0;
@@ -165,12 +186,16 @@
                 overflow-y: auto;
                 scrollbar-gutter: stable;
             }
+
+            /* Align the first catalog card with the sticky calculator column.
+               JS sets --catalog-top-pad based on header/sticky offsets. */
+            #catalog-container {
+                padding-top: var(--catalog-top-pad, 0px);
+            }
         }
 
         /* Mobile header */
         @media (max-width: 768px) {
-            body { padding-top: 60px; }
-
             .header-container {
                 padding: 10px 15px;
             }
@@ -281,22 +306,6 @@
             </div>
         </div>
     </header>
-    <!-- Верхня панель: Доставка -->
-    <div class="bg-white shadow-md sticky top-16 z-50 p-4 mb-4" id="delivery-panel">
-        <div class="max-w-7xl mx-auto">
-            <div id="delivery-menu">
-                <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Вартість доставки:</h3>
-                <div class="flex flex-wrap gap-2" id="delivery-buttons">
-                    <!-- Кнопки генеруються JS -->
-                </div>
-            </div>
-
-            <button id="delivery-reopen" type="button"
-                    class="hidden mt-2 w-full md:w-auto px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition">
-                Змінити доставку
-            </button>
-        </div>
-    </div>
 
     <!-- Основний контейнер з сіткою -->
     <div class="max-w-7xl mx-auto px-4">
@@ -313,21 +322,19 @@
                     <!-- Міні адмін-панель прайсу (над калькулятором; НЕ в хедері) -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-3 flex flex-col gap-2" id="price-admin-bar">
                         <div class="hidden text-xs font-bold uppercase tracking-wide text-amber-600" id="priceEditModeLabel">Режим редагування</div>
-                        <div class="flex flex-wrap items-center gap-2 justify-between">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <button type="button" id="priceEditToggle" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition w-full sm:w-44">
+                        <div class="flex flex-wrap items-center gap-2" id="priceAdminButtonsRow">
+                                <button type="button" id="priceEditToggle" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10">
                                 <i class="fas fa-pen"></i>
                                 <span>Редагувати</span>
                                 </button>
-                                <button type="button" id="priceLastChangesBtn" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition w-full sm:w-44">
+                                <button type="button" id="priceLastChangesBtn" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10">
                                 <i class="fas fa-clock"></i>
                                 <span>Останні зміни</span>
                                 </button>
-                            </div>
-                            <div class="hidden flex flex-wrap items-center gap-2 justify-end" id="priceAdminControls">
-                                <button type="button" id="priceAddCategoryBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap w-full sm:w-44"><i class="fas fa-folder-plus"></i>Категорія</button>
-                                <button type="button" id="priceAddItemBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap w-full sm:w-44"><i class="fas fa-plus"></i>Позиція</button>
-                                <button type="button" id="priceApplyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap w-full sm:w-44"><i class="fas fa-save"></i>Зберегти</button>
+                            <div class="hidden contents" id="priceAdminControls">
+                                <button type="button" id="priceAddCategoryBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10"><i class="fas fa-folder-plus"></i>Категорія</button>
+                                <button type="button" id="priceAddItemBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10"><i class="fas fa-plus"></i>Позиція</button>
+                                <button type="button" id="priceApplyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10"><i class="fas fa-save"></i>Зберегти</button>
                             </div>
                         </div>
                     </div>
@@ -351,10 +358,36 @@
 
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="calculator-section">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Калькулятор</h2>
-		 <!-- Кнопка "Калькулятор" (скрол до низу) -->
+
+                    <!-- Спец-ціни (синя/червона) для вибраного товару -->
+                    <div id="generalXCalcPrices" class="hidden mb-4">
+                        <div class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Спец-ціни: <span id="specialPricesItemName" class="text-slate-800"></span></div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" id="generalXPriceBlueBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition"></button>
+                            <button type="button" id="generalXPriceRedBtn" class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition"></button>
+                            <div id="generalXPriceHint" class="text-sm text-slate-600 self-center"></div>
+                        </div>
+
+                        <div id="generalXCalcPricesEdit" class="hidden mt-3 p-3 rounded-lg border border-slate-200 bg-white">
+                            <div class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Редагування спец-цін (з ПДВ)</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="text-sm text-slate-700">
+                                    <div class="text-slate-600">Синя кнопка</div>
+                                    <input id="generalXBluePriceInput" type="number" inputmode="numeric" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+                                </label>
+                                <label class="text-sm text-slate-700">
+                                    <div class="text-slate-600">Червона кнопка</div>
+                                    <input id="generalXRedPriceInput" type="number" inputmode="numeric" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+                                </label>
+                            </div>
+                            <div class="mt-2 text-xs text-slate-500">Збережеться в Firestore після натискання кнопки “Зберегти” у режимі редагування.</div>
+                        </div>
+                    </div>
+		 <!-- Кнопка "Калькулятор" (FAB, мобільні) -->
     <div class="fixed bottom-4 right-4 z-40 md:hidden" id="calc-fab">
-        <button onclick="scrollToBottom()" class="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
-            <i class="fas fa-calculator"></i> Калькулятор
+        <button type="button" onclick="scrollToBottom()" aria-label="Калькулятор" title="Калькулятор"
+                class="w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <i class="fas fa-calculator text-xl" aria-hidden="true"></i>
         </button>
     </div>
                     <!-- Знижка та Націнка -->
@@ -391,10 +424,6 @@
                                 <span>Сума товарів:</span>
                                 <span>0 грн</span>
                             </div>
-                            <div class="flex justify-between text-blue-600" id="receipt-delivery">
-                                <span>Доставка:</span>
-                                <span>0 грн</span>
-                            </div>
                             <div class="flex justify-between text-red-600 hidden" id="receipt-discount">
                                 <span>Знижка:</span>
                                 <span>-0 грн</span>
@@ -426,7 +455,6 @@
 
     <script>
         // --- Дані (незмінні) ---
-        const deliveryOptions = [3000, 4000, 5000, 7000, 8000, 10000, 12000, 15000];
         const categoryColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
 
         // --- Firebase: прайс з бази (Firestore) ---
@@ -442,7 +470,23 @@
             appId: "1:579626247182:web:09324aa5823c564defc85f"
         };
 
+        // --- Спец-ціни (синя/червона) для товарів ---
+        // Зберігається у Firestore в priceItems: specialPriceBlue2, specialPriceRed2 (обидва = 0 означає “вимкнено”).
+        let specialEditSelectedDocId_ = '';
+        let specialUiCartKey_ = '';
+
         let firebasePriceApiPromise_ = null;
+
+        function discountIconHtml_() {
+            // Heroicons "tag" (outline) as a generic discount icon.
+            return `
+                <span class="inline-flex items-center" title="Є спец-ціни (знижки)" aria-label="Є спец-ціни">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-amber-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15l6-6m-5.5 5.5h.01m4.99-4.99h.01M3 7.5V3h4.5L21 16.5 16.5 21 3 7.5z" />
+                    </svg>
+                </span>
+            `.trim();
+        }
 
         async function initFirebaseForPrice_() {
             if (firebasePriceApiPromise_) return firebasePriceApiPromise_;
@@ -505,7 +549,10 @@
                     else if (sortCategory != null && sortCategory < cur) byCat.get(category).sortCategory = sortCategory;
                 }
 
-                byCat.get(category).items.push({ id: docId, name, price1, price2, sortItem });
+                const specialPriceBlue2 = Number.isFinite(Number(data.specialPriceBlue2)) ? Number(data.specialPriceBlue2) : 0;
+                const specialPriceRed2 = Number.isFinite(Number(data.specialPriceRed2)) ? Number(data.specialPriceRed2) : 0;
+
+                byCat.get(category).items.push({ id: docId, name, price1, price2, sortItem, specialPriceBlue2, specialPriceRed2 });
             }
 
             const cats = Array.from(byCat.values());
@@ -527,8 +574,8 @@
                     if (as == null && bs != null) return 1;
                     return String(a.name).localeCompare(String(b.name), 'uk');
                 });
-                // Keep sortItem in-memory so edit UI can show it.
-                c.items = c.items.map(({ id, name, price1, price2, sortItem }) => ({ id, name, price1, price2, sortItem }));
+                // Keep fields in-memory so edit UI can show them.
+                c.items = c.items.map(({ id, name, price1, price2, sortItem, specialPriceBlue2, specialPriceRed2 }) => ({ id, name, price1, price2, sortItem, specialPriceBlue2, specialPriceRed2 }));
             }
             return cats;
         }
@@ -706,7 +753,6 @@
 
         // --- Стан ---
         let cart = {}; 
-        let selectedDelivery = 0;
         let vatMode_ = 2; // only: 2 = З ПДВ
         let vatDiscount25Active_ = false;
         // --- LocalStorage: persist calculator state across tab switches ---
@@ -740,7 +786,6 @@
                 const state = {
                     v: 1,
                     t: Date.now(),
-                    selectedDelivery: Number(selectedDelivery) || 0,
                     vatMode: 2,
                     vatDiscount25Active: !!vatDiscount25Active_,
                     discountInput: String(discountEl?.value ?? ''),
@@ -784,16 +829,6 @@
             return null;
         }
 
-        function applyDeliveryUiFromState_() {
-            const buttonsHost = document.getElementById('delivery-buttons');
-            if (!buttonsHost) return;
-            const kids = buttonsHost.querySelectorAll('button[data-delivery-price]');
-            kids.forEach((b) => {
-                const p = Number(b.getAttribute('data-delivery-price'));
-                b.classList.toggle('active', p === Number(selectedDelivery));
-            });
-        }
-
         function restoreCalcState_() {
             const st = readCalcState_();
             if (!st) return;
@@ -803,11 +838,6 @@
             const markupEl = document.getElementById('markup-input');
             if (discountEl) discountEl.value = String(st.discountInput ?? '');
             if (markupEl) markupEl.value = String(st.markupInput ?? '');
-
-            // Delivery
-            selectedDelivery = Number(st.selectedDelivery) || 0;
-            applyDeliveryUiFromState_();
-            setDeliveryMenuCollapsed(false);
 
             // VAT / 25% (VAT mode is fixed: only "З ПДВ")
             vatMode_ = 2;
@@ -970,13 +1000,13 @@
 
         // --- Ініціалізація ---
         document.addEventListener('DOMContentLoaded', () => {
-            renderDeliveryButtons();
             renderCatalog();
 
             // Restore persisted state (must run after initial render so buttons exist).
             restoreCalcState_();
 
             updateStickyCalcOffset_();
+            window.addEventListener('load', updateStickyCalcOffset_);
 
             const vat25 = document.getElementById('vatDiscount25Btn');
             if (vat25) vat25.addEventListener('click', () => {
@@ -1024,14 +1054,7 @@
             if (clearChangesBtn) clearChangesBtn.addEventListener('click', onPriceClearChanges_);
             setChangesUi_();
 
-            const reopenBtn = document.getElementById('delivery-reopen');
-            if (reopenBtn) {
-                reopenBtn.addEventListener('click', () => setDeliveryMenuCollapsed(false));
-            }
-
-            // Якщо вийшли з мобільного режиму — повертаємо панель доставки
             window.addEventListener('resize', () => {
-                if (!isMobileViewport()) setDeliveryMenuCollapsed(false);
                 updateStickyCalcOffset_();
             });
 
@@ -1040,28 +1063,32 @@
 
         function setupCalcFabVisibility_() {
             const fab = document.getElementById('calc-fab');
-            const target = document.getElementById('calculator-section');
-            if (!fab || !target) return;
+            const discountBlock = document.querySelector('label.text-red-700');
+            if (!fab || !discountBlock) return;
 
-            const setHidden = (hidden) => {
-                fab.classList.toggle('hidden', !!hidden);
+            let discountVisible = false;
+
+            const applyVisibility_ = () => {
+                fab.classList.toggle('calc-fab--hidden', !!discountVisible);
             };
 
-            // Prefer IntersectionObserver; fallback to scroll handler.
             if (typeof IntersectionObserver === 'function') {
                 const obs = new IntersectionObserver((entries) => {
                     const e = entries && entries[0];
-                    setHidden(!!e && (e.isIntersecting || (typeof e.intersectionRatio === 'number' && e.intersectionRatio > 0)));
+                    discountVisible = !!e && (e.isIntersecting || (typeof e.intersectionRatio === 'number' && e.intersectionRatio > 0));
+                    applyVisibility_();
                 }, { root: null, threshold: [0, 0.05, 0.15] });
-                obs.observe(target);
+                obs.observe(discountBlock);
+                applyVisibility_();
                 return;
             }
 
+            // Fallback: scroll handler
             const onScroll = () => {
-                const r = target.getBoundingClientRect();
+                const r = discountBlock.getBoundingClientRect();
                 const vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
-                const visible = r.top < vh * 0.95 && r.bottom > vh * 0.05;
-                setHidden(visible);
+                discountVisible = r.top < vh * 0.95 && r.bottom > vh * 0.05;
+                applyVisibility_();
             };
             window.addEventListener('scroll', onScroll, { passive: true });
             window.addEventListener('resize', onScroll);
@@ -1070,75 +1097,50 @@
 
         function updateStickyCalcOffset_() {
             try {
+                // Ensure body padding matches the real header height on all viewports.
+                const headerAny = document.querySelector('header.header');
+                const hh = headerAny ? Math.max(0, Math.round(headerAny.offsetHeight || 0)) : 0;
+                const hasVisibleHeader = hh > 0 && !document.documentElement.classList.contains('embed');
+                if (hasVisibleHeader) {
+                    const extra = 12;
+                    document.documentElement.style.setProperty('--header-pad-top', Math.max(0, hh + extra) + 'px');
+                } else {
+                    // When there's no visible header (e.g. embed), keep 1rem offset from the top.
+                    document.documentElement.style.setProperty('--header-pad-top', '16px');
+                }
+
                 if (!window.matchMedia('(min-width: 1024px)').matches) return;
                 const delivery = document.getElementById('delivery-panel');
-                if (!delivery) return;
+                const header = document.querySelector('header.header');
 
-                const cs = window.getComputedStyle(delivery);
-                const top = parseFloat(cs.top || '0') || 0;
-                const mb = parseFloat(cs.marginBottom || '0') || 0;
-                const h = delivery.offsetHeight || 0;
-                const stickyTop = Math.max(0, Math.round(top + h + mb));
+                let stickyTop = 180;
+                if (delivery) {
+                    const cs = window.getComputedStyle(delivery);
+                    const top = parseFloat(cs.top || '0') || 0;
+                    const mb = parseFloat(cs.marginBottom || '0') || 0;
+                    const h = delivery.offsetHeight || 0;
+                    stickyTop = Math.max(0, Math.round(top + h + mb));
+                } else if (header) {
+                    const h = header.offsetHeight || 0;
+                    stickyTop = Math.max(0, Math.round(h + 20));
+                }
                 document.documentElement.style.setProperty('--sticky-calc-top', stickyTop + 'px');
                 document.documentElement.style.setProperty('--sticky-calc-maxh', `calc(100vh - ${stickyTop + 20}px)`);
+
+                // Keep the left catalog aligned with the sticky right column.
+                const bodyPadTop = (function () {
+                    try {
+                        const v = parseFloat(getComputedStyle(document.body).paddingTop || '0');
+                        return Number.isFinite(v) ? v : 0;
+                    } catch (e) {
+                        return 0;
+                    }
+                })();
+                const catPad = Math.max(0, Math.round(stickyTop - bodyPadTop));
+                document.documentElement.style.setProperty('--catalog-top-pad', catPad + 'px');
             } catch (e) {
                 // ignore
             }
-        }
-
-        function isMobileViewport() {
-            return window.matchMedia('(max-width: 768px)').matches;
-        }
-
-        function setDeliveryMenuCollapsed(collapsed) {
-            const menu = document.getElementById('delivery-menu');
-            const reopenBtn = document.getElementById('delivery-reopen');
-            if (!menu || !reopenBtn) return;
-
-            if (collapsed) {
-                menu.classList.add('hidden');
-                reopenBtn.classList.remove('hidden');
-            } else {
-                menu.classList.remove('hidden');
-                reopenBtn.classList.add('hidden');
-            }
-        }
-
-        // --- Рендеринг ---
-        function renderDeliveryButtons() {
-            const container = document.getElementById('delivery-buttons');
-            deliveryOptions.forEach(price => {
-                const btn = document.createElement('button');
-                btn.setAttribute('data-delivery-price', String(price));
-                btn.className = 'price-btn px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition';
-                btn.textContent = `+${price.toLocaleString()} грн`;
-                btn.onclick = () => toggleDelivery(price, btn);
-                container.appendChild(btn);
-            });
-        }
-
-        function toggleDelivery(price, btn) {
-            const buttons = document.getElementById('delivery-buttons').children;
-            for (let b of buttons) {
-                if (b !== btn) b.classList.remove('active');
-            }
-
-            if (selectedDelivery === price) {
-                selectedDelivery = 0;
-                btn.classList.remove('active');
-                // якщо доставку зняли — показуємо меню назад
-                setDeliveryMenuCollapsed(false);
-            } else {
-                selectedDelivery = price;
-                btn.classList.add('active');
-
-                // На мобільному після вибору доставки ховаємо меню, але залишаємо кнопку для повторного відкриття
-                if (isMobileViewport()) {
-                    setDeliveryMenuCollapsed(true);
-                }
-            }
-            calculateTotal();
-            scheduleCalcSave_();
         }
 
         function renderCatalog() {
@@ -1228,14 +1230,40 @@
                     const p2 = pending && Number.isFinite(Number(pending.price2)) ? Number(pending.price2) : item.price2;
                     const sItem = pending && Number.isFinite(Number(pending.sortItem)) ? Number(pending.sortItem) : (Number.isFinite(Number(item.sortItem)) ? Number(item.sortItem) : null);
 
+                    const baseBlue2 = Number.isFinite(Number(item.specialPriceBlue2)) ? Number(item.specialPriceBlue2) : 0;
+                    const baseRed2 = Number.isFinite(Number(item.specialPriceRed2)) ? Number(item.specialPriceRed2) : 0;
+                    const effBlue2 = (pending && pending.specialPriceBlue2 != null && Number.isFinite(Number(pending.specialPriceBlue2)))
+                        ? Number(pending.specialPriceBlue2)
+                        : baseBlue2;
+                    const effRed2 = (pending && pending.specialPriceRed2 != null && Number.isFinite(Number(pending.specialPriceRed2)))
+                        ? Number(pending.specialPriceRed2)
+                        : baseRed2;
+
+                    const hasSpecialPrices = effBlue2 > 0 || effRed2 > 0;
+                    const discountIcon = hasSpecialPrices ? discountIconHtml_() : '';
+
                     if (docId && !priceDocSnapshot_.has(docId)) {
-                        priceDocSnapshot_.set(docId, { price1: item.price1, price2: item.price2, sortItem: Number.isFinite(Number(item.sortItem)) ? Number(item.sortItem) : null, category: String(cat.category || '') });
+                        priceDocSnapshot_.set(docId, {
+                            price1: item.price1,
+                            price2: item.price2,
+                            sortItem: Number.isFinite(Number(item.sortItem)) ? Number(item.sortItem) : null,
+                            category: String(cat.category || ''),
+                            specialPriceBlue2: baseBlue2,
+                            specialPriceRed2: baseRed2,
+                        });
                     }
                     
                     if (priceEditMode_) {
                         itemRow.setAttribute('data-doc-id', docId);
                         itemRow.innerHTML = `
-                            <div class="font-medium text-gray-700 md:w-1/2 min-w-0">${item.name}</div>
+                            <div class="font-medium text-gray-700 md:w-1/2 min-w-0 flex items-center gap-2">
+                                ${discountIcon}
+                                <span class="truncate">${item.name}</span>
+                                <button type="button" data-special-edit-select="${docId}" ${docId ? '' : 'disabled'}
+                                        class="px-2 py-1 rounded-md text-xs font-bold border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition disabled:opacity-40 disabled:hover:bg-amber-50">
+                                    Спец-ціни
+                                </button>
+                            </div>
                             <div class="flex items-end gap-2 md:w-1/2 justify-end">
                                 <button type="button" data-item-drag-handle="${docId}" ${docId ? '' : 'disabled'}
                                         class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-move disabled:opacity-30 disabled:cursor-not-allowed" title="Перетягнути" aria-label="Перетягнути" draggable="${docId ? 'true' : 'false'}">
@@ -1260,11 +1288,11 @@
                             </div>
                         `;
                     } else {
-                            const active2 = !!(cart[id] && cart[id].type === 2);
+                        const active2 = !!(cart[id] && cart[id].type === 2);
                         itemRow.innerHTML = `
-                            <div class="font-medium text-gray-700 md:w-1/2">${item.name}</div>
+                            <div class="font-medium text-gray-700 md:w-1/2 flex items-center gap-2">${discountIcon}<span>${item.name}</span></div>
                             <div class="flex gap-2 md:w-1/2 justify-end">
-                                    <button data-item-id="${id}" data-item-type="2" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 2, this, '${item.id ? String(item.id) : ''}', '${cat.category}')" 
+                                    <button data-item-id="${id}" data-item-type="2" onclick="toggleItem('${id}', '${item.name}', ${item.price1}, ${item.price2}, 2, this, '${item.id ? String(item.id) : ''}', '${cat.category}', ${effBlue2}, ${effRed2})" 
                                             class="price-btn w-full md:w-auto border border-gray-300 rounded px-3 py-2 text-center text-sm hover:bg-gray-50 flex flex-col items-center justify-center min-w-[120px] ${active2 ? 'active' : ''}">
                                     <span class="text-xs text-gray-500 mb-1">З ПДВ</span>
                                     <span class="font-bold">${item.price2.toLocaleString()} грн</span>
@@ -1356,6 +1384,19 @@
                         const docId = String(el.getAttribute('data-delete-doc') || '');
                         if (!docId) return;
                         onPriceDeleteItem_(docId);
+                    });
+                });
+
+                // Select an item in edit mode to reveal/edit its special prices under calculator.
+                container.querySelectorAll('button[data-special-edit-select]').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!priceEditUnlocked_ || !priceEditMode_) return;
+                        const docId = String(btn.getAttribute('data-special-edit-select') || '').trim();
+                        if (!docId) return;
+                        specialEditSelectedDocId_ = (specialEditSelectedDocId_ === docId) ? '' : docId;
+                        updateGeneralXCalcPricesUi_();
                     });
                 });
 
@@ -1515,7 +1556,7 @@
             });
         }
 
-        function toggleItem(id, name, price1, price2, type, btn, docId, category) {
+        function toggleItem(id, name, price1, price2, type, btn, docId, category, specialPriceBlue2, specialPriceRed2) {
             const targetType = 2; // fixed: only "З ПДВ"
             const exists = cart[id];
 
@@ -1530,6 +1571,7 @@
                 // Same type click => toggle off (remove)
                 if (Number(exists.type) === targetType) {
                     delete cart[id];
+                    if (specialUiCartKey_ === id) specialUiCartKey_ = '';
                     syncCatalogActiveStates_();
                     calculateTotal();
                     return;
@@ -1548,7 +1590,13 @@
                     type: targetType,
                     price: price2,
                     qty: Math.max(1, Math.floor(Number(exists?.qty) || 1)),
+                    basePrice1: Number(price1),
+                    basePrice2: Number(price2),
+                    specialPriceBlue2: Number.isFinite(Number(specialPriceBlue2)) ? Number(specialPriceBlue2) : 0,
+                    specialPriceRed2: Number.isFinite(Number(specialPriceRed2)) ? Number(specialPriceRed2) : 0,
+                    specialTag: null,
                 };
+                specialUiCartKey_ = id;
                 syncCatalogActiveStates_();
                 calculateTotal();
                 scheduleCalcSave_();
@@ -1575,10 +1623,168 @@
                 type: targetType,
                 price: price2,
                 qty: Math.max(1, Math.floor(prevQty)),
+                basePrice1: Number(price1),
+                basePrice2: Number(price2),
+                specialPriceBlue2: Number.isFinite(Number(specialPriceBlue2)) ? Number(specialPriceBlue2) : 0,
+                specialPriceRed2: Number.isFinite(Number(specialPriceRed2)) ? Number(specialPriceRed2) : 0,
+                specialTag: null,
             };
+            specialUiCartKey_ = id;
             syncCatalogActiveStates_();
             calculateTotal();
             scheduleCalcSave_();
+        }
+
+        function computePrice1FromVatPrice_(price2) {
+            const p2 = Number(price2);
+            if (!Number.isFinite(p2)) return 0;
+            return Math.round(p2 / 1.2);
+        }
+
+        function findSelectedCartKeyForSpecialPrices_() {
+            if (specialUiCartKey_ && cart[specialUiCartKey_]) return specialUiCartKey_;
+            const keys = Object.keys(cart);
+            if (keys.length === 1) return keys[0];
+            return null;
+        }
+
+        function findItemByDocId_(docId) {
+            const id = String(docId || '').trim();
+            if (!id) return null;
+            for (const c of catalogData) {
+                const items = c && Array.isArray(c.items) ? c.items : [];
+                const hit = items.find((it) => String(it?.id || '') === id);
+                if (hit) return hit;
+            }
+            return null;
+        }
+
+        function getEffectiveSpecialPricesForDocId_(docId) {
+            const base = priceDocSnapshot_.get(String(docId)) || { specialPriceBlue2: 0, specialPriceRed2: 0 };
+            const pending = priceEdits_.get(String(docId)) || {};
+            const blue = (pending.specialPriceBlue2 != null && Number.isFinite(Number(pending.specialPriceBlue2)))
+                ? Number(pending.specialPriceBlue2)
+                : Number(base.specialPriceBlue2) || 0;
+            const red = (pending.specialPriceRed2 != null && Number.isFinite(Number(pending.specialPriceRed2)))
+                ? Number(pending.specialPriceRed2)
+                : Number(base.specialPriceRed2) || 0;
+            return { blue, red };
+        }
+
+        function toggleSelectedItemSpecialPrice_(tag) {
+            const key = findSelectedCartKeyForSpecialPrices_();
+            if (!key || !cart[key]) return;
+            const it = cart[key];
+
+            const blue2 = Number(it.specialPriceBlue2) || 0;
+            const red2 = Number(it.specialPriceRed2) || 0;
+
+            const nextP2 = Number(tag === 'red' ? red2 : blue2);
+            if (!Number.isFinite(nextP2) || nextP2 <= 0) return;
+
+            // Base/original prices for toggle-off.
+            if (!Number.isFinite(Number(it.basePrice2))) it.basePrice2 = Number(it.price2);
+            if (!Number.isFinite(Number(it.basePrice1))) it.basePrice1 = Number(it.price1);
+
+            if (String(it.specialTag || '') === String(tag)) {
+                const bp2 = Number(it.basePrice2);
+                const bp1 = Number(it.basePrice1);
+                if (Number.isFinite(bp2)) {
+                    it.price2 = bp2;
+                    it.price = bp2;
+                }
+                if (Number.isFinite(bp1)) it.price1 = bp1;
+                it.specialTag = null;
+            } else {
+                it.price2 = nextP2;
+                it.price1 = computePrice1FromVatPrice_(nextP2);
+                it.price = nextP2;
+                it.specialTag = tag;
+            }
+
+            calculateTotal();
+            scheduleCalcSave_();
+        }
+
+        function updateGeneralXCalcPricesUi_() {
+            const wrap = document.getElementById('generalXCalcPrices');
+            if (!wrap) return;
+
+            const key = findSelectedCartKeyForSpecialPrices_();
+            const cartItem = key && cart[key] ? cart[key] : null;
+
+            const editDocId = (priceEditUnlocked_ && priceEditMode_) ? String(specialEditSelectedDocId_ || '').trim() : '';
+            const editItem = editDocId ? findItemByDocId_(editDocId) : null;
+            const editName = editItem ? String(editItem.name || '') : '';
+            const effEdit = editDocId ? getEffectiveSpecialPricesForDocId_(editDocId) : { blue: 0, red: 0 };
+
+            const showInCart = !!(cartItem && (Number(cartItem.specialPriceBlue2) > 0 || Number(cartItem.specialPriceRed2) > 0));
+            const showInEdit = !!(priceEditUnlocked_ && priceEditMode_ && editDocId);
+
+            wrap.classList.toggle('hidden', !(showInCart || showInEdit));
+            if (!(showInCart || showInEdit)) return;
+
+            const nameEl = document.getElementById('specialPricesItemName');
+            const blueBtn = document.getElementById('generalXPriceBlueBtn');
+            const redBtn = document.getElementById('generalXPriceRedBtn');
+            const hint = document.getElementById('generalXPriceHint');
+            const editWrap = document.getElementById('generalXCalcPricesEdit');
+            const blueInp = document.getElementById('generalXBluePriceInput');
+            const redInp = document.getElementById('generalXRedPriceInput');
+
+            const blueVal = showInCart ? Number(cartItem.specialPriceBlue2) : Number(effEdit.blue);
+            const redVal = showInCart ? Number(cartItem.specialPriceRed2) : Number(effEdit.red);
+
+            const blueEnabled = Number(blueVal) > 0;
+            const redEnabled = Number(redVal) > 0;
+
+            if (nameEl) nameEl.textContent = showInCart ? String(cartItem.name || '') : editName;
+            if (blueBtn) blueBtn.textContent = Math.round(Number(blueVal) || 0).toLocaleString('uk-UA');
+            if (redBtn) redBtn.textContent = Math.round(Number(redVal) || 0).toLocaleString('uk-UA');
+
+            const canApply = !!(showInCart);
+            if (blueBtn) {
+                blueBtn.classList.toggle('hidden', !blueEnabled);
+                blueBtn.disabled = !canApply;
+                blueBtn.classList.toggle('opacity-50', !canApply);
+            }
+            if (redBtn) {
+                redBtn.classList.toggle('hidden', !redEnabled);
+                redBtn.disabled = !canApply;
+                redBtn.classList.toggle('opacity-50', !canApply);
+            }
+
+            const tag = cartItem ? String(cartItem.specialTag || '') : '';
+            if (blueBtn) {
+                const active = tag === 'blue' && blueEnabled;
+                blueBtn.classList.toggle('ring-2', active);
+                blueBtn.classList.toggle('ring-blue-300', active);
+                blueBtn.classList.toggle('ring-offset-2', active);
+            }
+            if (redBtn) {
+                const active = tag === 'red' && redEnabled;
+                redBtn.classList.toggle('ring-2', active);
+                redBtn.classList.toggle('ring-red-300', active);
+                redBtn.classList.toggle('ring-offset-2', active);
+            }
+
+            if (hint) {
+                if (showInCart) {
+                    const current = Number(cartItem.price2);
+                    hint.textContent = Number.isFinite(current)
+                        ? `Поточна: ${Math.round(current).toLocaleString()} грн`
+                        : '';
+                } else {
+                    hint.textContent = 'Додай товар у кошик (один), щоб застосувати ціну';
+                }
+            }
+
+            const showEditor = !!(priceEditUnlocked_ && priceEditMode_ && editDocId);
+            if (editWrap) editWrap.classList.toggle('hidden', !showEditor);
+            if (showEditor) {
+                if (blueInp && document.activeElement !== blueInp) blueInp.value = String(Math.round(Number(effEdit.blue) || 0));
+                if (redInp && document.activeElement !== redInp) redInp.value = String(Math.round(Number(effEdit.red) || 0));
+            }
         }
 
         function setVatMode_(mode, applyToCart) {
@@ -1648,6 +1854,10 @@
             if (controls) controls.classList.toggle('hidden', !priceEditMode_);
             if (label) label.classList.toggle('hidden', !priceEditMode_);
 
+            if (!priceEditMode_) {
+                specialEditSelectedDocId_ = '';
+            }
+
             // Clear-history button is admin-only and only in edit mode.
             const clearBtn = document.getElementById('priceClearChangesBtn');
             if (clearBtn) clearBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
@@ -1656,6 +1866,8 @@
             const addItemBtn = document.getElementById('priceAddItemBtn');
             if (addCatBtn) addCatBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
             if (addItemBtn) addItemBtn.classList.toggle('hidden', !(priceEditUnlocked_ && priceEditMode_));
+
+            updateGeneralXCalcPricesUi_();
         }
 
         async function onPriceEditToggle_() {
@@ -1663,6 +1875,10 @@
             if (!ok) return;
 
             priceEditMode_ = !priceEditMode_;
+            if (priceEditMode_) {
+                // Hide special prices until user selects an item in edit mode.
+                specialEditSelectedDocId_ = '';
+            }
             setAdminUi_();
             renderCatalog();
         }
@@ -1761,17 +1977,23 @@
                     const batch = api.writeBatch(api.db);
 
                     for (const [docId, v] of chunk) {
-                        const base = priceDocSnapshot_.get(String(docId)) || { price1: null, price2: null, sortItem: null, category: '' };
+                        const base = priceDocSnapshot_.get(String(docId)) || { price1: null, price2: null, sortItem: null, category: '', specialPriceBlue2: 0, specialPriceRed2: 0 };
                         const p1 = v?.price1 == null ? Number(base.price1) : Number(v.price1);
                         const p2 = v?.price2 == null ? Number(base.price2) : Number(v.price2);
                         if (!Number.isFinite(p1) || !Number.isFinite(p2)) continue;
                         const sortItem = v?.sortItem == null ? null : Number(v.sortItem);
+
+                        const spBlue2 = v?.specialPriceBlue2 == null ? Number(base.specialPriceBlue2) : Number(v.specialPriceBlue2);
+                        const spRed2 = v?.specialPriceRed2 == null ? Number(base.specialPriceRed2) : Number(v.specialPriceRed2);
+
                         const ref = api.doc(api.db, 'priceItems', String(docId));
                         const from1 = Number(base.price1);
                         const from2 = Number(base.price2);
                         const payload = {
                             price1: p1,
                             price2: p2,
+                            specialPriceBlue2: Number.isFinite(spBlue2) ? spBlue2 : 0,
+                            specialPriceRed2: Number.isFinite(spRed2) ? spRed2 : 0,
                             ...(sortItem == null ? { sortItem: api.deleteField() } : { sortItem }),
                             updatedAt: api.serverTimestamp(),
                             lastChange: {
@@ -2054,6 +2276,29 @@
                 const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
                 item.qty = qty;
 
+                // If a special price was removed (set to 0), force-toggle it off.
+                const spTag = String(item.specialTag || '');
+                if (spTag === 'blue' && (Number(item.specialPriceBlue2) || 0) <= 0) {
+                    const bp2 = Number(item.basePrice2);
+                    const bp1 = Number(item.basePrice1);
+                    if (Number.isFinite(bp2)) {
+                        item.price2 = bp2;
+                        item.price = bp2;
+                    }
+                    if (Number.isFinite(bp1)) item.price1 = bp1;
+                    item.specialTag = null;
+                }
+                if (spTag === 'red' && (Number(item.specialPriceRed2) || 0) <= 0) {
+                    const bp2 = Number(item.basePrice2);
+                    const bp1 = Number(item.basePrice1);
+                    if (Number.isFinite(bp2)) {
+                        item.price2 = bp2;
+                        item.price = bp2;
+                    }
+                    if (Number.isFinite(bp1)) item.price1 = bp1;
+                    item.specialTag = null;
+                }
+
                 const lineTotal = item.price * qty;
                 itemsTotal += lineTotal;
 
@@ -2098,6 +2343,7 @@
                     const k = String(el.getAttribute('data-remove-key') || '');
                     if (!k || !cart[k]) return;
                     delete cart[k];
+                    if (specialUiCartKey_ === k) specialUiCartKey_ = '';
 
                     // Clear active state on catalog buttons for this item id
                     document.querySelectorAll(`.price-btn[data-item-id="${CSS.escape(k)}"]`).forEach((b) => b.classList.remove('active'));
@@ -2114,8 +2360,7 @@
                 });
             });
 
-            let deliveryCost = selectedDelivery;
-            let baseTotal = itemsTotal + deliveryCost;
+            let baseTotal = itemsTotal;
 
             const discountEl = document.getElementById('discount-input');
             const markupEl = document.getElementById('markup-input');
@@ -2142,7 +2387,6 @@
             const finalTotal = totalBeforeComp - compensationVal;
 
             document.getElementById('receipt-subtotal').innerHTML = `<span>Сума товарів:</span> <span class="font-bold">${itemsTotal.toLocaleString()} грн</span>`;
-            document.getElementById('receipt-delivery').innerHTML = `<span>Доставка:</span> <span>${deliveryCost > 0 ? '+' : ''}${deliveryCost.toLocaleString()} грн</span>`;
             
             const discElem = document.getElementById('receipt-discount');
             if (discountVal > 0) {
@@ -2172,27 +2416,119 @@
 
             document.getElementById('final-total').textContent = `${Math.round(finalTotal).toLocaleString()} грн`;
 
+            // Show/hide special calculator buttons for selected item
+            updateGeneralXCalcPricesUi_();
+
             // Persist state after recalculation (debounced).
             scheduleCalcSave_();
         }
 
         function clearCart() {
             cart = {};
-            selectedDelivery = 0;
+            specialUiCartKey_ = '';
             vatMode_ = 2;
             vatDiscount25Active_ = false;
             updateVatToggleUi_();
             updateVat25Ui_();
             document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('#delivery-buttons button').forEach(btn => {
-                btn.classList.remove('active');
-            });
             document.getElementById('discount-input').value = '';
             document.getElementById('markup-input').value = '';
-            setDeliveryMenuCollapsed(false);
             calculateTotal();
             clearCalcState_();
         }
+
+        // Special price buttons (blue/red) + edit-mode inputs
+        (function initSpecialCalcButtons_() {
+            const blueBtn = document.getElementById('generalXPriceBlueBtn');
+            const redBtn = document.getElementById('generalXPriceRedBtn');
+            const blueInp = document.getElementById('generalXBluePriceInput');
+            const redInp = document.getElementById('generalXRedPriceInput');
+
+            if (blueBtn) blueBtn.addEventListener('click', () => toggleSelectedItemSpecialPrice_('blue'));
+            if (redBtn) redBtn.addEventListener('click', () => toggleSelectedItemSpecialPrice_('red'));
+
+            function setSpecialEdit_(field, value) {
+                const docId = String(specialEditSelectedDocId_ || '').trim();
+                if (!docId) return;
+                const base = priceDocSnapshot_.get(docId) || { price1: null, price2: null, sortItem: null, category: '', specialPriceBlue2: 0, specialPriceRed2: 0 };
+                const prev = priceEdits_.get(docId) || {
+                    price1: base.price1,
+                    price2: base.price2,
+                    sortItem: base.sortItem,
+                    specialPriceBlue2: base.specialPriceBlue2,
+                    specialPriceRed2: base.specialPriceRed2,
+                };
+                const next = { ...prev };
+                next[field] = value;
+                priceEdits_.set(docId, next);
+
+                // If the currently selected cart item matches this docId, update its specials (and active override if needed).
+                const key = findSelectedCartKeyForSpecialPrices_();
+                if (key && cart[key] && String(cart[key].docId || '') === docId) {
+                    cart[key].specialPriceBlue2 = Number(next.specialPriceBlue2) || 0;
+                    cart[key].specialPriceRed2 = Number(next.specialPriceRed2) || 0;
+                    const tag = String(cart[key].specialTag || '');
+
+                    if (tag === 'blue') {
+                        if (cart[key].specialPriceBlue2 > 0) {
+                            const p2 = Number(cart[key].specialPriceBlue2);
+                            cart[key].price2 = p2;
+                            cart[key].price1 = computePrice1FromVatPrice_(p2);
+                            cart[key].price = p2;
+                        } else {
+                            const bp2 = Number(cart[key].basePrice2);
+                            const bp1 = Number(cart[key].basePrice1);
+                            if (Number.isFinite(bp2)) {
+                                cart[key].price2 = bp2;
+                                cart[key].price = bp2;
+                            }
+                            if (Number.isFinite(bp1)) cart[key].price1 = bp1;
+                            cart[key].specialTag = null;
+                        }
+                    }
+
+                    if (tag === 'red') {
+                        if (cart[key].specialPriceRed2 > 0) {
+                            const p2 = Number(cart[key].specialPriceRed2);
+                            cart[key].price2 = p2;
+                            cart[key].price1 = computePrice1FromVatPrice_(p2);
+                            cart[key].price = p2;
+                        } else {
+                            const bp2 = Number(cart[key].basePrice2);
+                            const bp1 = Number(cart[key].basePrice1);
+                            if (Number.isFinite(bp2)) {
+                                cart[key].price2 = bp2;
+                                cart[key].price = bp2;
+                            }
+                            if (Number.isFinite(bp1)) cart[key].price1 = bp1;
+                            cart[key].specialTag = null;
+                        }
+                    }
+                    calculateTotal();
+                    scheduleCalcSave_();
+                    return;
+                }
+
+                updateGeneralXCalcPricesUi_();
+            }
+
+            if (blueInp) {
+                blueInp.addEventListener('input', () => {
+                    const v = Number(String(blueInp.value || '').trim());
+                    if (!Number.isFinite(v) || v < 0) return;
+                    setSpecialEdit_('specialPriceBlue2', Math.round(v));
+                });
+            }
+            if (redInp) {
+                redInp.addEventListener('input', () => {
+                    const v = Number(String(redInp.value || '').trim());
+                    if (!Number.isFinite(v) || v < 0) return;
+                    setSpecialEdit_('specialPriceRed2', Math.round(v));
+                });
+            }
+
+            updateGeneralXCalcPricesUi_();
+        })();
 
 	  function scrollToBottom() {
             document.getElementById('calculator-section').scrollIntoView({ behavior: 'smooth' });
