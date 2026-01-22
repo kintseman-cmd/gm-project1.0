@@ -356,33 +356,19 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200" id="calculator-section">
-                    <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Калькулятор</h2>
-
-                    <!-- Спец-ціни (синя/червона) для вибраного товару -->
-                    <div id="generalXCalcPrices" class="hidden mb-4">
-                        <div class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Спец-ціни: <span id="specialPricesItemName" class="text-slate-800"></span></div>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" id="generalXPriceBlueBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition"></button>
-                            <button type="button" id="generalXPriceRedBtn" class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition"></button>
-                            <div id="generalXPriceHint" class="text-sm text-slate-600 self-center"></div>
-                        </div>
-
-                        <div id="generalXCalcPricesEdit" class="hidden mt-3 p-3 rounded-lg border border-slate-200 bg-white">
-                            <div class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Редагування спец-цін (з ПДВ)</div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <label class="text-sm text-slate-700">
-                                    <div class="text-slate-600">Синя кнопка</div>
-                                    <input id="generalXBluePriceInput" type="number" inputmode="numeric" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
-                                </label>
-                                <label class="text-sm text-slate-700">
-                                    <div class="text-slate-600">Червона кнопка</div>
-                                    <input id="generalXRedPriceInput" type="number" inputmode="numeric" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
-                                </label>
-                            </div>
-                            <div class="mt-2 text-xs text-slate-500">Збережеться в Firestore після натискання кнопки “Зберегти” у режимі редагування.</div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 max-w-full overflow-x-hidden" id="calculator-section">
+                    <div class="flex items-center justify-between mb-4 border-b pb-2">
+                        <h2 class="text-2xl font-bold text-gray-800">Калькулятор</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="creditBtn" type="button" class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
+                                <i class="fas fa-credit-card"></i> Кредит
+                            </button>
+                            <button id="creditCompareBtn" type="button" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded" title="Порівняти варіанти кредиту">
+                                <i class="fas fa-table"></i>
+                            </button>
                         </div>
                     </div>
+
 		 <!-- Кнопка "Калькулятор" (FAB, мобільні) -->
     <div class="fixed bottom-4 right-4 z-40 md:hidden" id="calc-fab">
         <button type="button" onclick="scrollToBottom()" aria-label="Калькулятор" title="Калькулятор"
@@ -391,18 +377,16 @@
         </button>
     </div>
                     <!-- Знижка та Націнка -->
-                    <div class="space-y-4 mb-6">
-                        <div class="bg-red-50 p-3 rounded-lg border border-red-100">
-                            <label class="block text-sm font-medium text-red-700 mb-1">Знижка (грн або %)</label>
-                            <input type="text" id="discount-input" placeholder="напр. 5000 або 5%" 
-                                   class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 outline-none"
-                                   oninput="calculateTotal()">
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                            <label class="block text-sm font-medium text-green-700 mb-1">Націнка (грн або %)</label>
-                            <input type="text" id="markup-input" placeholder="напр. 2000 або 2%" 
-                                   class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none"
-                                   oninput="calculateTotal()">
+                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Знижка/Націнка</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="adjustment-input" placeholder="напр. 5000 або 5%" 
+                                   class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                            <div class="flex gap-1">
+                                <button type="button" id="adjustment-plus" class="px-3 py-2 text-sm font-bold rounded bg-gray-200 text-gray-700 hover:bg-gray-300 transition">+</button>
+                                <button type="button" id="adjustment-minus" class="px-3 py-2 text-sm font-bold rounded bg-red-600 text-white hover:bg-red-700 transition">-</button>
+                                <button type="button" id="adjustment-percent" class="px-3 py-2 text-sm font-bold rounded bg-gray-200 text-gray-700 hover:bg-gray-300 transition">%</button>
+                            </div>
                         </div>
                     </div>
 
@@ -424,17 +408,13 @@
                                 <span>Сума товарів:</span>
                                 <span>0 грн</span>
                             </div>
-                            <div class="flex justify-between text-red-600 hidden" id="receipt-discount">
-                                <span>Знижка:</span>
-                                <span>-0 грн</span>
+                            <div class="flex justify-between text-blue-600 hidden" id="receipt-adjustment">
+                                <span>Коригування:</span>
+                                <span>0 грн</span>
                             </div>
                             <div class="flex justify-between text-amber-700 hidden" id="receipt-compensation">
                                 <span>Компенсація:</span>
                                 <span>-0 грн</span>
-                            </div>
-                            <div class="flex justify-between text-green-600 hidden" id="receipt-markup">
-                                <span>Націнка:</span>
-                                <span>+0 грн</span>
                             </div>
                         </div>
                         <div class="border-t-2 border-gray-800 pt-2 mt-2 flex justify-between text-xl font-bold">
@@ -447,9 +427,133 @@
                         <button type="button" onclick="collapseAllCatalog()" class="text-gray-600 text-sm hover:underline">Згорнути все</button>
                         <button type="button" onclick="clearCart()" class="text-red-500 text-sm hover:underline">Очистити все</button>
                     </div>
+
+                    <!-- Спец-ціни (синя/червона) для вибраного товару -->
+                    <div id="generalXCalcPrices" class="hidden mt-5">
+                        <div class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Спец-ціни: <span id="specialPricesItemName" class="text-slate-800"></span></div>
+                        <div class="flex flex-wrap gap-2">
+                            <!-- Removed standalone general special-price buttons; per-item buttons shown in list -->
+                            <div id="generalXPriceHint" class="text-sm text-slate-600 self-center"></div>
+                        </div>
+
+                        <div id="generalXCalcPricesEdit" class="hidden mt-3 p-3 rounded-lg border border-slate-200 bg-white">
+                            <div class="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Редагування спец-цін (з ПДВ)</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="text-sm text-slate-700">
+                                    <div class="text-slate-600">Синя кнопка</div>
+                                    <input id="generalXBluePriceInput" type="number" inputmode="numeric" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+                                </label>
+                                <label class="text-sm text-slate-700">
+                                    <div class="text-slate-600">Червона кнопка</div>
+                                    <input id="generalXRedPriceInput" type="number" inputmode="numeric" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+                                </label>
+                            </div>
+                            <div class="mt-2 text-xs text-slate-500">Збережеться в Firestore після натискання кнопки “Зберегти” у режимі редагування.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Credit Modal -->
+    <div id="creditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Розрахунок кредиту</h3>
+                <button id="closeCreditModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Термін кредиту (місяці)</label>
+                <input type="hidden" id="creditTerm" value="1">
+                <div class="relative">
+                    <div id="creditTermDisplay" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white flex items-center justify-between">
+                        <span id="termText"><span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці</span>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </div>
+                    <div id="creditTermOptions" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded mt-1 shadow-lg z-10 hidden max-h-48 overflow-y-auto">
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="1"><span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="2"><span style="font-weight: bold;">2 місяці</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="3"><span style="font-weight: bold;">3 місяці</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="4"><span style="font-weight: bold;">4 місяці</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="5"><span style="font-weight: bold;">5 місяців</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="6"><span style="font-weight: bold;">6 місяців</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="7"><span style="font-weight: bold;">7 місяців</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="8"><span style="font-weight: bold;">8 місяців</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="9"><span style="font-weight: bold;">9 місяців</span> | Один платіж в кінці</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="10"><span style="font-weight: bold;">10 місяців</span> | Рівними частинами</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="11"><span style="font-weight: bold;">11 місяців</span> | Рівними частинами</div>
+                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="12"><span style="font-weight: bold;">12 місяців</span> | Рівними частинами</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Вартість товару</label>
+                <input type="text" id="creditProductCost" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Аванс</label>
+                <div class="flex gap-2">
+                    <input type="number" id="creditAdvance" placeholder="0" class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" min="0">
+                    <div class="flex">
+                        <button type="button" id="advanceUah" class="px-3 py-2 bg-blue-600 text-white rounded-l">грн</button>
+                        <button type="button" id="advancePercent" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-r">%</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Загальна сума для покупця</label>
+                <input type="text" id="creditTotalForBuyer" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100">
+            </div>
+            <div class="mb-4" id="monthlyPaymentContainer" style="display: none;">
+                <label class="block text-sm font-medium text-gray-700 mb-2">В місяць</label>
+                <input type="text" id="creditMonthlyPayment" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100">
+            </div>
+            <div class="flex justify-end">
+                <button id="closeCreditModalBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Закрити</button>
+            </div>
+            <div id="creditOrderComposition" class="mt-4 text-[11px] text-gray-500"></div>
+        </div>
+    </div>
+
+    <!-- Credit Comparison Modal -->
+    <div id="creditCompareModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Порівняння всіх варіантів кредиту</h3>
+                <button id="closeCreditCompareModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Аванс</label>
+                <div class="flex gap-2">
+                    <input type="number" id="compareAdvance" placeholder="0" class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" min="0">
+                    <div class="flex">
+                        <button type="button" id="compareAdvanceUah" class="px-3 py-2 bg-blue-600 text-white rounded-l">грн</button>
+                        <button type="button" id="compareAdvancePercent" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-r">%</button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="creditCompareTable" class="w-full border-collapse border border-gray-300 text-sm">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 p-2 text-left">Термін</th>
+                            <th class="border border-gray-300 p-2 text-right">Сума рівної частини</th>
+                            <th class="border border-gray-300 p-2 text-right">Загальна сума для покупця</th>
+                            <th class="border border-gray-300 p-2 text-right">Переплата</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creditCompareTableBody">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="compareOrderComposition" class="mt-4 text-[11px] text-gray-500"></div>
         </div>
     </div>
 
@@ -755,6 +859,35 @@
         let cart = {}; 
         let vatMode_ = 2; // only: 2 = З ПДВ
         let vatDiscount25Active_ = false;
+        let adjustmentMode_ = 'minus'; // 'plus' or 'minus'
+        let isPercentage_ = false;
+
+        function updateAdjustmentButtons_() {
+            const plusBtn = document.getElementById('adjustment-plus');
+            const minusBtn = document.getElementById('adjustment-minus');
+            const percentBtn = document.getElementById('adjustment-percent');
+
+            if (plusBtn) {
+                plusBtn.classList.toggle('bg-green-600', adjustmentMode_ === 'plus');
+                plusBtn.classList.toggle('text-white', adjustmentMode_ === 'plus');
+                plusBtn.classList.toggle('bg-gray-200', adjustmentMode_ !== 'plus');
+                plusBtn.classList.toggle('text-gray-700', adjustmentMode_ !== 'plus');
+            }
+
+            if (minusBtn) {
+                minusBtn.classList.toggle('bg-red-600', adjustmentMode_ === 'minus');
+                minusBtn.classList.toggle('text-white', adjustmentMode_ === 'minus');
+                minusBtn.classList.toggle('bg-gray-200', adjustmentMode_ !== 'minus');
+                minusBtn.classList.toggle('text-gray-700', adjustmentMode_ !== 'minus');
+            }
+
+            if (percentBtn) {
+                percentBtn.classList.toggle('bg-blue-600', isPercentage_);
+                percentBtn.classList.toggle('text-white', isPercentage_);
+                percentBtn.classList.toggle('bg-gray-200', !isPercentage_);
+                percentBtn.classList.toggle('text-gray-700', !isPercentage_);
+            }
+        }
         // --- LocalStorage: persist calculator state across tab switches ---
         const CALC_STATE_KEY_ = 'gm_calc_state_v1';
         let calcSaveTimer_ = null;
@@ -769,8 +902,7 @@
 
         function saveCalcState_() {
             try {
-                const discountEl = document.getElementById('discount-input');
-                const markupEl = document.getElementById('markup-input');
+                const discountEl = document.getElementById('adjustment-input');
 
                 const cartItems = Object.keys(cart).map((k) => {
                     const it = cart[k] || {};
@@ -779,7 +911,12 @@
                         name: String(it.name || ''),
                         type: 2,
                         qty: Math.max(1, Math.floor(Number(it.qty) || 1)),
-                        docId: String(it.docId || '')
+                        docId: String(it.docId || ''),
+                        specialPriceBlue2: Number(it.specialPriceBlue2) || 0,
+                        specialPriceRed2: Number(it.specialPriceRed2) || 0,
+                        specialTag: String(it.specialTag || ''),
+                        basePrice1: Number(it.basePrice1) || 0,
+                        basePrice2: Number(it.basePrice2) || 0
                     };
                 }).filter(x => x.name);
 
@@ -788,8 +925,13 @@
                     t: Date.now(),
                     vatMode: 2,
                     vatDiscount25Active: !!vatDiscount25Active_,
-                    discountInput: String(discountEl?.value ?? ''),
-                    markupInput: String(markupEl?.value ?? ''),
+                    adjustmentInput: String(discountEl?.value ?? ''),
+                    adjustmentMode: adjustmentMode_,
+                    isPercentage: !!isPercentage_,
+                    specialUiCartKey: String(specialUiCartKey_ || ''),
+                    creditTerm: document.getElementById('creditTerm')?.value || '1',
+                    creditAdvance: document.getElementById('creditAdvance')?.value || '',
+                    creditAdvanceType: document.getElementById('advanceUah')?.classList.contains('bg-blue-600') ? 'uah' : 'percent',
                     cartItems
                 };
                 localStorage.setItem(CALC_STATE_KEY_, JSON.stringify(state));
@@ -834,16 +976,18 @@
             if (!st) return;
 
             // Inputs
-            const discountEl = document.getElementById('discount-input');
-            const markupEl = document.getElementById('markup-input');
-            if (discountEl) discountEl.value = String(st.discountInput ?? '');
-            if (markupEl) markupEl.value = String(st.markupInput ?? '');
+            const adjustmentEl = document.getElementById('adjustment-input');
+            if (adjustmentEl) adjustmentEl.value = String(st.adjustmentInput ?? '');
 
             // VAT / 25% (VAT mode is fixed: only "З ПДВ")
             vatMode_ = 2;
             vatDiscount25Active_ = !!st.vatDiscount25Active;
+            adjustmentMode_ = String(st.adjustmentMode || 'minus');
+            isPercentage_ = !!st.isPercentage;
+            specialUiCartKey_ = String(st.specialUiCartKey || '');
             updateVatToggleUi_();
             updateVat25Ui_();
+            updateAdjustmentButtons_();
 
             // Cart
             cart = {};
@@ -866,11 +1010,55 @@
                     type: enforcedType,
                     price: price2,
                     qty,
+                    specialPriceBlue2: Number(ref?.specialPriceBlue2) || 0,
+                    specialPriceRed2: Number(ref?.specialPriceRed2) || 0,
+                    specialTag: String(ref?.specialTag || ''),
+                    basePrice1: Number(ref?.basePrice1) || price1,
+                    basePrice2: Number(ref?.basePrice2) || price2
                 };
             }
+            // Credit state
+            const creditTermEl = document.getElementById('creditTerm');
+            const creditAdvanceEl = document.getElementById('creditAdvance');
+            const advanceUahEl = document.getElementById('advanceUah');
+            const advancePercentEl = document.getElementById('advancePercent');
+            const termTextEl = document.getElementById('termText');
+            if (creditTermEl) creditTermEl.value = String(st.creditTerm || '1');
+            if (creditAdvanceEl) creditAdvanceEl.value = String(st.creditAdvance || '');
+            const advanceType = String(st.creditAdvanceType || 'uah');
+            if (advanceUahEl && advancePercentEl) {
+                if (advanceType === 'uah') {
+                    advanceUahEl.classList.add('bg-blue-600', 'text-white');
+                    advanceUahEl.classList.remove('bg-gray-200', 'text-gray-700');
+                    advancePercentEl.classList.add('bg-gray-200', 'text-gray-700');
+                    advancePercentEl.classList.remove('bg-blue-600', 'text-white');
+                } else {
+                    advancePercentEl.classList.add('bg-blue-600', 'text-white');
+                    advancePercentEl.classList.remove('bg-gray-200', 'text-gray-700');
+                    advanceUahEl.classList.add('bg-gray-200', 'text-gray-700');
+                    advanceUahEl.classList.remove('bg-blue-600', 'text-white');
+                }
+            }
+            // Update term display
+            const termOptions = {
+                1: '<span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці',
+                2: '<span style="font-weight: bold;">2 місяці</span> | Один платіж в кінці',
+                3: '<span style="font-weight: bold;">3 місяці</span> | Один платіж в кінці',
+                4: '<span style="font-weight: bold;">4 місяці</span> | Один платіж в кінці',
+                5: '<span style="font-weight: bold;">5 місяців</span> | Один платіж в кінці',
+                6: '<span style="font-weight: bold;">6 місяців</span> | Один платіж в кінці',
+                7: '<span style="font-weight: bold;">7 місяців</span> | Один платіж в кінці',
+                8: '<span style="font-weight: bold;">8 місяців</span> | Один платіж в кінці',
+                9: '<span style="font-weight: bold;">9 місяців</span> | Один платіж в кінці',
+                10: '<span style="font-weight: bold;">10 місяців</span> | Рівними частинами',
+                11: '<span style="font-weight: bold;">11 місяців</span> | Рівними частинами',
+                12: '<span style="font-weight: bold;">12 місяців</span> | Рівними частинами'
+            };
+            if (termTextEl) termTextEl.innerHTML = termOptions[creditTermEl?.value] || termOptions[1];
             updateVatToggleUi_();
             syncCatalogActiveStates_();
             calculateTotal();
+            updateGeneralXCalcPricesUi_();
         }
 
         // --- Міні адмін редагування прайсу ---
@@ -1059,6 +1247,303 @@
             });
 
             setupCalcFabVisibility_();
+
+            // Adjustment buttons
+            const plusBtn = document.getElementById('adjustment-plus');
+            const minusBtn = document.getElementById('adjustment-minus');
+            const percentBtn = document.getElementById('adjustment-percent');
+            const adjustmentInput = document.getElementById('adjustment-input');
+
+            updateAdjustmentButtons_();
+
+            if (plusBtn) plusBtn.addEventListener('click', () => {
+                adjustmentMode_ = 'plus';
+                updateAdjustmentButtons_();
+                calculateTotal();
+                scheduleCalcSave_();
+            });
+
+            if (minusBtn) minusBtn.addEventListener('click', () => {
+                adjustmentMode_ = 'minus';
+                updateAdjustmentButtons_();
+                calculateTotal();
+                scheduleCalcSave_();
+            });
+
+            if (percentBtn) percentBtn.addEventListener('click', () => {
+                isPercentage_ = !isPercentage_;
+                updateAdjustmentButtons_();
+                calculateTotal();
+                scheduleCalcSave_();
+            });
+
+            if (adjustmentInput) adjustmentInput.addEventListener('input', () => {
+                calculateTotal();
+                scheduleCalcSave_();
+            });
+
+            // Credit Modal
+            const creditBtn = document.getElementById('creditBtn');
+            const creditModal = document.getElementById('creditModal');
+            const closeCreditModal = document.getElementById('closeCreditModal');
+            const closeCreditModalBtn = document.getElementById('closeCreditModalBtn');
+            const creditTerm = document.getElementById('creditTerm');
+
+            function calculateCredit() {
+                const finalTotalEl = document.getElementById('final-total');
+                const baseAmount = finalTotalEl ? parseFloat(finalTotalEl.textContent.replace(/\s|грн/g, '')) || 0 : 0;
+                const months = parseInt(creditTerm.value) || 1;
+                const advanceInput = parseFloat(document.getElementById('creditAdvance').value) || 0;
+                const advanceType = document.getElementById('advanceUah').classList.contains('bg-blue-600') ? 'uah' : 'percent';
+
+                // Rate table
+                const rates = {
+                    1: 0.025,
+                    2: 0.050,
+                    3: 0.075,
+                    4: 0.100,
+                    5: 0.125,
+                    6: 0.150,
+                    7: 0.180,
+                    8: 0.200,
+                    9: 0.225,
+                    10: 0.210,
+                    11: 0.210,
+                    12: 0.210
+                };
+                const rate = rates[months] || 0.025;
+
+                let advancePercent = 0;
+                if (advanceType === 'percent') {
+                    advancePercent = advanceInput;
+                } else {
+                    advancePercent = baseAmount > 0 ? (advanceInput / baseAmount) * 100 : 0;
+                }
+
+                // Validation: advance cannot be greater than total
+                if (advancePercent > 100) {
+                    advancePercent = 100;
+                    if (advanceType === 'percent') {
+                        document.getElementById('creditAdvance').value = 100;
+                    } else {
+                        document.getElementById('creditAdvance').value = baseAmount;
+                    }
+                }
+
+                const advanceUAH = baseAmount * (advancePercent / 100);
+                const loanBody = baseAmount - advanceUAH;
+                const buyerBill = loanBody / (1 - rate);
+                const totalForBuyer = advanceUAH + buyerBill;
+                const monthlyPayment = totalForBuyer / months;
+                const commission = buyerBill - loanBody;
+
+                document.getElementById('creditProductCost').value = baseAmount.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                document.getElementById('creditTotalForBuyer').value = totalForBuyer.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+
+                const monthlyContainer = document.getElementById('monthlyPaymentContainer');
+                const monthlyInput = document.getElementById('creditMonthlyPayment');
+                if (months >= 10 && months <= 12) {
+                    monthlyContainer.style.display = 'block';
+                    monthlyInput.value = monthlyPayment.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                } else {
+                    monthlyContainer.style.display = 'none';
+                }
+
+                // Update order composition
+                const compositionEl = document.getElementById('creditOrderComposition');
+                const itemNames = Object.values(cart).map(item => item.name);
+                if (itemNames.length > 0) {
+                    compositionEl.textContent = `Склад замовлення: ${itemNames.join(', ')}`;
+                } else {
+                    compositionEl.textContent = '';
+                }
+            }
+
+            if (creditBtn) creditBtn.addEventListener('click', () => {
+                calculateCredit();
+                creditModal.classList.remove('hidden');
+            });
+
+            // Custom dropdown logic
+            const creditTermDisplay = document.getElementById('creditTermDisplay');
+            const creditTermOptions = document.getElementById('creditTermOptions');
+            const termText = document.getElementById('termText');
+
+            if (creditTermDisplay) creditTermDisplay.addEventListener('click', () => {
+                creditTermOptions.classList.toggle('hidden');
+            });
+
+            if (creditTermOptions) creditTermOptions.addEventListener('click', (e) => {
+                if (e.target.classList.contains('option')) {
+                    const value = e.target.getAttribute('data-value');
+                    const text = e.target.innerHTML;
+                    document.getElementById('creditTerm').value = value;
+                    termText.innerHTML = text;
+                    creditTermOptions.classList.add('hidden');
+                    calculateCredit();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!creditTermDisplay.contains(e.target) && !creditTermOptions.contains(e.target)) {
+                    creditTermOptions.classList.add('hidden');
+                }
+            });
+
+            // Advance input and toggle
+            const creditAdvance = document.getElementById('creditAdvance');
+            const advanceUah = document.getElementById('advanceUah');
+            const advancePercent = document.getElementById('advancePercent');
+
+            if (creditAdvance) creditAdvance.addEventListener('input', calculateCredit);
+
+            if (advanceUah) advanceUah.addEventListener('click', () => {
+                advanceUah.classList.add('bg-blue-600', 'text-white');
+                advanceUah.classList.remove('bg-gray-200', 'text-gray-700');
+                advancePercent.classList.add('bg-gray-200', 'text-gray-700');
+                advancePercent.classList.remove('bg-blue-600', 'text-white');
+                calculateCredit();
+            });
+
+            if (advancePercent) advancePercent.addEventListener('click', () => {
+                advancePercent.classList.add('bg-blue-600', 'text-white');
+                advancePercent.classList.remove('bg-gray-200', 'text-gray-700');
+                advanceUah.classList.add('bg-gray-200', 'text-gray-700');
+                advanceUah.classList.remove('bg-blue-600', 'text-white');
+                calculateCredit();
+            });
+
+            const closeModal = () => {
+                creditModal.classList.add('hidden');
+            };
+
+            if (closeCreditModal) closeCreditModal.addEventListener('click', closeModal);
+            if (closeCreditModalBtn) closeCreditModalBtn.addEventListener('click', closeModal);
+
+            // Close on overlay click
+            creditModal.addEventListener('click', (e) => {
+                if (e.target === creditModal) closeModal();
+            });
+
+            // Credit Comparison Modal
+            const creditCompareBtn = document.getElementById('creditCompareBtn');
+            const creditCompareModal = document.getElementById('creditCompareModal');
+            const closeCreditCompareModal = document.getElementById('closeCreditCompareModal');
+            const compareAdvance = document.getElementById('compareAdvance');
+            const compareAdvanceUah = document.getElementById('compareAdvanceUah');
+            const compareAdvancePercent = document.getElementById('compareAdvancePercent');
+            const creditCompareTableBody = document.getElementById('creditCompareTableBody');
+            const compareOrderComposition = document.getElementById('compareOrderComposition');
+
+            function calculateCreditComparison() {
+                const finalTotalEl = document.getElementById('final-total');
+                const baseAmount = finalTotalEl ? parseFloat(finalTotalEl.textContent.replace(/\s|грн/g, '')) || 0 : 0;
+                const advanceInput = parseFloat(compareAdvance.value) || 0;
+                const advanceType = compareAdvanceUah.classList.contains('bg-blue-600') ? 'uah' : 'percent';
+
+                let advancePercent = 0;
+                if (advanceType === 'percent') {
+                    advancePercent = advanceInput;
+                } else {
+                    advancePercent = baseAmount > 0 ? (advanceInput / baseAmount) * 100 : 0;
+                }
+
+                if (advancePercent > 100) {
+                    advancePercent = 100;
+                    if (advanceType === 'percent') {
+                        compareAdvance.value = 100;
+                    } else {
+                        compareAdvance.value = baseAmount;
+                    }
+                }
+
+                const advanceUAH = baseAmount * (advancePercent / 100);
+                const loanBody = baseAmount - advanceUAH;
+
+                const rates = {
+                    1: 0.025, 2: 0.050, 3: 0.075, 4: 0.100, 5: 0.125, 6: 0.150,
+                    7: 0.180, 8: 0.200, 9: 0.225, 10: 0.210, 11: 0.210, 12: 0.210
+                };
+
+                let minOverpayment = Infinity;
+                let minOverpaymentRow = null;
+
+                creditCompareTableBody.innerHTML = '';
+
+                for (let month = 1; month <= 12; month++) {
+                    const rate = rates[month];
+                    const buyerBill = loanBody / (1 - rate);
+                    const totalForBuyer = advanceUAH + buyerBill;
+                    const overpayment = totalForBuyer - baseAmount;
+                    const monthly = month >= 10 && month <= 12 ? totalForBuyer / month : null;
+
+                    const row = document.createElement('tr');
+                    if (overpayment < minOverpayment) {
+                        minOverpayment = overpayment;
+                        minOverpaymentRow = row;
+                    }
+
+                    const termText = month >= 10 && month <= 12 ? `${month} місяців (Рівними частинами)` : `${month} ${month === 1 ? 'місяць' : 'місяці'}`;
+
+                    const equalPart = month >= 10 && month <= 12 ? `<span class="font-bold text-blue-600">${monthly.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</span>` : 'В кінці терміну';
+
+                    row.innerHTML = `
+                        <td class="border border-gray-300 p-2">${termText}</td>
+                        <td class="border border-gray-300 p-2 text-right">${equalPart}</td>
+                        <td class="border border-gray-300 p-2 text-right">${totalForBuyer.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</td>
+                        <td class="border border-gray-300 p-2 text-right">${overpayment.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</td>
+                    `;
+
+                    creditCompareTableBody.appendChild(row);
+                }
+
+                if (minOverpaymentRow) {
+                    minOverpaymentRow.classList.add('bg-green-50');
+                }
+
+                // Update order composition
+                const itemNames = Object.values(cart).map(item => item.name);
+                if (itemNames.length > 0) {
+                    compareOrderComposition.textContent = `Склад замовлення: ${itemNames.join(', ')}`;
+                } else {
+                    compareOrderComposition.textContent = '';
+                }
+            }
+
+            if (creditCompareBtn) creditCompareBtn.addEventListener('click', () => {
+                calculateCreditComparison();
+                creditCompareModal.classList.remove('hidden');
+            });
+
+            if (compareAdvance) compareAdvance.addEventListener('input', calculateCreditComparison);
+
+            if (compareAdvanceUah) compareAdvanceUah.addEventListener('click', () => {
+                compareAdvanceUah.classList.add('bg-blue-600', 'text-white');
+                compareAdvanceUah.classList.remove('bg-gray-200', 'text-gray-700');
+                compareAdvancePercent.classList.add('bg-gray-200', 'text-gray-700');
+                compareAdvancePercent.classList.remove('bg-blue-600', 'text-white');
+                calculateCreditComparison();
+            });
+
+            if (compareAdvancePercent) compareAdvancePercent.addEventListener('click', () => {
+                compareAdvancePercent.classList.add('bg-blue-600', 'text-white');
+                compareAdvancePercent.classList.remove('bg-gray-200', 'text-gray-700');
+                compareAdvanceUah.classList.add('bg-gray-200', 'text-gray-700');
+                compareAdvanceUah.classList.remove('bg-blue-600', 'text-white');
+                calculateCreditComparison();
+            });
+
+            const closeCompareModal = () => {
+                creditCompareModal.classList.add('hidden');
+            };
+
+            if (closeCreditCompareModal) closeCreditCompareModal.addEventListener('click', closeCompareModal);
+
+            // Close on overlay click
+            creditCompareModal.addEventListener('click', (e) => {
+                if (e.target === creditCompareModal) closeCompareModal();
+            });
         });
 
         function setupCalcFabVisibility_() {
@@ -1673,6 +2158,12 @@
 
         function toggleSelectedItemSpecialPrice_(tag) {
             const key = findSelectedCartKeyForSpecialPrices_();
+            if (!key) return;
+            toggleItemSpecialPriceForKey(tag, key);
+        }
+
+        // Toggle special price for a specific cart key (supports multiple special-priced items).
+        function toggleItemSpecialPriceForKey(tag, key) {
             if (!key || !cart[key]) return;
             const it = cart[key];
 
@@ -1682,7 +2173,6 @@
             const nextP2 = Number(tag === 'red' ? red2 : blue2);
             if (!Number.isFinite(nextP2) || nextP2 <= 0) return;
 
-            // Base/original prices for toggle-off.
             if (!Number.isFinite(Number(it.basePrice2))) it.basePrice2 = Number(it.price2);
             if (!Number.isFinite(Number(it.basePrice1))) it.basePrice1 = Number(it.price1);
 
@@ -1706,84 +2196,125 @@
             scheduleCalcSave_();
         }
 
+        // Quick inline edit for per-cart-item special price (affects calculator immediately).
+        function editCartItemSpecialPrice(key, tag) {
+            if (!key || !cart[key]) return;
+            const it = cart[key];
+            const prop = tag === 'red' ? 'specialPriceRed2' : 'specialPriceBlue2';
+            const current = Number(it[prop]) || 0;
+            const raw = prompt('Нова спец-ціна (грн)', String(Math.round(current || 0)));
+            if (raw == null) return;
+            const v = parsePriceNumber_(raw);
+            if (!Number.isFinite(v) || v < 0) return;
+            it[prop] = v;
+            updateGeneralXCalcPricesUi_();
+            scheduleCalcSave_();
+        }
+
         function updateGeneralXCalcPricesUi_() {
             const wrap = document.getElementById('generalXCalcPrices');
             if (!wrap) return;
-
-            const key = findSelectedCartKeyForSpecialPrices_();
-            const cartItem = key && cart[key] ? cart[key] : null;
 
             const editDocId = (priceEditUnlocked_ && priceEditMode_) ? String(specialEditSelectedDocId_ || '').trim() : '';
             const editItem = editDocId ? findItemByDocId_(editDocId) : null;
             const editName = editItem ? String(editItem.name || '') : '';
             const effEdit = editDocId ? getEffectiveSpecialPricesForDocId_(editDocId) : { blue: 0, red: 0 };
 
-            const showInCart = !!(cartItem && (Number(cartItem.specialPriceBlue2) > 0 || Number(cartItem.specialPriceRed2) > 0));
+            const cartSpecialKeys = Object.keys(cart).filter((k) => {
+                const it = cart[k];
+                return !!(it && (Number(it.specialPriceBlue2) > 0 || Number(it.specialPriceRed2) > 0));
+            });
+            const showInCart = cartSpecialKeys.length > 0;
             const showInEdit = !!(priceEditUnlocked_ && priceEditMode_ && editDocId);
 
             wrap.classList.toggle('hidden', !(showInCart || showInEdit));
             if (!(showInCart || showInEdit)) return;
 
-            const nameEl = document.getElementById('specialPricesItemName');
-            const blueBtn = document.getElementById('generalXPriceBlueBtn');
-            const redBtn = document.getElementById('generalXPriceRedBtn');
-            const hint = document.getElementById('generalXPriceHint');
-            const editWrap = document.getElementById('generalXCalcPricesEdit');
-            const blueInp = document.getElementById('generalXBluePriceInput');
-            const redInp = document.getElementById('generalXRedPriceInput');
-
-            const blueVal = showInCart ? Number(cartItem.specialPriceBlue2) : Number(effEdit.blue);
-            const redVal = showInCart ? Number(cartItem.specialPriceRed2) : Number(effEdit.red);
-
-            const blueEnabled = Number(blueVal) > 0;
-            const redEnabled = Number(redVal) > 0;
-
-            if (nameEl) nameEl.textContent = showInCart ? String(cartItem.name || '') : editName;
-            if (blueBtn) blueBtn.textContent = Math.round(Number(blueVal) || 0).toLocaleString('uk-UA');
-            if (redBtn) redBtn.textContent = Math.round(Number(redVal) || 0).toLocaleString('uk-UA');
-
-            const canApply = !!(showInCart);
-            if (blueBtn) {
-                blueBtn.classList.toggle('hidden', !blueEnabled);
-                blueBtn.disabled = !canApply;
-                blueBtn.classList.toggle('opacity-50', !canApply);
+            // Keep existing edit block; render dynamic list of cart special-priced items in a dedicated container.
+            const listId = 'generalXCalcPricesList';
+            let list = document.getElementById(listId);
+            if (!list) {
+                list = document.createElement('div');
+                list.id = listId;
+                list.className = 'space-y-2 mt-2';
+                const editWrap = document.getElementById('generalXCalcPricesEdit');
+                if (editWrap) wrap.insertBefore(list, editWrap);
+                else wrap.appendChild(list);
             }
-            if (redBtn) {
-                redBtn.classList.toggle('hidden', !redEnabled);
-                redBtn.disabled = !canApply;
-                redBtn.classList.toggle('opacity-50', !canApply);
+            list.innerHTML = '';
+
+            // Helper to create button element
+            function createBtn(label, cls, onClick) {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = cls;
+                b.textContent = label;
+                b.setAttribute('onclick', onClick);
+                return b;
             }
 
-            const tag = cartItem ? String(cartItem.specialTag || '') : '';
-            if (blueBtn) {
-                const active = tag === 'blue' && blueEnabled;
-                blueBtn.classList.toggle('ring-2', active);
-                blueBtn.classList.toggle('ring-blue-300', active);
-                blueBtn.classList.toggle('ring-offset-2', active);
-            }
-            if (redBtn) {
-                const active = tag === 'red' && redEnabled;
-                redBtn.classList.toggle('ring-2', active);
-                redBtn.classList.toggle('ring-red-300', active);
-                redBtn.classList.toggle('ring-offset-2', active);
-            }
+            if (showInCart) {
+                for (const key of cartSpecialKeys) {
+                    const it = cart[key];
+                    const blueVal = Math.round(Number(it.specialPriceBlue2) || 0);
+                    const redVal = Math.round(Number(it.specialPriceRed2) || 0);
+                    const current = Math.round(Number(it.price2) || 0);
 
-            if (hint) {
-                if (showInCart) {
-                    const current = Number(cartItem.price2);
-                    hint.textContent = Number.isFinite(current)
-                        ? `Поточна: ${Math.round(current).toLocaleString()} грн`
-                        : '';
-                } else {
-                    hint.textContent = 'Додай товар у кошик (один), щоб застосувати ціну';
+
+                    const row = document.createElement('div');
+                    row.className = 'flex flex-col bg-slate-50 p-2 rounded-lg border border-slate-100 w-full';
+
+                    const left = document.createElement('div');
+                    left.className = 'w-full text-sm font-semibold text-slate-800 mb-2';
+                    left.textContent = String(it.name || '');
+
+                    const middle = document.createElement('div');
+                    middle.className = 'w-full flex flex-row flex-wrap items-center gap-2 mb-2';
+
+                    if (blueVal > 0) {
+                        const b = createBtn(blueVal.toLocaleString('uk-UA'), 'inline-flex items-center justify-center px-3 py-1 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition', `toggleItemSpecialPriceForKey('blue','${key}')`);
+                        middle.appendChild(b);
+                        // Only show inline edit for admins in edit mode
+                        if (priceEditUnlocked_ && priceEditMode_) {
+                            const eb = createBtn('Ред.', 'ml-1 text-xs px-2 py-1 border rounded hover:bg-gray-100', `editCartItemSpecialPrice('${key}','blue')`);
+                            middle.appendChild(eb);
+                        }
+                    }
+
+                    if (redVal > 0) {
+                        const r = createBtn(redVal.toLocaleString('uk-UA'), 'inline-flex items-center justify-center px-3 py-1 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition', `toggleItemSpecialPriceForKey('red','${key}')`);
+                        middle.appendChild(r);
+                        // Only show inline edit for admins in edit mode
+                        if (priceEditUnlocked_ && priceEditMode_) {
+                            const er = createBtn('Ред.', 'ml-1 text-xs px-2 py-1 border rounded hover:bg-gray-100', `editCartItemSpecialPrice('${key}','red')`);
+                            middle.appendChild(er);
+                        }
+                    }
+
+                    const right = document.createElement('div');
+                    right.className = 'w-full text-xs text-slate-600';
+                    right.textContent = Number.isFinite(current) ? `Поточна: ${current.toLocaleString('uk-UA')} грн` : '';
+
+                    row.appendChild(left);
+                    row.appendChild(middle);
+                    row.appendChild(right);
+                    list.appendChild(row);
                 }
             }
 
-            const showEditor = !!(priceEditUnlocked_ && priceEditMode_ && editDocId);
-            if (editWrap) editWrap.classList.toggle('hidden', !showEditor);
-            if (showEditor) {
+            // Update edit block visibility and inputs
+            const editWrap = document.getElementById('generalXCalcPricesEdit');
+            if (editWrap) editWrap.classList.toggle('hidden', !showInEdit);
+            if (showInEdit) {
+                const blueInp = document.getElementById('generalXBluePriceInput');
+                const redInp = document.getElementById('generalXRedPriceInput');
                 if (blueInp && document.activeElement !== blueInp) blueInp.value = String(Math.round(Number(effEdit.blue) || 0));
                 if (redInp && document.activeElement !== redInp) redInp.value = String(Math.round(Number(effEdit.red) || 0));
+                const nameEl = document.getElementById('specialPricesItemName');
+                if (nameEl) nameEl.textContent = editName;
+            } else {
+                const nameEl = document.getElementById('specialPricesItemName');
+                if (nameEl) nameEl.textContent = '';
             }
         }
 
@@ -2269,6 +2800,7 @@
             
             if (Object.keys(cart).length === 0) {
                 receiptItemsContainer.innerHTML = '<div class="text-center text-gray-400 italic">Товари не обрані</div>';
+                resetCreditState_();
             }
 
             for (let key in cart) {
@@ -2362,16 +2894,26 @@
 
             let baseTotal = itemsTotal;
 
-            const discountEl = document.getElementById('discount-input');
-            const markupEl = document.getElementById('markup-input');
-            const discountInput = String(discountEl?.value ?? '');
-            const markupInput = String(markupEl?.value ?? '');
+            const adjustmentEl = document.getElementById('adjustment-input');
+            const adjustmentInput = String(adjustmentEl?.value ?? '');
 
-            const discountVal = parseInput(discountInput, baseTotal);
-            const markupVal = parseInput(markupInput, baseTotal);
+            let adjustmentVal = 0;
+            if (adjustmentInput) {
+                const num = parseFloat(adjustmentInput.replace(/\s/g, ''));
+                if (!isNaN(num)) {
+                    if (isPercentage_) {
+                        adjustmentVal = baseTotal * num / 100;
+                    } else {
+                        adjustmentVal = num;
+                    }
+                    if (adjustmentMode_ === 'minus') {
+                        adjustmentVal = -adjustmentVal;
+                    }
+                }
+            }
 
-            // "РАЗОМ" before compensation (includes discount/markup).
-            const totalBeforeComp = baseTotal - discountVal + markupVal;
+            // "РАЗОМ" before compensation (includes adjustment).
+            const totalBeforeComp = baseTotal + adjustmentVal;
 
             // 25% mode is a VISUAL "state compensation" indicator.
             // It must be calculated ONLY from the final total "РАЗОМ" (y) before compensation.
@@ -2388,30 +2930,14 @@
 
             document.getElementById('receipt-subtotal').innerHTML = `<span>Сума товарів:</span> <span class="font-bold">${itemsTotal.toLocaleString()} грн</span>`;
             
-            const discElem = document.getElementById('receipt-discount');
-            if (discountVal > 0) {
-                discElem.classList.remove('hidden');
-                discElem.innerHTML = `<span>Знижка:</span> <span>-${Math.round(discountVal).toLocaleString()} грн</span>`;
+            const adjElem = document.getElementById('receipt-adjustment');
+            if (adjustmentVal !== 0) {
+                adjElem.classList.remove('hidden');
+                const sign = adjustmentVal > 0 ? '+' : '';
+                adjElem.innerHTML = `<span>Коригування:</span> <span>${sign}${Math.round(adjustmentVal).toLocaleString()} грн</span>`;
+                adjElem.className = `flex justify-between ${adjustmentVal > 0 ? 'text-green-600' : 'text-red-600'}`;
             } else {
-                discElem.classList.add('hidden');
-            }
-
-            const compElem = document.getElementById('receipt-compensation');
-            if (compElem) {
-                if (compensationVal > 0) {
-                    compElem.classList.remove('hidden');
-                    compElem.innerHTML = `<span>Компенсація:</span> <span>-${Math.round(compensationVal).toLocaleString()} грн</span>`;
-                } else {
-                    compElem.classList.add('hidden');
-                }
-            }
-
-            const markElem = document.getElementById('receipt-markup');
-            if (markupVal > 0) {
-                markElem.classList.remove('hidden');
-                markElem.innerHTML = `<span>Націнка:</span> <span>+${Math.round(markupVal).toLocaleString()} грн</span>`;
-            } else {
-                markElem.classList.add('hidden');
+                adjElem.classList.add('hidden');
             }
 
             document.getElementById('final-total').textContent = `${Math.round(finalTotal).toLocaleString()} грн`;
@@ -2423,6 +2949,25 @@
             scheduleCalcSave_();
         }
 
+        function resetCreditState_() {
+            const creditTermEl = document.getElementById('creditTerm');
+            const creditAdvanceEl = document.getElementById('creditAdvance');
+            const advanceUahEl = document.getElementById('advanceUah');
+            const advancePercentEl = document.getElementById('advancePercent');
+            const termTextEl = document.getElementById('termText');
+            if (creditTermEl) creditTermEl.value = '1';
+            if (creditAdvanceEl) creditAdvanceEl.value = '';
+            if (advanceUahEl) {
+                advanceUahEl.classList.add('bg-blue-600', 'text-white');
+                advanceUahEl.classList.remove('bg-gray-200', 'text-gray-700');
+            }
+            if (advancePercentEl) {
+                advancePercentEl.classList.add('bg-gray-200', 'text-gray-700');
+                advancePercentEl.classList.remove('bg-blue-600', 'text-white');
+            }
+            if (termTextEl) termTextEl.innerHTML = '<span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці';
+        }
+
         function clearCart() {
             cart = {};
             specialUiCartKey_ = '';
@@ -2431,21 +2976,18 @@
             updateVatToggleUi_();
             updateVat25Ui_();
             document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('discount-input').value = '';
-            document.getElementById('markup-input').value = '';
+            document.getElementById('adjustment-input').value = '';
+            adjustmentMode_ = 'minus';
+            isPercentage_ = false;
             calculateTotal();
             clearCalcState_();
+            resetCreditState_();
         }
 
         // Special price buttons (blue/red) + edit-mode inputs
         (function initSpecialCalcButtons_() {
-            const blueBtn = document.getElementById('generalXPriceBlueBtn');
-            const redBtn = document.getElementById('generalXPriceRedBtn');
             const blueInp = document.getElementById('generalXBluePriceInput');
             const redInp = document.getElementById('generalXRedPriceInput');
-
-            if (blueBtn) blueBtn.addEventListener('click', () => toggleSelectedItemSpecialPrice_('blue'));
-            if (redBtn) redBtn.addEventListener('click', () => toggleSelectedItemSpecialPrice_('red'));
 
             function setSpecialEdit_(field, value) {
                 const docId = String(specialEditSelectedDocId_ || '').trim();
