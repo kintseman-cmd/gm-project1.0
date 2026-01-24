@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Script New (Refactor wrapper)</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{display:flex;flex-direction:column;height:100vh}
+    header{background:#111;color:#fff;padding:10px 14px;font-weight:700}
+    .hint{font-size:13px;color:#eee;opacity:.9}
+    #frame-wrap{flex:1;display:block;height:calc(100% - 48px)}
+    iframe{width:100%;height:100%;border:0}
+  </style>
+</head>
+<body>
+  <header>
+    Script — new wrapper (runtime refactor). <span class="hint">Embedding gm-script.html and injecting unified selection functions.</span>
+  </header>
+  <div id="frame-wrap">
+    <iframe id="srcFrame" src="gm-script.html"></iframe>
+  </div>
+
+<script>
+(function(){
+  const iframe = document.getElementById('srcFrame');
+  iframe.addEventListener('load', () => {
+    let win, doc;
+    try {
+      win = iframe.contentWindow;
+      doc = iframe.contentDocument || win.document;
+    } catch (e) {
+      console.error('Cannot access iframe content (cross-origin). Ensure files are same origin.', e);
+      return;
+    }
+
+    // Add structural classes: product-section and sub-script
+    Array.from(doc.querySelectorAll('[id$="-section"]')).forEach(el => el.classList.add('product-section'));
+    Array.from(doc.querySelectorAll('.script-section')).forEach(el => el.classList.add('sub-script'));
+
+    // Helper: toggle active class on buttons inside a container
+    function clearSiblingsActive(container, btn) {
+      if (!container) return;
+      Array.from(container.querySelectorAll('button')).forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    // Unified selectProduct
+    function selectProduct(productType, btnElement) {
+      const all = doc.querySelectorAll('.product-section');
+      const target = doc.getElementById(productType + '-section');
+      const sameOpen = target && !target.classList.contains('hidden') && target === doc.querySelector('.product-section:not(.hidden)');
+
+      all.forEach(s => s.classList.add('hidden'));
+      // toggle
+      if (!target) {
+        // nothing
+      } else if (sameOpen) {
+        target.classList.add('hidden');
+      } else {
+        target.classList.remove('hidden');
+        target.scrollIntoView({behavior:'smooth'});
+      }
+
+      // Set active state on product buttons (data-product-btn)
+      Array.from(doc.querySelectorAll('[data-product-btn]')).forEach(b => b.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+    }
+
+    // Unified selectSubScript: show element with id=scriptId and hide other .sub-script inside same product-section
+    function selectSubScript(scriptId, btnElement) {
+      if (!btnElement) {
+        // try to find by id
+        const el = doc.getElementById(scriptId);
+        if (!el) return;
+        const parentProduct = Array.from(doc.querySelectorAll('.product-section')).find(p => p.contains(el));
+        if (!parentProduct) return;
+        parentProduct.querySelectorAll('.sub-script').forEach(s => s.classList.add('hidden'));
+        el.classList.remove('hidden');
+        el.scrollIntoView({behavior:'smooth'});
+        return;
+      }
+
+      // find nearest product-section ancestor
+      const parentProduct = btnElement.closest ? btnElement.closest('.product-section') : null;
+      if (parentProduct) {
+        parentProduct.querySelectorAll('.sub-script').forEach(s => s.classList.add('hidden'));
+      } else {
+        // fallback: hide all
+        doc.querySelectorAll('.sub-script').forEach(s => s.classList.add('hidden'));
+      }
+
+      const target = doc.getElementById(scriptId);
+      if (target) {
+        target.classList.remove('hidden');
+      }
+
+      // manage active state among sibling buttons
+      if (btnElement && btnElement.parentElement) {
+        clearSiblingsActive(btnElement.parentElement, btnElement);
+      }
+    }
+
+    // Override/attach functions into iframe's window so inline onclicks call our unified handlers
+    try {
+      win.selectProduct = selectProduct;
+      win.selectSubScript = selectSubScript;
+
+      // Delegate existing selectScript/selectHuskerScript/selectRipperScript/selectKrnScript to selectSubScript
+      win.selectScript = function(type, param, btn) {
+        // Map known cultivator types to script ids (best effort)
+        const map = {
+          'kns': 'script-kns',
+          'kps4': 'script-kps-4',
+          'kprs': 'script-kprs'
+        };
+        const id = map[type] || ('script-' + type);
+        // dynamic text updates preserved if elements present
+        if (type === 'kns') {
+          const el = doc.getElementById('dynamic-width-kns'); if (el) el.textContent = param;
+        }
+        if (type === 'kprs') {
+          const el = doc.getElementById('dynamic-model-kprs'); if (el) el.textContent = param;
+        }
+        selectSubScript(id, btn);
+      };
+
+      win.selectHuskerScript = function(type, model, btn) {
+        const map = {
+          'mounted': 'script-husker-mounted',
+          'trailed_lp': 'script-husker-lp',
+          'heavy_lpr': 'script-husker-lpr'
+        };
+        const id = map[type] || ('script-husker-' + type);
+        // update dynamic labels
+        if (type === 'mounted') { const el = doc.getElementById('husker-mounted-model'); if (el) el.textContent = model; }
+        if (type === 'trailed_lp') { const el = doc.getElementById('husker-lp-model'); if (el) el.textContent = model; }
+        if (type === 'heavy_lpr') { const el = doc.getElementById('husker-lpr-model'); if (el) el.textContent = model; }
+        selectSubScript(id, btn);
+      };
+
+      win.selectRipperScript = function(model, hp, btn) {
+        const idMap = { '2.0': 'script-ripper-2-0', '2.5': 'script-ripper-2-5', '3.0': 'script-ripper-3-0' };
+        const id = idMap[model] || ('script-ripper-' + model.replace('.', '-'));
+        const dyn = doc.getElementById('ripper-model-' + model);
+        if (dyn) dyn.textContent = model;
+        selectSubScript(id, btn);
+      };
+
+      win.selectKrnScript = function(type, btn) {
+        const id = 'script-krn-' + type;
+        selectSubScript(id, btn);
+      };
+
+      // Ensure buttons with data attributes are bound to unified handlers
+      function bindProductButton(b) {
+        try {
+          if (!b || b.dataset.__registered === '1') return;
+          const type = b.getAttribute('data-product-btn');
+          if (!type) return;
+          b.addEventListener('click', () => win.selectProduct(type, b));
+          b.dataset.__registered = '1';
+        } catch (e) { /* noop */ }
+      }
+
+      function bindSubscriptButton(b) {
+        try {
+          if (!b || b.dataset.__registered === '1') return;
+          const scriptId = b.getAttribute('data-script-id') || b.getAttribute('data-subscript') || b.getAttribute('data-target-script');
+          if (!scriptId) return;
+          b.addEventListener('click', () => win.selectSubScript(scriptId, b));
+          b.dataset.__registered = '1';
+        } catch (e) { /* noop */ }
+      }
+
+      // Register existing static buttons
+      function registerAllButtons() {
+        Array.from(doc.querySelectorAll('[data-product-btn]')).forEach(bindProductButton);
+        Array.from(doc.querySelectorAll('[data-script-id], [data-subscript], [data-target-script]')).forEach(bindSubscriptButton);
+      }
+
+      registerAllButtons();
+
+      // Watch for dynamically added buttons and bind them automatically
+      const observer = new MutationObserver(mutations => {
+        for (const m of mutations) {
+          if (!m.addedNodes || m.addedNodes.length === 0) continue;
+          m.addedNodes.forEach(node => {
+            if (node.nodeType !== 1) return; // element only
+            if (node.matches && node.matches('[data-product-btn]')) bindProductButton(node);
+            if (node.querySelectorAll) {
+              Array.from(node.querySelectorAll('[data-product-btn]')).forEach(bindProductButton);
+              Array.from(node.querySelectorAll('[data-script-id], [data-subscript], [data-target-script]')).forEach(bindSubscriptButton);
+            }
+          });
+        }
+      });
+
+      try { observer.observe(doc.body || doc.documentElement, { childList: true, subtree: true }); } catch (e) { /* ignore */ }
+
+      // Helpers to programmatically create buttons (exposed on iframe window)
+      win.createProductButton = function(containerSelector, opts) {
+        const container = typeof containerSelector === 'string' ? doc.querySelector(containerSelector) : containerSelector;
+        if (!container) return null;
+        const btn = doc.createElement('button');
+        btn.className = opts && opts.className ? opts.className : 'btn';
+        btn.textContent = opts && opts.label ? opts.label : (opts && opts.type ? opts.type : 'Product');
+        btn.setAttribute('data-product-btn', opts.type || 'product');
+        if (opts && opts.attrs) Object.keys(opts.attrs).forEach(k => btn.setAttribute(k, opts.attrs[k]));
+        container.appendChild(btn);
+        bindProductButton(btn);
+        return btn;
+      };
+
+      win.createSubscriptButton = function(containerSelector, opts) {
+        const container = typeof containerSelector === 'string' ? doc.querySelector(containerSelector) : containerSelector;
+        if (!container) return null;
+        const btn = doc.createElement('button');
+        btn.className = opts && opts.className ? opts.className : 'btn';
+        btn.textContent = opts && opts.label ? opts.label : (opts && opts.scriptId ? opts.scriptId : 'Script');
+        btn.setAttribute('data-script-id', opts.scriptId || opts.id || 'script');
+        if (opts && opts.attrs) Object.keys(opts.attrs).forEach(k => btn.setAttribute(k, opts.attrs[k]));
+        container.appendChild(btn);
+        bindSubscriptButton(btn);
+        return btn;
+      };
+
+      // Add a small visual marker to product sections (non-destructive)
+      Array.from(doc.querySelectorAll('.product-section')).forEach((s)=>{
+        s.dataset.refactored = '1';
+      });
+
+      console.log('script-new: injected unified selectors into iframe.');
+    } catch (err) {
+      console.error('Injection failed:', err);
+    }
+
+    // Inject Firebase price listener into iframe so scripts show live price updates
+    try {
+      const priceScript = doc.createElement('script');
+      priceScript.type = 'module';
+      priceScript.textContent = `
+        // Firebase price listener injected by script-new wrapper
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+            authDomain: "gm-base.firebaseapp.com",
+            projectId: "gm-base",
+            storageBucket: "gm-base.firebasestorage.app",
+            messagingSenderId: "579626247182",
+            appId: "1:579626247182:web:09324aa5823c564defc85f"
+        };
+
+        async function initFirebaseForPrice() {
+          try {
+            const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+            const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            let app;
+            const appName = 'script-new-price';
+            try { app = appMod.initializeApp(FIREBASE_CONFIG, appName); } catch (e) { app = appMod.getApp(appName); }
+            const db = fsMod.getFirestore(app);
+            try {
+              const auth = authMod.getAuth(app);
+              if (!auth.currentUser) await authMod.signInAnonymously(auth);
+            } catch (e) { /* ignore auth errors */ }
+            return { db, fsMod };
+          } catch (e) {
+            console.warn('Firebase init failed', e);
+            return null;
+          }
+        }
+
+        function formatUAN(n) { try { return Number(n).toLocaleString('uk-UA'); } catch(e){ return String(n); } }
+
+        async function parseCalcForPrice() {
+          try {
+            const r = await fetch('calc.html');
+            if (!r.ok) return null;
+            const txt = await r.text();
+            // prefer price2 then price1
+            let m = txt.match(/\{\s*name:\s*"Борона пружинна 9 m\. \+ опорні колеса"[\s\S]*?price2:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            m = txt.match(/\{\s*name:\s*"Борона пружинна 9 m\. \+ опорні колеса",\s*price2:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            m = txt.match(/\{\s*name:\s*"Борona pruzhinna 9 m|Борона пружинна 9 m|Борона пружинна 9 м"[\s\S]*?price2:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            // fallbacks to price1
+            m = txt.match(/\{\s*name:\s*"Борона пружинна 9 m\. \+ опорні колеса"[\s\S]*?price1:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            m = txt.match(/\{\s*name:\s*"Борona pruzhinna 9 m|Борона пружинна 9 m|Борона пружинна 9 м"[\s\S]*?price1:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            // base + wheels (accept price2 or price1)
+            const base = txt.match(/\{\s*name:\s*"Борона пружинна 9 m\. \(без опорних коліс\)"[\s\S]*?(?:price2|price1):\s*(\d+)/i) || txt.match(/\{\s*name:\s*"Борона пружинна 9 м\. \(без опорних коліс\)"[\s\S]*?(?:price2|price1):\s*(\d+)/i);
+            const wheels = txt.match(/\{\s*name:\s*"Колеса опорні"[\s\S]*?(?:price2|price1):\s*(\d+)/i);
+            if (base && wheels && base[1] && wheels[1]) return Number(base[1]) + Number(wheels[1]);
+          } catch (e) {
+            return null;
+          }
+          return null;
+        }
+
+        (async function() {
+          const targetEl = document.getElementById('dynamic-price-harrow');
+          if (!targetEl) return;
+          targetEl.textContent = 'пошук ціни...';
+
+          // Try Firebase first
+          const api = await initFirebaseForPrice();
+          if (api) {
+            try {
+              const { db, fsMod } = api;
+              const q = fsMod.collection(db, 'priceItems');
+              fsMod.onSnapshot(q, snap => {
+                try {
+                  let found = null;
+                  snap.forEach(doc => {
+                    const d = doc.data();
+                    const name = String(d.name || '').toLowerCase();
+                    if (name.includes('борона') && name.includes('9') && name.includes('опор')) { found = d; }
+                  });
+                  if (!found) {
+                    snap.forEach(doc => {
+                      const d = doc.data();
+                      const name = String(d.name || '').toLowerCase();
+                      if (!found && name.includes('борона') && name.includes('9')) { found = d; }
+                    });
+                  }
+                  if (found && (found.price2 || found.price1)) {
+                    const price = Number(found.price2 || found.price1 || 0);
+                    targetEl.textContent = formatUAN(price);
+                    return;
+                  }
+                } catch (e) { console.warn('price snapshot handler error', e); }
+              }, err => { console.warn('price onSnapshot error', err); });
+            } catch (e) { console.warn('price listener setup failed', e); }
+          }
+
+          // If Firebase didn't populate quickly, fallback to parsing local calc.html
+          const parsed = await parseCalcForPrice();
+          if (parsed) {
+            targetEl.textContent = formatUAN(parsed);
+            return;
+          }
+
+          // Final fallback: leave dash
+          targetEl.textContent = '—';
+        })();
+      `;
+      doc.body.appendChild(priceScript);
+    } catch (e) {
+      console.warn('Failed to inject price script into iframe', e);
+    }
+
+  });
+})();
+</script>
+</body>
+</html>

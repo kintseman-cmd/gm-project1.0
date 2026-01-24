@@ -711,15 +711,15 @@
 
         /* --- МОДАЛЬНЕ ВІКНО (POP-UP) --- */
         .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 1001; 
+            display: none;
+            position: fixed;
+            z-index: 99999; /* ensure modal sits above all other UI */
             left: 0;
             top: 0;
-            width: 100%; 
-            height: 100%; 
-            overflow: auto; 
-            background-color: rgba(0,0,0,0.5);
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
             contain: strict;
             overscroll-behavior: contain;
         }
@@ -734,6 +734,7 @@
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             position: relative;
+            z-index: 100000; /* sit above the modal overlay and other fixed elements */
             contain: content;
         }
 
@@ -1226,6 +1227,10 @@
     align-items: center;
     gap: 10px;
 }
+
+/* Ensure the single-image lightbox sits above other photo modals */
+#imageModal { z-index: 200000; }
+#imageModal .modal-content.image-modal { z-index: 200001; position: relative; }
 
 .modal-content.image-modal .image-stage {
     position: relative;
@@ -1764,7 +1769,21 @@
         </div>
     </div>
 
-    <!-- Основний контент -->
+        <!-- Модальне вікно для фото Пружинної борони (placeholder) -->
+        <div id="springharrowPhotosModal" class="modal">
+            <div class="modal-content photo-modal">
+                <span class="close-btn" onclick="closeSpringHarrowPhotos()">&times;</span>
+                <h2 style="margin-top: 0;">Фото Пружинної борони 9м</h2>
+                <div class="photo-gallery">
+                    <!-- Порожньо: фото будуть додані пізніше -->
+                </div>
+                <div class="text-center mt-4">
+                    <button class="btn btn-photo" onclick="window.open('#', '_blank')" style="background: #FF0000;">🎥 Відео (порожньо)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основний контент -->
     <div id="main-content">
 
         <!-- 1. Привітання -->
@@ -1776,12 +1795,12 @@
 
             <h3>Оберіть категорію товару:</h3>
             <div class="btn-grid">
-                <button class="btn" data-product-btn="cultivator" onclick="selectProduct('cultivator', this)">1. Культиватори</button>
-                <button class="btn" data-product-btn="husker" onclick="selectProduct('husker', this)">2. Лущильники</button>
-                <button class="btn" data-product-btn="kun" onclick="selectProduct('kun', this)">3. КУН</button>
-                <button class="btn" data-product-btn="ripper" onclick="selectProduct('ripper', this)">4. Глибокорозпушувач</button>
-                <button class="btn" data-product-btn="krn" onclick="selectProduct('krn', this)">5. КРН</button>
-                <button class="btn" onclick="alert('Розділ в розробці')">6. Пружинні борони</button>
+                <button class="btn" data-product-btn="cultivator">1. Культиватори</button>
+                <button class="btn" data-product-btn="husker">2. Лущильники</button>
+                <button class="btn" data-product-btn="kun">3. КУН</button>
+                <button class="btn" data-product-btn="ripper">4. Глибокорозпушувач</button>
+                <button class="btn" data-product-btn="krn">5. КРН</button>
+                <button class="btn" data-product-btn="springharrow">6. Пружинні борони</button>
                 <button class="btn" onclick="alert('Розділ в розробці')">7. Кран маніпулятор</button>
                 <button class="btn" onclick="alert('Розділ в розробці')">8. Компактор</button>
             </div>
@@ -1802,15 +1821,15 @@
                 <h3>Оберіть потужність трактора:</h3>
                 <div class="btn-grid">
                     <!-- Навісні КНС -->
-                    <button class="btn btn-kns" onclick="selectScript('kns', '2.6', this)">1. 50-60 к.с. -> 2.6м (Навісний)</button>
-                    <button class="btn btn-kns" onclick="selectScript('kns', '3.0', this)">2. 70-80 к.с. -> 3м (Навісний)</button>
-                    <button class="btn btn-kns" onclick="selectScript('kns', '3.5', this)">3. 80-95 к.с. -> 3.5м (Навісний)</button>
-                    <button class="btn btn-kns" onclick="selectScript('kns', '4.0', this)">100-120 к.с. -> 4м (Навісний)</button>
+                    <button class="btn btn-kns" data-script-type="kns" data-script-param="2.6">1. 50-60 к.с. -> 2.6м (Навісний)</button>
+                    <button class="btn btn-kns" data-script-type="kns" data-script-param="3.0">2. 70-80 к.с. -> 3м (Навісний)</button>
+                    <button class="btn btn-kns" data-script-type="kns" data-script-param="3.5">3. 80-95 к.с. -> 3.5м (Навісний)</button>
+                    <button class="btn btn-kns" data-script-type="kns" data-script-param="4.0">100-120 к.с. -> 4м (Навісний)</button>
                     
                     <!-- Причіпні КПС/КПРС -->
-                    <button class="btn btn-kps" onclick="selectScript('kps4', 'КПС 4.0', this)">95-120 к.с. -> КПС 4м (Причіпний)</button>
-                    <button class="btn btn-kps" onclick="selectScript('kprs', 'КПРС 5.0', this)">110-140 к.с. -> КПРС 5м (Причіпний)</button>
-                    <button class="btn btn-kps" onclick="selectScript('kprs', 'КПРС 6.0', this)">140-200 к.с. -> КПРС 6м (Причіпний)</button>
+                    <button class="btn btn-kps" data-script-type="kps4" data-script-param="КПС 4.0">95-120 к.с. -> КПС 4м (Причіпний)</button>
+                    <button class="btn btn-kps" data-script-type="kprs" data-script-param="КПРС 5.0">110-140 к.с. -> КПРС 5м (Причіпний)</button>
+                    <button class="btn btn-kps" data-script-type="kprs" data-script-param="КПРС 6.0">140-200 к.с. -> КПРС 6м (Причіпний)</button>
                 </div>
             </div>
 
@@ -2103,16 +2122,16 @@
                 <h3>Оберіть тип лущильника:</h3>
                 <div class="btn-grid">
                     <!-- Навісні -->
-                    <button class="btn btn-lpn" onclick="selectHuskerScript('mounted', '2.6м', this)">1. 70-90 к.с. (Навісний 2.6м)</button>
-                    <button class="btn btn-lpn" onclick="selectHuskerScript('mounted', '3.2м', this)">2. 100-130 к.с. (Навісний 3.2м)</button>
+                    <button class="btn btn-lpn" data-husker-type="mounted" data-husker-model="2.6м">1. 70-90 к.с. (Навісний 2.6м)</button>
+                    <button class="btn btn-lpn" data-husker-type="mounted" data-husker-model="3.2м">2. 100-130 к.с. (Навісний 3.2м)</button>
                     
                     <!-- Причіпні ЛП -->
-                    <button class="btn btn-lpr" onclick="selectHuskerScript('trailed_lp', 'ЛП 2.6м', this)">3. 90-120 к.с. (Причіпний ЛП 2.6м)</button>
-                    <button class="btn btn-lpr" onclick="selectHuskerScript('trailed_lp', 'ЛП 3.2м', this)">4. 100-130 к.с. (Причіпний ЛП 3.2м)</button>
+                    <button class="btn btn-lpr" data-husker-type="trailed_lp" data-husker-model="ЛП 2.6м">3. 90-120 к.с. (Причіпний ЛП 2.6м)</button>
+                    <button class="btn btn-lpr" data-husker-type="trailed_lp" data-husker-model="ЛП 3.2м">4. 100-130 к.с. (Причіпний ЛП 3.2м)</button>
 
                     <!-- Важкі ЛПР -->
-                    <button class="btn btn-lpr" onclick="selectHuskerScript('heavy_lpr', 'ЛПР 4.2м', this)">5. 130-160 к.с. (Важкий ЛПР 4.2м)</button>
-                    <button class="btn btn-lpr" onclick="selectHuskerScript('heavy_lpr', 'ЛПР 5.2м', this)">6. 150-200 к.с. (Важкий ЛПР 5.2м)</button>
+                    <button class="btn btn-lpr" data-husker-type="heavy_lpr" data-husker-model="ЛПР 4.2м">5. 130-160 к.с. (Важкий ЛПР 4.2м)</button>
+                    <button class="btn btn-lpr" data-husker-type="heavy_lpr" data-husker-model="ЛПР 5.2м">6. 150-200 к.с. (Важкий ЛПР 5.2м)</button>
                 </div>
             </div>
 
@@ -2471,9 +2490,9 @@
 
                 <h3>Оберіть модель (за потужністю трактора):</h3>
                 <div class="btn-grid">
-                    <button class="btn btn-kun-select" onclick="selectRipperScript('2.0', '150 к.с.', this)">1. від 130 к.с. -> 2.0 м (3 лапи)</button>
-                    <button class="btn btn-kun-select" onclick="selectRipperScript('2.5', '250 к.с.', this)">2. від 200 к.с. -> 2.5 м (5 лап)</button>
-                    <button class="btn btn-kun-select" onclick="selectRipperScript('3.0', '220 к.с.', this)">3. 200-250 к.с. -> 3.0 м (5/7 лап)</button>
+                    <button class="btn btn-kun-select" data-ripper-model="2.0" data-ripper-hp="150 к.с.">1. від 130 к.с. -> 2.0 м (3 лапи)</button>
+                    <button class="btn btn-kun-select" data-ripper-model="2.5" data-ripper-hp="250 к.с.">2. від 200 к.с. -> 2.5 м (5 лап)</button>
+                    <button class="btn btn-kun-select" data-ripper-model="3.0" data-ripper-hp="220 к.с.">3. 200-250 к.с. -> 3.0 м (5/7 лап)</button>
                 </div>
             </div>
 
@@ -2695,9 +2714,9 @@
 
                 <h3>Обрати сценарій:</h3>
                 <div class="btn-grid">
-                    <button class="btn btn-krn" onclick="selectKrnScript('solid_no_liquid', this)">КРН 5.6 м (Суцільний, без бочки)</button>
-                    <button class="btn btn-krn" onclick="selectKrnScript('solid_with_liquid', this)">КРН 5.6 м (Суцільний, З бочкою)</button>
-                    <button class="btn btn-krn" onclick="selectKrnScript('folding', this)">КРН 5.6 м (Розкладний, без бочки)</button>
+                    <button class="btn btn-krn" data-krn-type="solid_no_liquid">КРН 5.6 м (Суцільний, без бочки)</button>
+                    <button class="btn btn-krn" data-krn-type="solid_with_liquid">КРН 5.6 м (Суцільний, З бочкою)</button>
+                    <button class="btn btn-krn" data-krn-type="folding">КРН 5.6 м (Розкладний, без бочки)</button>
                 </div>
             </div>
             
@@ -2877,7 +2896,104 @@
                     </ul>
                 </div>
             </div>
+        </div>
 
+        <!-- Секція Пружинні борони -->
+        <div id="springharrow-section" class="hidden">
+            <div class="script-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Пружинна борона 9м</h3>
+                    <button class="btn btn-ttx" onclick="openTTX('springharrow')">📊 Відкрити таблицю ТТХ</button>
+                </div>
+
+                <div class="manager-text">
+                    <strong>Менеджер:</strong> Підкажіть, на яку потужність трактору розглядаєте пружинну борону? 
+                </div>
+
+                <h3>Оберіть варіант:</h3>
+                <div class="btn-grid">
+                    <button class="btn btn-kns" data-script-id="script-springharrow-strigel">1. 9 метрова від 80 к.с.</button>
+                    <button class="btn btn-kps" data-script-id="script-springharrow-classic">2. Універсальна 9м</button>
+                    <button class="btn btn-kns" data-script-id="script-springharrow-6m">3. 6 метрова</button>
+                    <button class="btn btn-photo" data-open-photos="all">📸 Фото</button>
+                </div>
+
+                <!-- Tooth-type selector removed from main block; kept in Presentations -->
+            </div>
+
+            <div id="script-springharrow-strigel" class="hidden" data-role="presentation">
+                <div class="script-section">
+                    <h2>2. Презентація</h2>
+                    <div class="manager-text">
+                        <strong>Менеджер:</strong>
+                        <ol>
+                            <li>Щоб я порадив правильну комплектацію, скажіть: Вам більше для закриття вологи навесні чи для роботи по сходах, щоб прибрати «нитку»?</li>
+                        </ol>
+                    </div>
+
+                    <h3>Оберіть тип зубців:</h3>
+                    <div class="btn-grid">
+                        <button class="btn btn-kns" data-script-id="script-springharrow-shtrigel">1. Штригельна</button>
+                        <button class="btn btn-kps" data-script-id="script-springharrow-pryamiy">2. Прямий зуб</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="script-springharrow-classic" class="hidden" data-role="presentation">
+                <div class="script-section">
+                    <h2>2. Презентація (Класика)</h2>
+                    <div class="manager-text">
+                        <strong>Менеджер:</strong> Контент буде додано пізніше.
+                    </div>
+                </div>
+            </div>
+
+            <div id="script-springharrow-shtrigel" class="hidden">
+                <div class="script-section">
+                    <h2>3. Детальний скрипт (Штригельна)</h2>
+                    <div class="manager-text">
+                        <strong>Менеджер:</strong>
+                        <p>«Саме для такої делікатної задачі у нас є спеціальна комплектація — Штригельна борона 9м. Тут ми ставимо Г-подібний зуб товщиною 7 мм та висотою 560 мм.</p>
+
+                        <h4>Чому це важливо для Ваших сходів:</h4>
+
+                        <p><strong>Висота 560 мм:</strong> Зуб дуже довгий і гнучкий. Він має високу амплітуду коливань — дуже гарно "грає" у ґрунті, що дозволяє йому ювелірно вичісувати бур’ян, витягувати нитку, взагалі не травмуючи культурну рослину.</p>
+
+                        <p><strong>Спеціальний вигин зуба:</strong> Забезпечує правильний кут атаки — він працює поверхнево, не зариваючись глибоко, де коренева система культури вже почала зміцнюватися.</p>
+
+                        <p><strong>І головна фішка — опорні колеса (вже йдуть у комплекті):</strong> Для роботи по сходах це критично, тому що колеса:</p>
+
+                        <ul>
+                            <li><strong>Тримають горизонт:</strong> Ви чітко контролюєте глибину до міліметра по всій ширині 9 метрів. Агрегат не «гуляє», тому немає ризику десь "заритися" занадто глибоко.</li>
+                            <li><strong>Ідеально копіюють ґрунт:</strong> Борона повторює рельєф, не пропускаючи ділянки в низинах.</li>
+                            <li><strong>Полегшують роботу трактору:</strong> Оскільки у Вас трактор від 80 сил, колеса забирають на себе значну частину ваги борони. Трактору набагато легше її тягнути, він не буксує, і Ви реально економите на пальному.</li>
+                        </ul>
+
+                        <p><strong>Зверніть увагу на транспортування:</strong> Конструкція зроблена так, що в транспортному положенні борона складається «будиночком» (жорстким трикутником). Це величезний плюс, бо при переїздах секції стоять мертво, вони не розгойдуються і не «гуляють». Ви можете спокійно їхати по ґрунтовій дорозі чи переїжджати з поля на поле — навантаження на гідроциліндри та раму мінімальне, нічого не розбивається.</p>
+
+                        <p>Ціна такої комплектації разом із колесами та ДОСТАВКОЮ складає <span id="dynamic-price-harrow" class="highlight">завантаження...</span> грн. Як Вам такий варіант?»</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="script-springharrow-pryamiy" class="hidden">
+                <div class="script-section">
+                    <h2>3. Детальний скрипт (Прямий зуб)</h2>
+                    <div class="manager-text">
+                        <strong>Менеджер:</strong> Тут розгорнутий скрипт для варіанту "Прямий зуб" — інструкції, аргументи продажу та відповіді на часті заперечення.
+                    </div>
+                </div>
+            </div>
+
+            <div id="script-springharrow-6m" class="hidden" data-role="presentation">
+                <div class="script-section">
+                    <h2>2. Презентація (6 метрова)</h2>
+                    <div class="manager-text">
+                        <strong>Менеджер:</strong> Контент для 6 метрової пружинної борони буде додано пізніше.
+                    </div>
+                </div>
+            </div>
+        </div>
 
         </div>
     </div>
@@ -2891,6 +3007,8 @@
             document.getElementById('kun-section').classList.add('hidden');
             document.getElementById('ripper-section').classList.add('hidden');
             document.getElementById('krn-section').classList.add('hidden');
+            // hide springharrow when toggling
+            const sh = document.getElementById('springharrow-section'); if (sh) sh.classList.add('hidden');
         }
 
         function __getProductSection_(productType) {
@@ -2899,6 +3017,7 @@
             if (productType === 'kun') return document.getElementById('kun-section');
             if (productType === 'ripper') return document.getElementById('ripper-section');
             if (productType === 'krn') return document.getElementById('krn-section');
+            if (productType === 'springharrow') return document.getElementById('springharrow-section');
             return null;
         }
 
@@ -2909,7 +3028,9 @@
         }
 
         function selectProduct(productType, btnElement) {
+            try { console.log('selectProduct invoked', productType, btnElement && (btnElement.tagName || btnElement)); } catch(e){}
             const sectionToShow = __getProductSection_(productType);
+            try { console.log('target section', sectionToShow ? sectionToShow.id : null, 'initial classes', sectionToShow ? Array.from(sectionToShow.classList) : null); } catch(e){}
             const isSameOpen = (__activeProductType === productType) && sectionToShow && !sectionToShow.classList.contains('hidden');
 
             // Toggle off when clicking the same category again
@@ -2921,14 +3042,80 @@
             }
 
             __hideAllProductSections_();
+            try { console.log('after hideAll, target classes', sectionToShow ? Array.from(sectionToShow.classList) : null); } catch(e){}
 
             if (sectionToShow) {
                 sectionToShow.classList.remove('hidden');
+                    try { console.log('after remove hidden, classes', Array.from(sectionToShow.classList)); } catch(e){}
                 __activeProductType = productType;
                 __setActiveProductBtn_(btnElement, productType);
                 sectionToShow.scrollIntoView({ behavior: 'smooth' });
             }
         }
+
+        // Fallback event delegation: handle clicks on product buttons if they don't have inline onclick
+        document.addEventListener('click', function (ev) {
+            try {
+                const btn = ev.target.closest ? ev.target.closest('[data-product-btn]') : null;
+                if (!btn) return;
+                // If the element already has an inline onclick, let it run (prevents double invocation)
+                if (btn.hasAttribute && btn.hasAttribute('onclick')) return;
+                const type = btn.getAttribute('data-product-btn');
+                if (!type) return;
+                // Call the main selector
+                selectProduct(type, btn);
+            } catch (e) { /* ignore */ }
+        });
+
+        // Delegation for legacy script buttons converted to data-attributes
+        document.addEventListener('click', function (ev) {
+            try {
+                const b = ev.target.closest ? ev.target.closest('[data-script-type],[data-husker-type],[data-ripper-model],[data-krn-type],[data-script-id],[data-open-photos]') : null;
+                if (!b) return;
+                // Avoid interfering with elements that still have inline onclick
+                if (b.hasAttribute && b.hasAttribute('onclick')) return;
+
+                if (b.hasAttribute('data-script-type')) {
+                    const t = b.getAttribute('data-script-type');
+                    const p = b.getAttribute('data-script-param') || '';
+                    selectScript(t, p, b);
+                    return;
+                }
+
+                if (b.hasAttribute('data-husker-type')) {
+                    const t = b.getAttribute('data-husker-type');
+                    const m = b.getAttribute('data-husker-model') || '';
+                    selectHuskerScript(t, m, b);
+                    return;
+                }
+
+                if (b.hasAttribute('data-ripper-model')) {
+                    const m = b.getAttribute('data-ripper-model');
+                    const hp = b.getAttribute('data-ripper-hp') || '';
+                    selectRipperScript(m, hp, b);
+                    return;
+                }
+
+                if (b.hasAttribute('data-krn-type')) {
+                    const t = b.getAttribute('data-krn-type');
+                    selectKrnScript(t, b);
+                    return;
+                }
+
+                if (b.hasAttribute('data-script-id')) {
+                    const id = b.getAttribute('data-script-id');
+                    selectSubScript(id, b);
+                    // optionally open photos if requested
+                    if (b.hasAttribute('data-open-photos')) openSpringHarrowPhotos(b.getAttribute('data-open-photos'));
+                    return;
+                }
+
+                if (b.hasAttribute('data-open-photos')) {
+                    openSpringHarrowPhotos(b.getAttribute('data-open-photos'));
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+        });
 
         // Універсальна функція вибору скрипта (Культиватори)
         function selectScript(type, param, btnElement) {
@@ -3062,6 +3249,54 @@
                 scriptBlock.classList.remove('hidden');
                 scriptBlock.scrollIntoView({ behavior: 'smooth' });
             }
+        }
+
+        // Універсальна функція показу підскрипта за id (викликається делегатором)
+        function selectSubScript(scriptId, btnElement) {
+            try {
+                const target = document.getElementById(scriptId);
+                if (!target) return;
+
+                // знайти батьківський секційний блок (id закінчується на -section)
+                let parent = target.closest ? target.closest('[id$="-section"]') : null;
+                const isPresentation = target.getAttribute && target.getAttribute('data-role') === 'presentation';
+
+                if (!parent) {
+                    // fallback: if selecting a presentation, hide all other script-* elements; if selecting detailed, keep presentations
+                    Array.from(document.querySelectorAll('[id^="script-"]')).forEach(el => {
+                        if (el === target) return;
+                        if (isPresentation) {
+                            el.classList.add('hidden');
+                        } else {
+                            // keep presentation blocks visible
+                            if (el.getAttribute && el.getAttribute('data-role') === 'presentation') return;
+                            el.classList.add('hidden');
+                        }
+                    });
+                } else {
+                    // Within the same product section:
+                    Array.from(parent.querySelectorAll('[id^="script-"]')).forEach(el => {
+                        if (el === target) return;
+                        if (isPresentation) {
+                            // selecting a presentation -> hide everything else in section
+                            el.classList.add('hidden');
+                        } else {
+                            // selecting a detailed script -> hide other detailed scripts but keep presentations
+                            if (el.getAttribute && el.getAttribute('data-role') === 'presentation') return;
+                            el.classList.add('hidden');
+                        }
+                    });
+                }
+
+                // show the selected block
+                target.classList.remove('hidden');
+
+                // встановити активну кнопку серед сусідів
+                if (btnElement && btnElement.parentElement) {
+                    Array.from(btnElement.parentElement.getElementsByTagName('button')).forEach(b => b.classList.remove('active'));
+                    btnElement.classList.add('active');
+                }
+            } catch (e) { /* ignore */ }
         }
 
         // TTX Configuration
@@ -3452,6 +3687,65 @@ function closeKrnFoldableTank56Photos() {
     document.getElementById('krnFoldableTank56PhotosModal').style.display = 'none';
 }
 
+function openSpringHarrowPhotos() {
+    const el = document.getElementById('springharrowPhotosModal');
+    if (el) el.style.display = 'block';
+}
+
+function closeSpringHarrowPhotos() {
+    const el = document.getElementById('springharrowPhotosModal');
+    if (el) el.style.display = 'none';
+}
+
+// SpringHarrow photo galleries
+const springharrowGalleries = {
+    '9m': [
+        'https://general-machines.ua/wp-content/uploads/2021/11/photo_2024-02-15_09-00-49.jpg',
+        'https://general-machines.ua/wp-content/uploads/2021/11/photo_2024-02-15_09-00-50.jpg',
+        'https://general-machines.ua/wp-content/uploads/2021/11/photo_2024-02-15_09-00-51.jpg',
+        'https://general-machines.ua/wp-content/uploads/2021/11/photo_2024-02-15_09-00-53.jpg'
+    ],
+    'uni9m': [
+        'https://general-machines.ua/wp-content/uploads/2025/10/znimok-ekrana-2025-10-29-o-16.17.33.png',
+        'https://general-machines.ua/wp-content/uploads/2025/10/znimok-ekrana-2025-10-29-o-16.17.11.png',
+        'https://general-machines.ua/wp-content/uploads/2025/10/znimok-ekrana-2025-10-29-o-16.16.53.png',
+        'https://general-machines.ua/wp-content/uploads/2025/10/znimok-ekrana-2025-10-29-o-16.16.15.png',
+        'https://general-machines.ua/wp-content/uploads/2025/10/znimok-ekrana-2025-10-29-o-16.16.01.png'
+    ]
+};
+
+// add minimal gallery for 6m variant
+springharrowGalleries['6m'] = [
+    'https://general-machines.ua/wp-content/uploads/2021/11/photo_2024-02-15_09-00-49.jpg'
+];
+
+function openSpringHarrowPhotos(variant) {
+    const modal = document.getElementById('springharrowPhotosModal');
+    const gallery = modal ? modal.querySelector('.photo-gallery') : null;
+    if (!modal || !gallery) return;
+
+    // Choose images
+    let imgs = [];
+    if (!variant || variant === 'all') {
+        imgs = [].concat(springharrowGalleries['9m'] || [], springharrowGalleries['uni9m'] || []);
+    } else if (springharrowGalleries[variant]) {
+        imgs = springharrowGalleries[variant].slice();
+    }
+
+    // Populate thumbnails
+    gallery.innerHTML = '';
+    imgs.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = '';
+        img.style.cursor = 'pointer';
+        img.onclick = function() { openImageModal(this); };
+        gallery.appendChild(img);
+    });
+
+    modal.style.display = 'block';
+}
+
 let __imageGallery = [];
 let __imageIndex = 0;
 
@@ -3694,7 +3988,190 @@ window.onclick = function(event) {
         tractorsModal.style.display = 'none';
     }
 }
-	
+
+    // --- Price injection for SpringHarrow ---
+    // Attempts to read a global calc data structure or fetch and parse `calc.html` to find the price
+    (function(){
+        function formatPrice(n) {
+            return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        async function tryPopulateSpringHarrowPrice() {
+            const el = document.getElementById('springharrow-price');
+            if (!el) return;
+
+            // Try global data first
+            try {
+                if (window.calcData && Array.isArray(window.calcData)) {
+                    for (const cat of window.calcData) {
+                        if (!cat.items) continue;
+                        for (const it of cat.items) {
+                            if (it && it.name && it.name.indexOf('Борона пружинна 9') !== -1 && it.name.indexOf('опорн') !== -1) {
+                                el.textContent = formatPrice(it.price1 || it.price || it.price2 || 0);
+                                return;
+                            }
+                        }
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+            // Fallback: fetch calc.html and parse
+            try {
+                const r = await fetch('calc.html');
+                if (!r.ok) throw new Error('fetch failed');
+                const txt = await r.text();
+
+                // exact combined entry
+                let m = txt.match(/\{\s*name:\s*"Борона пружинна 9 м\. \+ опорні колеса"[\s\S]*?price1:\s*(\d+)/);
+                if (m && m[1]) { el.textContent = formatPrice(Number(m[1])); return; }
+
+                // base + wheels
+                const base = txt.match(/\{\s*name:\s*"Борона пружинна 9 m\. \(без опорних коліс\)"[\s\S]*?price1:\s*(\d+)/) || txt.match(/\{\s*name:\s*"Борона пружинна 9 м\. \(без опорних коліс\)"[\s\S]*?price1:\s*(\d+)/);
+                const wheels = txt.match(/\{\s*name:\s*"Колеса опорні"[\s\S]*?price1:\s*(\d+)/);
+                if (base && wheels && base[1] && wheels[1]) { el.textContent = formatPrice(Number(base[1]) + Number(wheels[1])); return; }
+
+                // looser match
+                m = txt.match(/Борона пружинна 9\s*м[\s\S]*?oporn/i);
+                if (m) {
+                    const p = txt.match(/price1:\s*(\d+)/);
+                    if (p && p[1]) { el.textContent = formatPrice(Number(p[1])); return; }
+                }
+            } catch (e) {
+                // ignore (file:// or CORS)
+            }
+
+            // last resort: leave placeholder dash
+            el.textContent = '—';
+        }
+
+        // Run after DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', tryPopulateSpringHarrowPrice);
+        } else {
+            tryPopulateSpringHarrowPrice();
+        }
+    })();
+
+    </script>
+    <script>
+    (function(){
+        document.addEventListener('click', function(e){
+            try {
+                console.log('DEBUG CLICK:', e.type, 'target=', e.target, 'closestButton=', e.target.closest ? e.target.closest('button') : null);
+                const el = document.elementFromPoint(e.clientX, e.clientY);
+                console.log('DEBUG elementFromPoint:', el);
+            } catch (err) { console.log('DEBUG click error', err); }
+        }, true);
+    })();
+    </script>
+    <script type="module">
+    // Live price updater for dynamic-price-harrow (works when gm-script.html is opened directly)
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCIDpmrCoITjCfqMeC94ZO7Enl4HyZ-Lkw",
+        authDomain: "gm-base.firebaseapp.com",
+        projectId: "gm-base",
+        storageBucket: "gm-base.firebasestorage.app",
+        messagingSenderId: "579626247182",
+        appId: "1:579626247182:web:09324aa5823c564defc85f"
+    };
+
+    async function initFirebaseForPriceLocal() {
+        try {
+            const appMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+            const fsMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const authMod = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            let app;
+            const appName = 'gm-script-price';
+            try { app = appMod.initializeApp(FIREBASE_CONFIG, appName); } catch (e) { try { app = appMod.getApp(appName); } catch(e2){ app = null; } }
+            if (!app) return null;
+            const db = fsMod.getFirestore(app);
+            try {
+                const auth = authMod.getAuth(app);
+                if (!auth.currentUser) await authMod.signInAnonymously(auth);
+            } catch (e) { /* ignore auth failures */ }
+            return { db, fsMod };
+        } catch (e) {
+            console.warn('[gm-script] Firebase init failed', e);
+            return null;
+        }
+    }
+
+    function formatUAN(n) { try { return Number(n).toLocaleString('uk-UA'); } catch(e){ return String(n); } }
+
+    async function parseCalcForPriceLocal() {
+        try {
+            const r = await fetch('calc.html');
+            if (!r.ok) return null;
+            const txt = await r.text();
+            // prefer price2 then price1 when parsing calc.html
+            let m = txt.match(/\{\s*name:\s*"Борона пружинна 9\s*m\. \+ oporn[\w\W]*?price2:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            m = txt.match(/\{\s*name:\s*"Борона пружинна 9\s*m\. \+ oporn[\w\W]*?price1:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            m = txt.match(/\{\s*name:\s*"Борона пружинна 9\s*m\.|Борона пружинна 9 m\.|Борона пружинна 9 м\.[\s\S]*?price2:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            m = txt.match(/\{\s*name:\s*"Борона пружинна 9\s*m\.|Борона пружинна 9 m\.|Борона пружинна 9 м\.[\s\S]*?price1:\s*(\d+)/i);
+            if (m && m[1]) return Number(m[1]);
+            // base + wheels (prefer price2 fields)
+            const base = txt.match(/\{\s*name:\s*"Борона пружинна 9 m\. \(без опорних коліс\)"[\s\S]*?(?:price2|price1):\s*(\d+)/i) || txt.match(/\{\s*name:\s*"Борона пружинна 9 м\. \(без опорних коліс\)"[\s\S]*?(?:price2|price1):\s*(\d+)/i);
+            const wheels = txt.match(/\{\s*name:\s*"Колеса опорні"[\s\S]*?(?:price2|price1):\s*(\d+)/i);
+            if (base && wheels && base[1] && wheels[1]) return Number(base[1]) + Number(wheels[1]);
+        } catch (e) {
+            return null;
+        }
+        return null;
+    }
+
+    (async function(){
+        const target = document.getElementById('dynamic-price-harrow');
+        if (!target) return;
+        target.textContent = 'пошук ціни...';
+
+        // Try Firebase realtime first
+        const api = await initFirebaseForPriceLocal();
+        let firebasePopulated = false;
+        if (api) {
+            try {
+                const { db, fsMod } = api;
+                const q = fsMod.collection(db, 'priceItems');
+                fsMod.onSnapshot(q, snap => {
+                    try {
+                        let found = null;
+                        snap.forEach(d => {
+                            try {
+                                const data = d.data ? d.data() : d;
+                                const name = String(data.name || '').toLowerCase();
+                                if (name.includes('борона') && name.includes('9') && name.includes('опор')) { found = data; }
+                            } catch(e){}
+                        });
+                        if (!found) {
+                            snap.forEach(d => {
+                                try {
+                                    const data = d.data ? d.data() : d;
+                                    const name = String(data.name || '').toLowerCase();
+                                    if (!found && name.includes('борона') && name.includes('9')) found = data;
+                                } catch(e){}
+                            });
+                        }
+                        if (found && (found.price2 || found.price1)) {
+                            const price = Number(found.price2 || found.price1 || 0);
+                            target.textContent = formatUAN(price);
+                            firebasePopulated = true;
+                        }
+                    } catch (e) { console.warn('[gm-script] snapshot handler error', e); }
+                }, err => { console.warn('[gm-script] onSnapshot error', err); });
+            } catch (e) { console.warn('[gm-script] setup snapshot failed', e); }
+        }
+
+        // Always attempt calc.html parse as fallback or quick fill
+        const parsed = await parseCalcForPriceLocal();
+        if (parsed && (!firebasePopulated)) {
+            target.textContent = formatUAN(parsed);
+        }
+
+        // If nothing worked, show dash
+        if (!firebasePopulated && !parsed) target.textContent = '—';
+    })();
     </script>
 </body>
 </html>
