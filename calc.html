@@ -27,6 +27,20 @@
     <title>Прайс-лист та Калькулятор</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+    /* Hover effect for credit comparison tables */
+    #installmentsTableBody tr:hover,
+    #deferredTableBody tr:hover {
+        background-color: #e0f2fe !important; /* Tailwind sky-100 */
+        transition: background 0.15s;
+    }
+    /* Dotted underline for overpayment cell */
+    .dotted-underline {
+        border-bottom: 1px dotted #ccc;
+        cursor: help;
+        text-decoration: none;
+    }
+    </style>
     <script>
         (function () {
             try {
@@ -360,11 +374,8 @@
                     <div class="flex items-center justify-between mb-4 border-b pb-2">
                         <h2 class="text-2xl font-bold text-gray-800">Калькулятор</h2>
                         <div class="flex items-center gap-2">
-                            <button id="creditBtn" type="button" class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
-                                <i class="fas fa-credit-card"></i> Кредит
-                            </button>
                             <button id="creditCompareBtn" type="button" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded" title="Порівняти варіанти кредиту">
-                                <i class="fas fa-table"></i>
+                                <i class="fas fa-credit-card"></i> Кредит
                             </button>
                         </div>
                     </div>
@@ -457,67 +468,6 @@
         </div>
     </div>
 
-    <!-- Credit Modal -->
-    <div id="creditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-800">Розрахунок кредиту</h3>
-                <button id="closeCreditModal" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Термін кредиту (місяці)</label>
-                <input type="hidden" id="creditTerm" value="1">
-                <div class="relative">
-                    <div id="creditTermDisplay" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white flex items-center justify-between">
-                        <span id="termText"><span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці</span>
-                        <i class="fas fa-chevron-down text-gray-400"></i>
-                    </div>
-                    <div id="creditTermOptions" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded mt-1 shadow-lg z-10 hidden max-h-48 overflow-y-auto">
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="1"><span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="2"><span style="font-weight: bold;">2 місяці</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="3"><span style="font-weight: bold;">3 місяці</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="4"><span style="font-weight: bold;">4 місяці</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="5"><span style="font-weight: bold;">5 місяців</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="6"><span style="font-weight: bold;">6 місяців</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="7"><span style="font-weight: bold;">7 місяців</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="8"><span style="font-weight: bold;">8 місяців</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="9"><span style="font-weight: bold;">9 місяців</span> | Один платіж в кінці</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="10"><span style="font-weight: bold;">10 місяців</span> | Рівними частинами</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="11"><span style="font-weight: bold;">11 місяців</span> | Рівними частинами</div>
-                        <div class="option p-2 hover:bg-gray-100 cursor-pointer" data-value="12"><span style="font-weight: bold;">12 місяців</span> | Рівними частинами</div>
-                    </div>
-                </div>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Вартість товару</label>
-                <input type="text" id="creditProductCost" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Аванс</label>
-                <div class="flex gap-2">
-                    <input type="number" id="creditAdvance" placeholder="0" class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" min="0">
-                    <div class="flex">
-                        <button type="button" id="advanceUah" class="px-3 py-2 bg-blue-600 text-white rounded-l">грн</button>
-                        <button type="button" id="advancePercent" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-r">%</button>
-                    </div>
-                </div>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Загальна сума для покупця</label>
-                <input type="text" id="creditTotalForBuyer" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100">
-            </div>
-            <div class="mb-4" id="monthlyPaymentContainer" style="display: none;">
-                <label class="block text-sm font-medium text-gray-700 mb-2">В місяць</label>
-                <input type="text" id="creditMonthlyPayment" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100">
-            </div>
-            <div class="flex justify-end">
-                <button id="closeCreditModalBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Закрити</button>
-            </div>
-            <div id="creditOrderComposition" class="mt-4 text-[11px] text-gray-500"></div>
-        </div>
-    </div>
 
     <!-- Credit Comparison Modal -->
     <div id="creditCompareModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
@@ -529,29 +479,62 @@
                 </button>
             </div>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Аванс</label>
-                <div class="flex gap-2">
-                    <input type="number" id="compareAdvance" placeholder="0" class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" min="0">
-                    <div class="flex">
-                        <button type="button" id="compareAdvanceUah" class="px-3 py-2 bg-blue-600 text-white rounded-l">грн</button>
-                        <button type="button" id="compareAdvancePercent" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-r">%</button>
+                <div class="flex border border-gray-300 rounded">
+                    <button id="compareProgramInstallments" type="button" class="flex-1 px-4 py-2 text-sm font-medium rounded-l bg-blue-600 text-white">Оплата частинами</button>
+                    <button id="compareProgramDeferred" type="button" class="flex-1 px-4 py-2 text-sm font-medium rounded-r bg-gray-200 text-gray-700">Відтермінування</button>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Розрахунок вартості</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <label class="block text-xs font-semibold text-blue-700 mb-1">Сума за товари</label>
+                        <input type="text" id="compareProductTotal" readonly class="w-full text-sm font-bold text-blue-800 bg-transparent border-none outline-none">
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <label class="block text-xs font-semibold text-green-700 mb-1">Аванс</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" id="compareAdvanceInput" min="0" step="any" class="w-full text-sm font-bold text-green-800 bg-white border border-green-200 rounded px-2 py-1 outline-none" autocomplete="off">
+                            <button id="compareAdvanceUnitUah" type="button" class="px-2 py-1 rounded border text-xs font-semibold border-green-300 bg-green-50 text-green-700">грн</button>
+                            <button id="compareAdvanceUnitPercent" type="button" class="px-2 py-1 rounded border text-xs font-semibold border-green-300 bg-green-50 text-green-700">%</button>
+                        </div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                        <label class="block text-xs font-semibold text-purple-700 mb-1">Сума кредиту</label>
+                        <input type="text" id="compareLoanAmount" readonly class="w-full text-sm font-bold text-purple-800 bg-transparent border-none outline-none">
                     </div>
                 </div>
             </div>
             <div class="overflow-x-auto">
-                <table id="creditCompareTable" class="w-full border-collapse border border-gray-300 text-sm">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-300 p-2 text-left">Термін</th>
-                            <th class="border border-gray-300 p-2 text-right">Сума рівної частини</th>
-                            <th class="border border-gray-300 p-2 text-right">Загальна сума для покупця</th>
-                            <th class="border border-gray-300 p-2 text-right">Переплата</th>
-                        </tr>
-                    </thead>
-                    <tbody id="creditCompareTableBody">
-                        <!-- Rows will be populated by JS -->
-                    </tbody>
-                </table>
+                <div id="containerInstallments">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Термін</th>
+                                <th class="border border-gray-300 p-2 text-right">Оплата в місяць</th>
+                                <th class="border border-gray-300 p-2 text-right">Загальна сума для покупця</th>
+                                <th class="border border-gray-300 p-2 text-right">Комісія</th>
+                            </tr>
+                        </thead>
+                        <tbody id="installmentsTableBody">
+                            <!-- Rows will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="containerDeferred" style="display:none;">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Термін</th>
+                                <th class="border border-gray-300 p-2 text-right">Оплата в кінці терміну</th>
+                                <th class="border border-gray-300 p-2 text-right">Комісія</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deferredTableBody">
+                            <!-- Rows will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div id="compareOrderComposition" class="mt-4 text-[11px] text-gray-500"></div>
         </div>
@@ -1041,18 +1024,18 @@
             }
             // Update term display
             const termOptions = {
-                1: '<span style="font-weight: bold;">1 місяць</span> | Один платіж в кінці',
-                2: '<span style="font-weight: bold;">2 місяці</span> | Один платіж в кінці',
-                3: '<span style="font-weight: bold;">3 місяці</span> | Один платіж в кінці',
-                4: '<span style="font-weight: bold;">4 місяці</span> | Один платіж в кінці',
-                5: '<span style="font-weight: bold;">5 місяців</span> | Один платіж в кінці',
-                6: '<span style="font-weight: bold;">6 місяців</span> | Один платіж в кінці',
-                7: '<span style="font-weight: bold;">7 місяців</span> | Один платіж в кінці',
-                8: '<span style="font-weight: bold;">8 місяців</span> | Один платіж в кінці',
-                9: '<span style="font-weight: bold;">9 місяців</span> | Один платіж в кінці',
-                10: '<span style="font-weight: bold;">10 місяців</span> | Рівними частинами',
-                11: '<span style="font-weight: bold;">11 місяців</span> | Рівними частинами',
-                12: '<span style="font-weight: bold;">12 місяців</span> | Рівними частинами'
+                1: '<span style="font-weight: bold;">1 міс.</span> | Один платіж в кінці',
+                2: '<span style="font-weight: bold;">2  міс.</span> | Один платіж в кінці',
+                3: '<span style="font-weight: bold;">3  міс.</span> | Один платіж в кінці',
+                4: '<span style="font-weight: bold;">4  міс.</span> | Один платіж в кінці',
+                5: '<span style="font-weight: bold;">5  міс.</span> | Один платіж в кінці',
+                6: '<span style="font-weight: bold;">6  міс.</span> | Один платіж в кінці',
+                7: '<span style="font-weight: bold;">7  міс.</span> | Один платіж в кінці',
+                8: '<span style="font-weight: bold;">8  міс.</span> | Один платіж в кінці',
+                9: '<span style="font-weight: bold;">9  міс.</span> | Один платіж в кінці',
+                10: '<span style="font-weight: bold;">10  міс.</span> | Рівними частинами',
+                11: '<span style="font-weight: bold;">11  міс.</span> | Рівними частинами',
+                12: '<span style="font-weight: bold;">12  міс.</span> | Рівними частинами'
             };
             if (termTextEl) termTextEl.innerHTML = termOptions[creditTermEl?.value] || termOptions[1];
             updateVatToggleUi_();
@@ -1064,6 +1047,7 @@
         // --- Міні адмін редагування прайсу ---
         // ВАЖЛИВО: Firestore Rules не можуть перевіряти цей пароль.
         // Для запису з цієї сторінки використовується Firebase Auth Email/Password користувач.
+
         const PRICE_ADMIN_EMAIL = 'price-admin@gm-base.local';
         const PRICE_ADMIN_PASSWORD = '123456';
         let priceEditUnlocked_ = false;
@@ -1282,257 +1266,224 @@
                 scheduleCalcSave_();
             });
 
-            // Credit Modal
-            const creditBtn = document.getElementById('creditBtn');
-            const creditModal = document.getElementById('creditModal');
-            const closeCreditModal = document.getElementById('closeCreditModal');
-            const closeCreditModalBtn = document.getElementById('closeCreditModalBtn');
-            const creditTerm = document.getElementById('creditTerm');
-
-            function calculateCredit() {
-                const finalTotalEl = document.getElementById('final-total');
-                const baseAmount = finalTotalEl ? parseFloat(finalTotalEl.textContent.replace(/\s|грн/g, '')) || 0 : 0;
-                const months = parseInt(creditTerm.value) || 1;
-                const advanceInput = parseFloat(document.getElementById('creditAdvance').value) || 0;
-                const advanceType = document.getElementById('advanceUah').classList.contains('bg-blue-600') ? 'uah' : 'percent';
-
-                // Rate table
-                const rates = {
-                    1: 0.025,
-                    2: 0.050,
-                    3: 0.075,
-                    4: 0.100,
-                    5: 0.125,
-                    6: 0.150,
-                    7: 0.180,
-                    8: 0.200,
-                    9: 0.225,
-                    10: 0.210,
-                    11: 0.210,
-                    12: 0.210
-                };
-                const rate = rates[months] || 0.025;
-
-                let advancePercent = 0;
-                if (advanceType === 'percent') {
-                    advancePercent = advanceInput;
-                } else {
-                    advancePercent = baseAmount > 0 ? (advanceInput / baseAmount) * 100 : 0;
-                }
-
-                // Validation: advance cannot be greater than total
-                if (advancePercent > 100) {
-                    advancePercent = 100;
-                    if (advanceType === 'percent') {
-                        document.getElementById('creditAdvance').value = 100;
-                    } else {
-                        document.getElementById('creditAdvance').value = baseAmount;
-                    }
-                }
-
-                const advanceUAH = baseAmount * (advancePercent / 100);
-                const loanBody = baseAmount - advanceUAH;
-                const buyerBill = loanBody / (1 - rate);
-                const totalForBuyer = advanceUAH + buyerBill;
-                const monthlyPayment = totalForBuyer / months;
-                const commission = buyerBill - loanBody;
-
-                document.getElementById('creditProductCost').value = baseAmount.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
-                document.getElementById('creditTotalForBuyer').value = totalForBuyer.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
-
-                const monthlyContainer = document.getElementById('monthlyPaymentContainer');
-                const monthlyInput = document.getElementById('creditMonthlyPayment');
-                if (months >= 10 && months <= 12) {
-                    monthlyContainer.style.display = 'block';
-                    monthlyInput.value = monthlyPayment.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
-                } else {
-                    monthlyContainer.style.display = 'none';
-                }
-
-                // Update order composition
-                const compositionEl = document.getElementById('creditOrderComposition');
-                const itemNames = Object.values(cart).map(item => item.name);
-                if (itemNames.length > 0) {
-                    compositionEl.textContent = `Склад замовлення: ${itemNames.join(', ')}`;
-                } else {
-                    compositionEl.textContent = '';
-                }
-            }
-
-            if (creditBtn) creditBtn.addEventListener('click', () => {
-                calculateCredit();
-                creditModal.classList.remove('hidden');
-            });
-
-            // Custom dropdown logic
-            const creditTermDisplay = document.getElementById('creditTermDisplay');
-            const creditTermOptions = document.getElementById('creditTermOptions');
-            const termText = document.getElementById('termText');
-
-            if (creditTermDisplay) creditTermDisplay.addEventListener('click', () => {
-                creditTermOptions.classList.toggle('hidden');
-            });
-
-            if (creditTermOptions) creditTermOptions.addEventListener('click', (e) => {
-                if (e.target.classList.contains('option')) {
-                    const value = e.target.getAttribute('data-value');
-                    const text = e.target.innerHTML;
-                    document.getElementById('creditTerm').value = value;
-                    termText.innerHTML = text;
-                    creditTermOptions.classList.add('hidden');
-                    calculateCredit();
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!creditTermDisplay.contains(e.target) && !creditTermOptions.contains(e.target)) {
-                    creditTermOptions.classList.add('hidden');
-                }
-            });
-
-            // Advance input and toggle
-            const creditAdvance = document.getElementById('creditAdvance');
-            const advanceUah = document.getElementById('advanceUah');
-            const advancePercent = document.getElementById('advancePercent');
-
-            if (creditAdvance) creditAdvance.addEventListener('input', calculateCredit);
-
-            if (advanceUah) advanceUah.addEventListener('click', () => {
-                advanceUah.classList.add('bg-blue-600', 'text-white');
-                advanceUah.classList.remove('bg-gray-200', 'text-gray-700');
-                advancePercent.classList.add('bg-gray-200', 'text-gray-700');
-                advancePercent.classList.remove('bg-blue-600', 'text-white');
-                calculateCredit();
-            });
-
-            if (advancePercent) advancePercent.addEventListener('click', () => {
-                advancePercent.classList.add('bg-blue-600', 'text-white');
-                advancePercent.classList.remove('bg-gray-200', 'text-gray-700');
-                advanceUah.classList.add('bg-gray-200', 'text-gray-700');
-                advanceUah.classList.remove('bg-blue-600', 'text-white');
-                calculateCredit();
-            });
-
-            const closeModal = () => {
-                creditModal.classList.add('hidden');
-            };
-
-            if (closeCreditModal) closeCreditModal.addEventListener('click', closeModal);
-            if (closeCreditModalBtn) closeCreditModalBtn.addEventListener('click', closeModal);
-
-            // Close on overlay click
-            creditModal.addEventListener('click', (e) => {
-                if (e.target === creditModal) closeModal();
-            });
 
             // Credit Comparison Modal
             const creditCompareBtn = document.getElementById('creditCompareBtn');
             const creditCompareModal = document.getElementById('creditCompareModal');
             const closeCreditCompareModal = document.getElementById('closeCreditCompareModal');
-            const compareAdvance = document.getElementById('compareAdvance');
-            const compareAdvanceUah = document.getElementById('compareAdvanceUah');
-            const compareAdvancePercent = document.getElementById('compareAdvancePercent');
             const creditCompareTableBody = document.getElementById('creditCompareTableBody');
             const compareOrderComposition = document.getElementById('compareOrderComposition');
+            let activeCompareProgram = 'installments'; // 'installments' or 'deferred'
+            // Program switch buttons for comparison
+            const compareProgramInstallments = document.getElementById('compareProgramInstallments');
+            const compareProgramDeferred = document.getElementById('compareProgramDeferred');
+            const containerInstallments = document.getElementById('containerInstallments');
+            const containerDeferred = document.getElementById('containerDeferred');
+            const installmentsTableBody = document.getElementById('installmentsTableBody');
+            const deferredTableBody = document.getElementById('deferredTableBody');
 
-            function calculateCreditComparison() {
-                const finalTotalEl = document.getElementById('final-total');
-                const baseAmount = finalTotalEl ? parseFloat(finalTotalEl.textContent.replace(/\s|грн/g, '')) || 0 : 0;
-                const advanceInput = parseFloat(compareAdvance.value) || 0;
-                const advanceType = compareAdvanceUah.classList.contains('bg-blue-600') ? 'uah' : 'percent';
 
-                let advancePercent = 0;
-                if (advanceType === 'percent') {
-                    advancePercent = advanceInput;
-                } else {
-                    advancePercent = baseAmount > 0 ? (advanceInput / baseAmount) * 100 : 0;
-                }
+            // --- Modal state snapshot and local logic ---
+            let popupBaseTotal = 0;
+            let popupAdvanceValue = 0;
+            let popupAdvanceUnit = 'uah'; // 'uah' or 'percent'
 
-                if (advancePercent > 100) {
-                    advancePercent = 100;
-                    if (advanceType === 'percent') {
-                        compareAdvance.value = 100;
-                    } else {
-                        compareAdvance.value = baseAmount;
-                    }
-                }
 
-                const advanceUAH = baseAmount * (advancePercent / 100);
-                const loanBody = baseAmount - advanceUAH;
-
+            function renderInstallmentsTable(advanceAmount, baseTotal) {
+                installmentsTableBody.innerHTML = '';
                 const rates = {
                     1: 0.025, 2: 0.050, 3: 0.075, 4: 0.100, 5: 0.125, 6: 0.150,
                     7: 0.180, 8: 0.200, 9: 0.225, 10: 0.210, 11: 0.210, 12: 0.210
                 };
-
+                const loanPrincipal = baseTotal - advanceAmount;
                 let minOverpayment = Infinity;
                 let minOverpaymentRow = null;
-
-                creditCompareTableBody.innerHTML = '';
-
                 for (let month = 1; month <= 12; month++) {
                     const rate = rates[month];
-                    const buyerBill = loanBody / (1 - rate);
-                    const totalForBuyer = advanceUAH + buyerBill;
-                    const overpayment = totalForBuyer - baseAmount;
-                    const monthly = month >= 10 && month <= 12 ? totalForBuyer / month : null;
-
+                    const buyerBill = loanPrincipal / (1 - rate);
+                    const overpayment = buyerBill - loanPrincipal;
+                    const monthly = buyerBill / month;
                     const row = document.createElement('tr');
                     if (overpayment < minOverpayment) {
                         minOverpayment = overpayment;
                         minOverpaymentRow = row;
                     }
-
-                    const termText = month >= 10 && month <= 12 ? `${month} місяців (Рівними частинами)` : `${month} ${month === 1 ? 'місяць' : 'місяці'}`;
-
-                    const equalPart = month >= 10 && month <= 12 ? `<span class="font-bold text-blue-600">${monthly.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</span>` : 'В кінці терміну';
-
+                    const termText = `${month} міс.`;
+                    const equalPart = `<span class=\"font-bold text-blue-600\">${monthly.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</span>`;
+                    // Tooltip content
+                    const overpaymentPerMonth = Math.round(overpayment / month);
+                    const overpaymentPerDay = Math.round(overpayment / (month * 30.42));
+                    const tooltip = `Ставка: ${(rate * 100).toFixed(1).replace(/\.0$/, '')}%\nВартість сервісу: ${overpaymentPerMonth} грн / міс\nВартість сервісу: ${overpaymentPerDay} грн / день`;
+                    const overpaymentCell = `<span class=\"dotted-underline tooltip-overpay\" title=\"${tooltip}\">${overpayment.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</span>`;
                     row.innerHTML = `
-                        <td class="border border-gray-300 p-2">${termText}</td>
-                        <td class="border border-gray-300 p-2 text-right">${equalPart}</td>
-                        <td class="border border-gray-300 p-2 text-right">${totalForBuyer.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</td>
-                        <td class="border border-gray-300 p-2 text-right">${overpayment.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</td>
+                        <td class=\"border border-gray-300 p-2\">${termText}</td>
+                        <td class=\"border border-gray-300 p-2 text-right\">${equalPart}</td>
+                        <td class=\"border border-gray-300 p-2 text-right\">${buyerBill.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</td>
+                        <td class=\"border border-gray-300 p-2 text-right\">${overpaymentCell}</td>
                     `;
-
-                    creditCompareTableBody.appendChild(row);
+                    installmentsTableBody.appendChild(row);
                 }
-
                 if (minOverpaymentRow) {
                     minOverpaymentRow.classList.add('bg-green-50');
                 }
+            }
 
-                // Update order composition
-                const itemNames = Object.values(cart).map(item => item.name);
-                if (itemNames.length > 0) {
-                    compareOrderComposition.textContent = `Склад замовлення: ${itemNames.join(', ')}`;
-                } else {
-                    compareOrderComposition.textContent = '';
+            function renderDeferredTable(advanceAmount, baseTotal) {
+                deferredTableBody.innerHTML = '';
+                const rates = {
+                    1: 0.025, 2: 0.050, 3: 0.075, 4: 0.100, 5: 0.125, 6: 0.150,
+                    7: 0.175, 8: 0.200, 9: 0.225, 10: 0.225, 11: 0.225, 12: 0.225
+                };
+                const loanPrincipal = baseTotal - advanceAmount;
+                for (let month = 1; month <= 12; month++) {
+                    const rate = rates[month];
+                    const buyerBill = loanPrincipal / (1 - rate);
+                    const overpayment = buyerBill - loanPrincipal;
+                    const row = document.createElement('tr');
+                    const termText = `${month} міс.`;
+                    const overpaymentPerMonth = Math.round(overpayment / month);
+                    const overpaymentPerDay = Math.round(overpayment / (month * 30.42));
+                    const tooltip = `Ставка: ${(rate * 100).toFixed(1).replace(/\.0$/, '')}%\nВартість сервісу: ${overpaymentPerMonth} грн / міс\nВартість сервісу: ${overpaymentPerDay} грн / день`;
+                    const overpaymentCell = `<span class=\"dotted-underline tooltip-overpay\" title=\"${tooltip}\">${overpayment.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</span>`;
+                    row.innerHTML = `
+                        <td class=\"border border-gray-300 p-2\">${termText}</td>
+                        <td class=\"border border-gray-300 p-2 text-right\">${buyerBill.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} грн</td>
+                        <td class=\"border border-gray-300 p-2 text-right\">${overpaymentCell}</td>
+                    `;
+                    deferredTableBody.appendChild(row);
                 }
             }
 
-            if (creditCompareBtn) creditCompareBtn.addEventListener('click', () => {
-                calculateCreditComparison();
+            function updateCompareTablesModal() {
+                // Calculate advance and loan based on modal state
+                let advanceAmount = 0;
+                if (popupAdvanceUnit === 'percent') {
+                    advanceAmount = Math.round(popupBaseTotal * popupAdvanceValue / 100);
+                } else {
+                    advanceAmount = Math.round(popupAdvanceValue);
+                }
+                // Validation: advance cannot exceed base total
+                if (advanceAmount > popupBaseTotal) advanceAmount = popupBaseTotal;
+                if (advanceAmount < 0) advanceAmount = 0;
+                // Update UI fields (safe checks)
+                const productTotalEl = document.getElementById('compareProductTotal');
+                if (productTotalEl) productTotalEl.value = popupBaseTotal.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                const advanceInputEl = document.getElementById('compareAdvanceInput');
+                if (advanceInputEl) advanceInputEl.value = popupAdvanceValue;
+                const advanceAmountEl = document.getElementById('compareAdvanceAmount');
+                if (advanceAmountEl) advanceAmountEl.value = advanceAmount.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                const loanAmountEl = document.getElementById('compareLoanAmount');
+                if (loanAmountEl) loanAmountEl.value = (popupBaseTotal - advanceAmount).toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                // Render tables
+                renderInstallmentsTable(advanceAmount, popupBaseTotal);
+                renderDeferredTable(advanceAmount, popupBaseTotal);
+            }
+
+            // --- Modal event handlers ---
+            function openCreditCompareModal() {
+                // Take snapshot of current base total
+                const finalTotalEl = document.getElementById('final-total');
+                popupBaseTotal = finalTotalEl ? parseFloat(finalTotalEl.textContent.replace(/\s|грн/g, '')) || 0 : 0;
+                // Reset advance to 0 грн
+                popupAdvanceValue = 0;
+                popupAdvanceUnit = 'uah';
+                // Set UI
+                document.getElementById('compareAdvanceInput').value = '';
+                document.getElementById('compareAdvanceUnitUah').classList.add('bg-green-600', 'text-white');
+                document.getElementById('compareAdvanceUnitPercent').classList.remove('bg-green-600', 'text-white');
+                updateCompareTablesModal();
+                switchCompareProgram(activeCompareProgram);
                 creditCompareModal.classList.remove('hidden');
+            }
+
+            if (creditCompareBtn) creditCompareBtn.addEventListener('click', openCreditCompareModal);
+
+            // Advance input listeners
+            document.getElementById('compareAdvanceInput').addEventListener('input', function(e) {
+                let val = parseFloat(e.target.value.replace(/\s/g, ''));
+                if (isNaN(val) || val < 0) val = 0;
+                popupAdvanceValue = val;
+                updateCompareTablesModal();
+            });
+            document.getElementById('compareAdvanceUnitUah').addEventListener('click', function() {
+                popupAdvanceUnit = 'uah';
+                document.getElementById('compareAdvanceUnitUah').classList.add('bg-green-600', 'text-white');
+                document.getElementById('compareAdvanceUnitPercent').classList.remove('bg-green-600', 'text-white');
+                updateCompareTablesModal();
+            });
+            document.getElementById('compareAdvanceUnitPercent').addEventListener('click', function() {
+                popupAdvanceUnit = 'percent';
+                document.getElementById('compareAdvanceUnitPercent').classList.add('bg-green-600', 'text-white');
+                document.getElementById('compareAdvanceUnitUah').classList.remove('bg-green-600', 'text-white');
+                updateCompareTablesModal();
             });
 
-            if (compareAdvance) compareAdvance.addEventListener('input', calculateCreditComparison);
 
-            if (compareAdvanceUah) compareAdvanceUah.addEventListener('click', () => {
-                compareAdvanceUah.classList.add('bg-blue-600', 'text-white');
-                compareAdvanceUah.classList.remove('bg-gray-200', 'text-gray-700');
-                compareAdvancePercent.classList.add('bg-gray-200', 'text-gray-700');
-                compareAdvancePercent.classList.remove('bg-blue-600', 'text-white');
-                calculateCreditComparison();
+            function updateCompareTables() {
+                // Calculate base total and adjustment
+                let baseTotal = 0;
+                for (let key in cart) {
+                    const item = cart[key];
+                    const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+                    baseTotal += item.price * qty;
+                }
+                const adjustmentEl = document.getElementById('adjustment-input');
+                const adjustmentInput = String(adjustmentEl?.value ?? '');
+                let adjustmentVal = 0;
+                if (adjustmentInput) {
+                    const num = parseFloat(adjustmentInput.replace(/\s/g, ''));
+                    if (!isNaN(num)) {
+                        if (isPercentage_) {
+                            adjustmentVal = baseTotal * num / 100;
+                        } else {
+                            adjustmentVal = num;
+                        }
+                        if (adjustmentMode_ === 'minus') {
+                            adjustmentVal = -adjustmentVal;
+                        }
+                    }
+                }
+                const advanceAmount = adjustmentVal < 0 ? -adjustmentVal : 0;
+                const baseAmount = document.getElementById('final-total') ? parseFloat(document.getElementById('final-total').textContent.replace(/\s|грн/g, '')) || 0 : 0;
+
+                document.getElementById('compareProductTotal').value = baseTotal.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                document.getElementById('compareAdvanceAmount').value = advanceAmount.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+                document.getElementById('compareLoanAmount').value = baseAmount.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+
+                renderInstallmentsTable(baseAmount, advanceAmount);
+                renderDeferredTable(baseAmount, advanceAmount);
+            }
+
+            function switchCompareProgram(program) {
+                activeCompareProgram = program;
+                if (program === 'installments') {
+                    compareProgramInstallments.classList.add('bg-blue-600', 'text-white');
+                    compareProgramInstallments.classList.remove('bg-gray-200', 'text-gray-700');
+                    compareProgramDeferred.classList.add('bg-gray-200', 'text-gray-700');
+                    compareProgramDeferred.classList.remove('bg-blue-600', 'text-white');
+                    containerInstallments.style.display = '';
+                    containerDeferred.style.display = 'none';
+                } else {
+                    compareProgramDeferred.classList.add('bg-blue-600', 'text-white');
+                    compareProgramDeferred.classList.remove('bg-gray-200', 'text-gray-700');
+                    compareProgramInstallments.classList.add('bg-gray-200', 'text-gray-700');
+                    compareProgramInstallments.classList.remove('bg-blue-600', 'text-white');
+                    containerInstallments.style.display = 'none';
+                    containerDeferred.style.display = '';
+                }
+            }
+
+
+            if (compareProgramInstallments) compareProgramInstallments.addEventListener('click', () => {
+                switchCompareProgram('installments');
+            });
+            if (compareProgramDeferred) compareProgramDeferred.addEventListener('click', () => {
+                switchCompareProgram('deferred');
             });
 
-            if (compareAdvancePercent) compareAdvancePercent.addEventListener('click', () => {
-                compareAdvancePercent.classList.add('bg-blue-600', 'text-white');
-                compareAdvancePercent.classList.remove('bg-gray-200', 'text-gray-700');
-                compareAdvanceUah.classList.add('bg-gray-200', 'text-gray-700');
-                compareAdvanceUah.classList.remove('bg-blue-600', 'text-white');
-                calculateCreditComparison();
-            });
+            // Update tables when shared data changes
+            document.getElementById('adjustment-input').addEventListener('input', updateCompareTables);
+            // If you have other triggers for recalculation, add them here
 
             const closeCompareModal = () => {
                 creditCompareModal.classList.add('hidden');
@@ -1540,7 +1491,6 @@
 
             if (closeCreditCompareModal) closeCreditCompareModal.addEventListener('click', closeCompareModal);
 
-            // Close on overlay click
             creditCompareModal.addEventListener('click', (e) => {
                 if (e.target === creditCompareModal) closeCompareModal();
             });
@@ -2272,7 +2222,13 @@
                     middle.className = 'w-full flex flex-row flex-wrap items-center gap-2 mb-2';
 
                     if (blueVal > 0) {
-                        const b = createBtn(blueVal.toLocaleString('uk-UA'), 'inline-flex items-center justify-center px-3 py-1 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition', `toggleItemSpecialPriceForKey('blue','${key}')`);
+                        const isActiveBlue = it.specialTag === 'blue';
+                        const b = createBtn(
+                            blueVal.toLocaleString('uk-UA'),
+                            'inline-flex items-center justify-center px-3 py-1 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition' + (isActiveBlue ? ' ring-2 ring-blue-400 ring-offset-2' : ''),
+                            `toggleItemSpecialPriceForKey('blue','${key}')`
+                        );
+                        if (isActiveBlue) b.classList.add('active');
                         middle.appendChild(b);
                         // Only show inline edit for admins in edit mode
                         if (priceEditUnlocked_ && priceEditMode_) {
@@ -2282,7 +2238,13 @@
                     }
 
                     if (redVal > 0) {
-                        const r = createBtn(redVal.toLocaleString('uk-UA'), 'inline-flex items-center justify-center px-3 py-1 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition', `toggleItemSpecialPriceForKey('red','${key}')`);
+                        const isActiveRed = it.specialTag === 'red';
+                        const r = createBtn(
+                            redVal.toLocaleString('uk-UA'),
+                            'inline-flex items-center justify-center px-3 py-1 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition' + (isActiveRed ? ' ring-2 ring-red-400 ring-offset-2' : ''),
+                            `toggleItemSpecialPriceForKey('red','${key}')`
+                        );
+                        if (isActiveRed) r.classList.add('active');
                         middle.appendChild(r);
                         // Only show inline edit for admins in edit mode
                         if (priceEditUnlocked_ && priceEditMode_) {
@@ -2434,6 +2396,7 @@
             } catch (e) {
                 console.warn('[calc] price admin sign-in failed', e);
                 alert('Не вдалося отримати доступ до запису. Створи користувача Email/Password у Firebase Auth з email: ' + PRICE_ADMIN_EMAIL + ' та паролем 123456.');
+               
                 return false;
             }
 
@@ -2919,11 +2882,18 @@
             // It must be calculated ONLY from the final total "РАЗОМ" (y) before compensation.
             // бухгалтерськи: ПДВ = y/6; база без ПДВ = y - ПДВ; компенсація = 25% від бази.
             let compensationVal = 0;
+            const compElem = document.getElementById('receipt-compensation');
             if (vatDiscount25Active_) {
                 const y = totalBeforeComp;
                 const vat = y > 0 ? (y / 6) : 0;
                 const net = y - vat;
                 compensationVal = net > 0 ? (net * 0.25) : 0;
+                if (compElem) {
+                    compElem.classList.remove('hidden');
+                    compElem.querySelector('span:last-child').textContent = `-${Math.round(compensationVal).toLocaleString()} грн`;
+                }
+            } else {
+                if (compElem) compElem.classList.add('hidden');
             }
 
             const finalTotal = totalBeforeComp - compensationVal;
