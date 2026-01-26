@@ -1330,12 +1330,13 @@
 
             function renderDeferredTable(advanceAmount, baseTotal) {
                 deferredTableBody.innerHTML = '';
+                // Render only months 1..9 for deferred program
                 const rates = {
                     1: 0.025, 2: 0.050, 3: 0.075, 4: 0.100, 5: 0.125, 6: 0.150,
-                    7: 0.175, 8: 0.200, 9: 0.225, 10: 0.225, 11: 0.225, 12: 0.225
+                    7: 0.175, 8: 0.200, 9: 0.225
                 };
                 const loanPrincipal = baseTotal - advanceAmount;
-                for (let month = 1; month <= 12; month++) {
+                for (let month = 1; month <= 9; month++) {
                     const rate = rates[month];
                     const buyerBill = loanPrincipal / (1 - rate);
                     const overpayment = buyerBill - loanPrincipal;
@@ -1352,6 +1353,8 @@
                     `;
                     deferredTableBody.appendChild(row);
                 }
+                // Keep column widths in sync after rendering
+                if (typeof syncTermColumnWidth === 'function') setTimeout(syncTermColumnWidth, 0);
             }
 
             function updateCompareTablesModal() {
@@ -1377,6 +1380,11 @@
                 // Render tables
                 renderInstallmentsTable(advanceAmount, popupBaseTotal);
                 renderDeferredTable(advanceAmount, popupBaseTotal);
+                // Ensure both tables' first column ('Термін') share the same width
+                if (typeof syncTermColumnWidth === 'function') {
+                    // defer briefly to allow DOM updates to settle
+                    setTimeout(syncTermColumnWidth, 0);
+                }
             }
 
             // --- Modal event handlers ---
@@ -1454,6 +1462,38 @@
                 renderDeferredTable(baseAmount, advanceAmount);
             }
 
+            // Sync the width of the first column ('Термін') between installments and deferred tables
+            function syncTermColumnWidth() {
+                try {
+                    if (!containerInstallments || !containerDeferred) return;
+                    const instTable = containerInstallments.querySelector('table');
+                    const defTable = containerDeferred.querySelector('table');
+                    if (!instTable || !defTable) return;
+                    const instTh = instTable.querySelector('thead th:first-child');
+                    if (!instTh) return;
+                    const width = instTh.getBoundingClientRect().width + 'px';
+                    // Lock installments first column to measured width
+                    instTh.style.boxSizing = 'border-box';
+                    instTh.style.width = width;
+                    instTable.querySelectorAll('tbody td:first-child').forEach(td => {
+                        td.style.boxSizing = 'border-box';
+                        td.style.width = width;
+                    });
+                    // Apply same width to deferred table
+                    const defTh = defTable.querySelector('thead th:first-child');
+                    if (defTh) {
+                        defTh.style.boxSizing = 'border-box';
+                        defTh.style.width = width;
+                    }
+                    defTable.querySelectorAll('tbody td:first-child').forEach(td => {
+                        td.style.boxSizing = 'border-box';
+                        td.style.width = width;
+                    });
+                } catch (e) {
+                    // ignore
+                }
+            }
+
             function switchCompareProgram(program) {
                 activeCompareProgram = program;
                 if (program === 'installments') {
@@ -1463,13 +1503,42 @@
                     compareProgramDeferred.classList.remove('bg-blue-600', 'text-white');
                     containerInstallments.style.display = '';
                     containerDeferred.style.display = 'none';
+                    // Clear any sizing overrides applied to deferred container
+                    if (containerDeferred) {
+                        containerDeferred.style.width = '';
+                        containerDeferred.style.minHeight = '';
+                        containerDeferred.style.boxSizing = '';
+                    }
                 } else {
+                    // When switching to deferred, match its size to the currently visible
+                    // `containerInstallments` so the popup appears the same size.
+                    let widthPx = '';
+                    let heightPx = '';
+                    if (containerInstallments && containerInstallments.offsetWidth > 0) {
+                        const r = containerInstallments.getBoundingClientRect();
+                        widthPx = r.width + 'px';
+                        heightPx = r.height + 'px';
+                    } else if (creditCompareModal && creditCompareModal.firstElementChild) {
+                        const modalContent = creditCompareModal.firstElementChild;
+                        const r = modalContent.getBoundingClientRect();
+                        widthPx = r.width + 'px';
+                        heightPx = r.height + 'px';
+                    }
                     compareProgramDeferred.classList.add('bg-blue-600', 'text-white');
                     compareProgramDeferred.classList.remove('bg-gray-200', 'text-gray-700');
                     compareProgramInstallments.classList.add('bg-gray-200', 'text-gray-700');
                     compareProgramInstallments.classList.remove('bg-blue-600', 'text-white');
                     containerInstallments.style.display = 'none';
                     containerDeferred.style.display = '';
+                    if (containerDeferred && widthPx) {
+                        containerDeferred.style.boxSizing = 'border-box';
+                        containerDeferred.style.width = widthPx;
+                    }
+                    if (containerDeferred && heightPx) {
+                        containerDeferred.style.minHeight = heightPx;
+                    }
+                    // Sync column widths after switch (allow layout to settle)
+                    setTimeout(syncTermColumnWidth, 0);
                 }
             }
 
@@ -1479,6 +1548,13 @@
             });
             if (compareProgramDeferred) compareProgramDeferred.addEventListener('click', () => {
                 switchCompareProgram('deferred');
+            });
+
+            // Keep term column widths synced when window resizes
+            window.addEventListener('resize', function() {
+                if (typeof syncTermColumnWidth === 'function') {
+                    setTimeout(syncTermColumnWidth, 50);
+                }
             });
 
             // Update tables when shared data changes
