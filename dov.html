@@ -486,18 +486,39 @@
                         <div class="mt-3 text-xs text-slate-500">Натисніть, щоб відкрити форму додавання замовлення</div>
                     </div>
 
-                    <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-5 bg-slate-50/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-500">
-                            <span>Мої продажі</span>
-                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-                                <button type="button" id="openExportModalBtn" class="w-full sm:w-auto text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
-                                    Експорт
+                    <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                        <div class="p-5 bg-slate-50/50 flex flex-col gap-3 border-b border-slate-100 relative z-20">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 font-bold text-xs uppercase tracking-wider text-slate-500">
+                                <span>Мої продажі</span>
+                                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+                                    <button type="button" id="openExportModalBtn" class="w-full sm:w-auto text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+                                        Експорт
+                                    </button>
+                                    <div id="connectionStatus" class="w-full sm:w-auto text-center text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl">З'єднано</div>
+                                </div>
+                            </div>
+                            <!-- Сортування та фільтрація -->
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" id="sortByDateBtn" data-sort-dir="desc" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 transition">
+                                    <i class="fa-solid fa-calendar-days text-[10px]"></i>
+                                    <span>Дата</span>
+                                    <i class="fa-solid fa-arrow-down text-[9px]" id="sortDateIcon"></i>
                                 </button>
-                                <div id="connectionStatus" class="w-full sm:w-auto text-center text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl">З'єднано</div>
+                                <div class="relative inline-block" id="statusFilterWrapper">
+                                    <button type="button" id="statusFilterBtn" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition">
+                                        <i class="fa-solid fa-filter text-[10px]"></i>
+                                        <span id="statusFilterLabel">Всі статуси</span>
+                                        <i class="fa-solid fa-chevron-down text-[8px]"></i>
+                                    </button>
+                                    <div id="statusFilterDropdown" class="hidden absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[100] min-w-[200px] py-1 max-h-[300px] overflow-y-auto">
+                                        <div data-filter-status="" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer border-b border-slate-100 font-medium">Всі статуси</div>
+                                        <div data-filter-status="no_status" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer">— Без статусу —</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="max-h-[300px] overflow-y-auto overflow-x-hidden">
-                            <table class="w-full text-left table-fixed">
+                        <div class="max-h-[300px] lg:max-h-[375px] overflow-y-auto overflow-x-hidden relative z-10">
+                            <table class="w-full text-left table-fixed mb-40">
                                 <tbody id="historyBody" class="text-sm divide-y divide-slate-100">
                                     <tr><td class="p-10 text-center text-slate-400 italic">Синхронізація...</td></tr>
                                 </tbody>
@@ -650,6 +671,67 @@
             'IvanYakushik': { name: 'Іван Якушик', pass: '5555' },
             'manager6': { name: 'Адмін', pass: '6666' }
         };
+
+        // Order statuses with colors
+        const ORDER_STATUSES = {
+            'not_paid': { label: 'Не оплачено', bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+            'preorder_unpaid': { label: 'Передзамовлення не оплачено', bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+            'preorder_paid': { label: 'Передзамовлення оплачено', bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
+            'fully_paid': { label: 'Повністю оплачено', bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+            'partially_paid': { label: 'Частково оплачено', bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+            'pay_on_delivery': { label: 'Оплата при отриманні', bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+            'done': { label: 'Готово', bg: 'bg-slate-200', text: 'text-slate-700', border: 'border-slate-400' }
+        };
+
+        // Стан сортування та фільтрації
+        window.__sortFilterState = { sortDir: 'desc', filterStatus: '' };
+
+        // Ініціалізація dropdown статусів для фільтру
+        (function initStatusFilterDropdown() {
+            const dropdown = document.getElementById('statusFilterDropdown');
+            if (!dropdown) return;
+            for (const [key, st] of Object.entries(ORDER_STATUSES)) {
+                const div = document.createElement('div');
+                div.setAttribute('data-filter-status', key);
+                div.className = 'px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer flex items-center gap-2';
+                div.innerHTML = `<span class="w-2 h-2 rounded-full ${st.bg} ${st.border} border"></span>${st.label}`;
+                dropdown.appendChild(div);
+            }
+        })();
+
+        function getStatusOptions_(selectedValue) {
+            let html = '<option value="">-- Без статусу --</option>';
+            for (const [key, st] of Object.entries(ORDER_STATUSES)) {
+                const sel = selectedValue === key ? 'selected' : '';
+                html += `<option value="${key}" ${sel}>${st.label}</option>`;
+            }
+            return html;
+        }
+
+        function renderStatusBadge_(statusKey) {
+            if (!statusKey || !ORDER_STATUSES[statusKey]) return '';
+            const st = ORDER_STATUSES[statusKey];
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} ${st.text} ${st.border} border">${st.label}</span>`;
+        }
+
+        function renderQuickStatusButtons_(orderId, rowId, currentStatus) {
+            let optionsHtml = `<div data-action="quick-status-option" data-status="" data-rowid="${rowId}" data-orderid="${orderId}" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer border-b border-slate-100">— Без статусу —</div>`;
+            for (const [key, st] of Object.entries(ORDER_STATUSES)) {
+                const activeClass = currentStatus === key ? 'bg-slate-100 font-bold' : '';
+                optionsHtml += `<div data-action="quick-status-option" data-status="${key}" data-rowid="${rowId}" data-orderid="${orderId}" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer flex items-center gap-2 ${activeClass}"><span class="w-2 h-2 rounded-full ${st.bg} ${st.border} border"></span>${st.label}</div>`;
+            }
+            
+            return `
+                <div class="relative inline-block status-dropdown-wrapper">
+                    <button type="button" data-action="toggle-status-dropdown" data-rowid="${rowId}" title="Змінити статус" class="w-9 h-9 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center hover:bg-slate-300 transition">
+                        <i class="fa-solid fa-tag"></i>
+                    </button>
+                    <div data-status-dropdown="${rowId}" class="hidden absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] min-w-[200px] py-1 max-h-[300px] overflow-y-auto">
+                        ${optionsHtml}
+                    </div>
+                </div>
+            `;
+        }
 
         // --- FIREBASE (основна БД для UI) ---
         // Структура Firestore:
@@ -840,6 +922,7 @@
                     items: o.items || '',
                     comment: o.comment || '',
                     crmLink: String(o.crmLink || o.link || ''),
+                    status: o.status || '',
                     amount: Number(o.amount) || 0
                 });
             });
@@ -870,6 +953,7 @@
                 items: payload.items || '',
                 comment: payload.comment || '',
                 crmLink: payload.crmLink || '',
+                status: payload.status || '',
                 amount,
                 date,
                 createdAt: api.serverTimestamp(),
@@ -901,6 +985,7 @@
                     items: payload.items || '',
                     comment: payload.comment || '',
                     crmLink: payload.crmLink || '',
+                    status: payload.status || '',
                     amount,
                     date,
                     updatedAt: api.serverTimestamp()
@@ -1993,6 +2078,53 @@
             if (e.key === 'Escape') closeExportModal_();
         });
 
+        // --- СОРТУВАННЯ ТА ФІЛЬТРАЦІЯ ---
+        document.getElementById('sortByDateBtn')?.addEventListener('click', () => {
+            const sfState = window.__sortFilterState;
+            sfState.sortDir = sfState.sortDir === 'desc' ? 'asc' : 'desc';
+            const icon = document.getElementById('sortDateIcon');
+            if (icon) {
+                icon.className = sfState.sortDir === 'desc' ? 'fa-solid fa-arrow-down text-[9px]' : 'fa-solid fa-arrow-up text-[9px]';
+            }
+            updateStats();
+        });
+
+        document.getElementById('statusFilterBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('statusFilterDropdown');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        });
+
+        document.getElementById('statusFilterDropdown')?.addEventListener('click', (e) => {
+            const option = e.target.closest('[data-filter-status]');
+            if (!option) return;
+            const status = option.dataset.filterStatus;
+            window.__sortFilterState.filterStatus = status;
+            
+            const label = document.getElementById('statusFilterLabel');
+            const btn = document.getElementById('statusFilterBtn');
+            if (status === '') {
+                label.textContent = 'Всі статуси';
+                btn.className = 'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition';
+            } else if (status === 'no_status') {
+                label.textContent = 'Без статусу';
+                btn.className = 'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 hover:bg-slate-300 transition';
+            } else {
+                const st = ORDER_STATUSES[status];
+                label.textContent = st?.label || status;
+                btn.className = `flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg ${st?.bg || 'bg-slate-100'} ${st?.text || 'text-slate-600'} ${st?.border || 'border-slate-200'} border hover:opacity-90 transition`;
+            }
+            
+            document.getElementById('statusFilterDropdown')?.classList.add('hidden');
+            updateStats();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#statusFilterWrapper')) {
+                document.getElementById('statusFilterDropdown')?.classList.add('hidden');
+            }
+        });
+
         // --- ЛОГІКА ТА UI ---
         function calculateSalary(totalSales) {
             const goal = currentGoal > 0 ? currentGoal : 1;
@@ -2052,6 +2184,29 @@
             const state = window.__historyState;
             state.byOrderId = {};
 
+            // Застосувати сортування та фільтрацію
+            const sfState = window.__sortFilterState || { sortDir: 'desc', filterStatus: '' };
+            let filteredHistory = [...history];
+
+            // Фільтрація по статусу
+            if (sfState.filterStatus) {
+                if (sfState.filterStatus === 'no_status') {
+                    filteredHistory = filteredHistory.filter(item => !item.status);
+                } else {
+                    filteredHistory = filteredHistory.filter(item => item.status === sfState.filterStatus);
+                }
+            }
+
+            // Сортування по даті
+            filteredHistory.sort((a, b) => {
+                const dateA = new Date(a.date).getTime();
+                const dateB = new Date(b.date).getTime();
+                return sfState.sortDir === 'desc' ? dateB - dateA : dateA - dateB;
+            });
+
+            // Замінюємо history на відфільтрований список
+            history = filteredHistory;
+
             const toInputDate = (v) => {
                 const d = new Date(v);
                 const s1 = toLocalYmd_(d);
@@ -2098,6 +2253,8 @@
                     const itemsVal = escapeHtml(item.items || '');
                     const commentVal = escapeHtml(item.comment || '');
                     const amountVal = escapeHtml(item.amount || '');
+                    const statusVal = escapeHtml(item.status || '');
+                    const statusOptionsHtml = getStatusOptions_(item.status || '');
 
                     historyBody.innerHTML += `
                         <tr class="bg-slate-50">
@@ -2110,6 +2267,11 @@
                                     <div class="sm:col-span-8">
                                         <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Платник</label>
                                         <input type="text" data-field="payer" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${payerVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
+                                    </div>
+
+                                    <div class="sm:col-span-12">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Статус</label>
+                                        <select data-field="status" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full p-2 rounded-xl bg-white border border-slate-200">${statusOptionsHtml}</select>
                                     </div>
 
                                     <div class="sm:col-span-12">
@@ -2146,20 +2308,25 @@
                         </tr>
                     `;
 
-                    // Set region select value after insertion
+                    // Set region and status select values after insertion
                     setTimeout(() => {
                         const sel = historyBody.querySelector(`select[data-field="region"][data-rowid="${rowId}"]`);
                         if (sel) sel.value = String(item.region || '');
+                        const statusSel = historyBody.querySelector(`select[data-field="status"][data-rowid="${rowId}"]`);
+                        if (statusSel) statusSel.value = String(item.status || '');
                     }, 0);
                     return;
                 }
+
+                const statusBadge = renderStatusBadge_(item.status);
+                const quickStatusBtns = renderQuickStatusButtons_(orderIdAttr, rowId, item.status);
 
                 historyBody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition-colors group">
                         <td class="p-0" colspan="4">
                             <div class="px-4 py-3">
                                 <div class="min-w-0">
-                                    <div class="flex items-center gap-2 min-w-0">
+                                    <div class="flex items-center gap-2 min-w-0 flex-wrap">
                                         <div class="shrink-0 text-slate-400 text-xs tabular-nums whitespace-nowrap">
                                             ${new Date(item.date).toLocaleDateString('uk-UA')}
                                         </div>
@@ -2167,6 +2334,7 @@
                                         <div class="min-w-0 text-xs font-medium text-slate-600 truncate whitespace-nowrap" title="${escapeHtml(regionLabel)}">
                                             ${escapeHtml(regionLabel)}
                                         </div>
+                                        ${statusBadge ? `<div class="shrink-0">${statusBadge}</div>` : ''}
                                     </div>
 
                                     <div class="mt-1 min-w-0 text-[11px] font-medium text-slate-900 truncate whitespace-nowrap leading-tight" title="${escapeHtml(item.payer)}">
@@ -2184,6 +2352,7 @@
 
                                         <div class="shrink-0 flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                             <div class="flex items-center space-x-2">
+                                                ${quickStatusBtns}
                                                 <button type="button" title="Редагувати" aria-label="Редагувати" data-action="edit" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-9 h-9 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
@@ -2203,6 +2372,82 @@
 
         // History actions (edit/save/cancel/delete)
         document.getElementById('historyBody')?.addEventListener('click', async (e) => {
+            // Handle status dropdown toggle
+            const toggleBtn = e.target.closest('[data-action="toggle-status-dropdown"]');
+            if (toggleBtn) {
+                const rowId = toggleBtn.dataset.rowid;
+                const dropdown = document.querySelector(`[data-status-dropdown="${rowId}"]`);
+                if (dropdown) {
+                    // Close all other dropdowns
+                    document.querySelectorAll('[data-status-dropdown]').forEach(d => {
+                        if (d !== dropdown) d.classList.add('hidden');
+                    });
+                    dropdown.classList.toggle('hidden');
+                }
+                return;
+            }
+
+            // Handle status option selection
+            const statusOption = e.target.closest('[data-action="quick-status-option"]');
+            if (statusOption) {
+                if (!window.__historyState) return;
+                const state = window.__historyState;
+                const newStatus = statusOption.dataset.status || '';
+                const orderId = statusOption.dataset.orderid;
+                const rowId = statusOption.dataset.rowid;
+
+                // Close dropdown
+                const dropdown = document.querySelector(`[data-status-dropdown="${rowId}"]`);
+                if (dropdown) dropdown.classList.add('hidden');
+
+                if (!orderId) {
+                    alert('Не вдалося визначити ID замовлення');
+                    return;
+                }
+                const existingOrder = state.byOrderId?.[orderId];
+                if (!existingOrder) {
+                    alert('Замовлення не знайдено');
+                    return;
+                }
+
+                try {
+                    await fs_updateOrder_(loggedInManagerId, orderId, { 
+                        date: existingOrder.date, 
+                        payer: existingOrder.payer, 
+                        crmLink: existingOrder.crmLink || '', 
+                        region: existingOrder.region || '', 
+                        items: existingOrder.items || '', 
+                        comment: existingOrder.comment || '', 
+                        amount: existingOrder.amount,
+                        status: newStatus 
+                    }, existingOrder.amount);
+                    console.info('[CRM] quick-status update source: firebase');
+
+                    const payload = { 
+                        action: 'updateOrder', 
+                        managerId: loggedInManagerId, 
+                        id: orderId, 
+                        date: existingOrder.date, 
+                        payer: existingOrder.payer, 
+                        crmLink: existingOrder.crmLink || '', 
+                        region: existingOrder.region || '', 
+                        items: existingOrder.items || '', 
+                        comment: existingOrder.comment || '', 
+                        amount: existingOrder.amount,
+                        status: newStatus 
+                    };
+                    const ok = await postToScript_(payload);
+                    if (!ok) enqueueSheetsOp_({ type: 'updateOrder', payload });
+                } catch (err) {
+                    console.warn('[CRM] quick-status update firebase failed', err);
+                    alert('Помилка зміни статусу. Спробуйте ще раз.');
+                    return;
+                }
+
+                setTimeout(updateStats, 600);
+                return;
+            }
+
             const btn = e.target.closest('button[data-action][data-rowid]');
             if (!btn) return;
             if (!window.__historyState) return;
@@ -2258,6 +2503,7 @@
                 const items = document.querySelector(`input[data-field="items"][data-rowid="${rowId}"]`)?.value?.trim() || '';
                 const comment = document.querySelector(`input[data-field="comment"][data-rowid="${rowId}"]`)?.value?.trim() || '';
                 const amount = document.querySelector(`input[data-field="amount"][data-rowid="${rowId}"]`)?.value;
+                const status = document.querySelector(`select[data-field="status"][data-rowid="${rowId}"]`)?.value || '';
 
                 if (!date) {
                     alert('Оберіть дату');
@@ -2280,11 +2526,11 @@
                 }
 
                 try {
-                    await fs_updateOrder_(loggedInManagerId, orderId, { date, payer, crmLink, region, items, comment, amount }, prevAmount);
+                    await fs_updateOrder_(loggedInManagerId, orderId, { date, payer, crmLink, region, items, comment, amount, status }, prevAmount);
                     console.info('[CRM] updateOrder source: firebase');
 
                     // Sheets backup: try now; if fails, queue for later.
-                    const payload = { action: 'updateOrder', managerId: loggedInManagerId, id: orderId, date, payer, crmLink, region, items, comment, amount };
+                    const payload = { action: 'updateOrder', managerId: loggedInManagerId, id: orderId, date, payer, crmLink, region, items, comment, amount, status };
                     const ok = await postToScript_(payload);
                     if (!ok) enqueueSheetsOp_({ type: 'updateOrder', payload });
                 } catch (e) {
@@ -2296,6 +2542,13 @@
                 state.editingOrderId = null;
                 setTimeout(updateStats, 600);
                 return;
+            }
+        });
+
+        // Close status dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.status-dropdown-wrapper')) {
+                document.querySelectorAll('[data-status-dropdown]').forEach(d => d.classList.add('hidden'));
             }
         });
 

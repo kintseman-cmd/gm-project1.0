@@ -484,21 +484,21 @@
             <div class="w-full lg:w-1/3 lg:flex-none min-w-0">
                 <div class="sticky-calc">
                     <!-- Міні адмін-панель прайсу (над калькулятором; НЕ в хедері) -->
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-3 flex flex-col gap-2" id="price-admin-bar">
-                        <div class="hidden text-xs font-bold uppercase tracking-wide text-amber-600" id="priceEditModeLabel">Режим редагування</div>
-                        <div class="flex flex-wrap items-center gap-2" id="priceAdminButtonsRow">
-                                <button type="button" id="priceEditToggle" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-3" id="price-admin-bar">
+                        <div class="hidden text-xs font-bold uppercase tracking-wide text-amber-600 mb-2" id="priceEditModeLabel">Режим редагування</div>
+                        <div class="flex flex-wrap lg:grid lg:grid-cols-2 xl:grid-cols-3 items-center gap-2" id="priceAdminButtonsRow">
+                                <button type="button" id="priceEditToggle" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition whitespace-nowrap w-full h-10">
                                 <i class="fas fa-pen"></i>
                                 <span>Редагувати</span>
                                 </button>
-                                <button type="button" id="priceLastChangesBtn" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10">
+                                <button type="button" id="priceLastChangesBtn" class="inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition whitespace-nowrap w-full h-10">
                                 <i class="fas fa-clock"></i>
                                 <span>Останні зміни</span>
                                 </button>
                             <div class="hidden contents" id="priceAdminControls">
-                                <button type="button" id="priceAddCategoryBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10"><i class="fas fa-folder-plus"></i>Категорія</button>
-                                <button type="button" id="priceAddItemBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10"><i class="fas fa-plus"></i>Позиція</button>
-                                <button type="button" id="priceApplyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap flex-1 basis-44 min-w-[10.5rem] h-10"><i class="fas fa-save"></i>Зберегти</button>
+                                <button type="button" id="priceAddCategoryBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap w-full h-10"><i class="fas fa-folder-plus"></i>Категорія</button>
+                                <button type="button" id="priceAddItemBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-700 text-sm font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap w-full h-10"><i class="fas fa-plus"></i>Позиція</button>
+                                <button type="button" id="priceApplyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap w-full lg:col-span-2 xl:col-span-1 h-10"><i class="fas fa-save"></i>Зберегти</button>
                             </div>
                         </div>
                     </div>
@@ -526,6 +526,9 @@
                         <div class="flex items-center gap-2">
                             <button id="creditCompareBtn" type="button" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded" title="Порівняти варіанти кредиту">
                                 <i class="fas fa-credit-card"></i> Кредит
+                            </button>
+                            <button id="packagesBtn" type="button" class="p-2 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded" title="Інструкція пакетів">
+                                <i class="fas fa-box-open"></i> Пакети
                             </button>
                         </div>
                     </div>
@@ -573,6 +576,18 @@
                                 <span>Коригування:</span>
                                 <span>0 грн</span>
                             </div>
+                            <div class="flex justify-between text-green-600 hidden" id="receipt-package-discount">
+                                <span>Пакет «СТАНДРАТНИЙ» знижка 5%:</span>
+                                <span>-0 грн</span>
+                            </div>
+                            <div class="flex justify-between text-red-600 hidden" id="receipt-package-pro-discount">
+                                <span>Пакет «ПРОФЕСІЙНИЙ» знижка 10%:</span>
+                                <span>-0 грн</span>
+                            </div>
+                            <div class="flex justify-between text-purple-600 hidden" id="receipt-package-agg-discount">
+                                <span>Пакет «АГРЕГАТ +АГРЕГАТ» знижка 5%:</span>
+                                <span>-0 грн</span>
+                            </div>
                             <div class="flex justify-between text-amber-700 hidden" id="receipt-compensation">
                                 <span>Компенсація:</span>
                                 <span>-0 грн</span>
@@ -584,6 +599,16 @@
                         </div>
                     </div>
                     
+                    <!-- Package Progress Indicator -->
+                    <div id="packageProgressBlock" class="hidden bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-lg border-2 border-indigo-200 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-gift text-indigo-600"></i>
+                            <h4 class="font-bold text-indigo-900" id="packageProgressTitle">До пакету залишилось...</h4>
+                        </div>
+                        <div id="packageProgressContent" class="text-sm space-y-1"></div>
+                        <div id="packageSavingsEstimate" class="mt-2 pt-2 border-t border-indigo-200 font-bold text-green-700"></div>
+                    </div>
+
                     <div class="text-center flex items-center justify-center gap-4">
                         <button type="button" onclick="collapseAllCatalog()" class="text-gray-600 text-sm hover:underline">Згорнути все</button>
                         <button type="button" onclick="clearCart()" class="text-red-500 text-sm hover:underline">Очистити все</button>
@@ -791,6 +816,84 @@
                 <button id="closeCreditInfoModalBtn" type="button" class="px-4 md:px-6 py-1.5 md:py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base font-medium rounded transition">
                     Зрозуміло
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Packages Promo Modal -->
+    <div id="packagesModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[70] flex items-center justify-center p-0 md:p-4">
+        <div class="bg-white rounded-none md:rounded-lg shadow-lg max-w-3xl w-full mx-0 md:mx-4 p-4 md:p-6 max-h-screen md:max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3 md:mb-4">
+                <h3 class="text-sm md:text-lg font-bold text-gray-800"><i class="fas fa-tags mr-1 md:mr-2 text-indigo-500"></i>ПРОМО-ПАКЕТИ GENERAL MACHINES</h3>
+                <button id="closePackagesModal" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm text-gray-700">
+                <div>
+                    <h4 class="font-bold mb-1">СТРУКТУРА ПРОМО-ПАКЕТІВ</h4>
+                    <p class="mb-2">Нижче представлені три промо-пакети для активізації продажів навантажувачів та агрегатів General Machines</p>
+                </div>
+
+                <div class="p-3 bg-green-50 border-2 border-green-300 rounded-lg">
+                    <h5 class="font-bold text-green-800"><i class="fas fa-star mr-1"></i>ПАКЕТ «СТАНДРАТНИЙ»</h5>
+                    <p class="text-sm text-green-700">Знижка: <strong>5% на загальний чек</strong></p>
+                    <p class="mt-1 font-semibold">УМОВИ ПАКЕТУ:</p>
+                    <ul class="list-disc list-inside mt-1">
+                        <li>1 x Навантажувач GM (будь-яка модель) зі стандартним ковшом</li>
+                        <li>1 x Джойстик керування (обов'язково)</li>
+                        <li>1 x Додатковий аксесуар на вибір (обов'язково)</li>
+                    </ul>
+                </div>
+
+                <div class="p-3 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                    <h5 class="font-bold text-blue-800"><i class="fas fa-crown mr-1"></i>ПАКЕТ «ПРОФЕСІЙНИЙ»</h5>
+                    <p class="text-sm text-blue-700">Знижка: <strong>10% на загальний чек</strong></p>
+                    <p class="mt-1 font-semibold">УМОВИ ПАКЕТУ:</p>
+                    <ul class="list-disc list-inside mt-1">
+                        <li>1 x Навантажувач GM (будь-яка модель) зі стандартним ковшом</li>
+                        <li>1 x Джойстик керування (обов'язково)</li>
+                        <li>2 x Додаткових аксесуари на вибір (обов'язково)</li>
+                    </ul>
+                    <p class="mt-2 font-semibold text-blue-800">ЦІЛЬОВА АУДИТОРІЯ:</p>
+                    <ul class="list-disc list-inside mt-1 text-sm">
+                        <li>Середні фермерські господарства (50-200 га)</li>
+                        <li>Агрокомпанії з різнопрофільним виробництвом</li>
+                        <li>Будівельні компанії середнього масштабу</li>
+                        <li>Логістичні центри та склади</li>
+                        <li>Лісничі господарства</li>
+                    </ul>
+                    <p class="mt-2 font-semibold text-blue-800">КЛЮЧОВІ МЕСЕДЖІ ДЛЯ ПРОМО:</p>
+                    <ul class="list-disc list-inside mt-1 text-sm">
+                        <li>"Професійний комплект — максимальна економія!"</li>
+                        <li>"Готове рішення для будь-яких завдань з доставкою та установкою під ключ"</li>
+                    </ul>
+                </div>
+
+                <div class="p-3 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                    <h5 class="font-bold text-purple-800"><i class="fas fa-tractor mr-1"></i>ПАКЕТ «АГРЕГАТ +АГРЕГАТ»</h5>
+                    <p class="text-sm text-purple-700">Знижка: <strong>5% на загальний чек</strong></p>
+                    <p class="mt-1 font-semibold">УМОВИ ПАКЕТУ:</p>
+                    <ul class="list-disc list-inside mt-1">
+                        <li>2 x Будь-які агрегати GM на вибір (комбінація)</li>
+                    </ul>
+                    <p class="mt-2 font-semibold text-purple-800">ЦІЛЬОВА АУДИТОРІЯ:</p>
+                    <ul class="list-disc list-inside mt-1 text-sm">
+                        <li>Фермерські господарства 100-500 га</li>
+                        <li>Агрокомпанії, що розширюють парк техніки</li>
+                        <li>Кооперативи та спільні господарства</li>
+                        <li>Підприємці, що стартують в агробізнесі</li>
+                    </ul>
+                    <p class="mt-2 font-semibold text-purple-800">КЛЮЧОВІ МЕСЕДЖІ ДЛЯ ПРОМО:</p>
+                    <ul class="list-disc list-inside mt-1 text-sm">
+                        <li>"Комплексне рішення для обробки ґрунту — знижка 5%"</li>
+                        <li>"Купуй два агрегати — працюй цілий рік без зупинок"</li>
+                        <li>"Доставка та налаштування — безкоштовно по всій Україні"</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <button id="closePackagesModalBtn" type="button" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded">Зрозуміло</button>
             </div>
         </div>
     </div>
@@ -1355,6 +1458,255 @@
             return ` (${sign}${formatMoney_(d)})`;
         }
 
+        // Detect ПАКЕТ «СТАНДРАТНИЙ» conditions
+        // Conditions:
+        // - one loader selected from this set (names must match catalog values)
+        // - one joystick selected (2Р-40 or 2Р-80)
+        // - at least one item from category "Навісне до кунів"
+        function isStandardPackageActive_() {
+            const loaderNames = new Set([
+                'GENERAL-EURO + 3-тя секція (без ковша) МТЗ',
+                'GENERAL-X (з ковшем в комплекті)',
+                'GENERAL-XL (з ковшем в комплекті)',
+                'GENERAL-EURO (з ковшем в комплекті)',
+                'GENERAL-EURO (з ковшем комплекті)'
+            ]);
+
+            let hasLoader = false;
+            let hasJoystick = false;
+            let hasNavisne = false;
+
+            for (const k in cart) {
+                const it = cart[k] || {};
+                const name = String(it.name || '');
+                const cat = String(it.category || '');
+
+                if (loaderNames.has(name)) hasLoader = true;
+
+                if (/Джойстик/.test(name) && /(2Р-40|2Р-80)/.test(name)) hasJoystick = true;
+
+                if (cat === 'Навісне до кунів') hasNavisne = true;
+            }
+
+            return hasLoader && hasJoystick && hasNavisne;
+        }
+
+        // Detect ПАКЕТ «ПРОФЕСІЙНИЙ» conditions
+        // Conditions:
+        // - 1 x Навантажувач GM (будь-яка модель) зі стандартним ковшом (detect: category 'Куни' and name contains 'з ковшем')
+        // - 1 x Джойстик керування (2Р-40 or 2Р-80)
+        // - 2 x Навісне до кунів (sum of qty from category 'Навісне до кунів' >= 2)
+        function isProfessionalPackageActive_() {
+            let hasLoaderWithBucket = false;
+            let hasJoystick = false;
+            let navisneQty = 0;
+
+            for (const k in cart) {
+                const it = cart[k] || {};
+                const name = String(it.name || '');
+                const cat = String(it.category || '');
+                const qty = Math.max(1, Math.floor(Number(it.qty) || 1));
+
+                if (cat === 'Куни' && /з\s*ковш/i.test(name)) hasLoaderWithBucket = true;
+
+                if (/Джойстик/.test(name) && /(2Р-40|2Р-80)/.test(name)) hasJoystick = true;
+
+                if (cat === 'Навісне до кунів') navisneQty += qty;
+            }
+
+            return hasLoaderWithBucket && hasJoystick && navisneQty >= 2;
+        }
+
+        // Update package progress indicator
+        function updatePackageProgress_(appliedDiscount, totalBeforeDiscount) {
+            const block = document.getElementById('packageProgressBlock');
+            const title = document.getElementById('packageProgressTitle');
+            const content = document.getElementById('packageProgressContent');
+            const savings = document.getElementById('packageSavingsEstimate');
+            
+            if (!block || !content) return;
+
+            // Check what's needed for each package
+            const loaderNames = new Set([
+                'GENERAL-EURO + 3-тя секція (без ковша) МТЗ',
+                'GENERAL-X (з ковшем в комплекті)',
+                'GENERAL-XL (з ковшем в комплекті)',
+                'GENERAL-EURO (з ковшем в комплекті)',
+                'GENERAL-EURO (з ковшем комплекті)'
+            ]);
+
+            let hasLoader = false;
+            let hasLoaderWithBucket = false;
+            let hasJoystick = false;
+            let navisneQty = 0;
+            let aggQty = 0;
+
+            for (const k in cart) {
+                const it = cart[k] || {};
+                const name = String(it.name || '');
+                const cat = String(it.category || '');
+                const qty = Math.max(1, Math.floor(Number(it.qty) || 1));
+
+                if (loaderNames.has(name)) hasLoader = true;
+                if (cat === 'Куни' && /з\s*ковш/i.test(name)) hasLoaderWithBucket = true;
+                if (/Джойстик/.test(name) && /(2Р-40|2Р-80)/.test(name)) hasJoystick = true;
+                if (cat === 'Навісне до кунів') navisneQty += qty;
+                
+                // Check aggregates
+                const aggregateNames = new Set([
+                    'GENERAL-X (без ковша)', 'GENERAL-XL (без ковша)', 'GENERAL-EURO (без ковша)',
+                    'GENERAL-XL 1221 (без ковша)', 'GENERAL-EURO + 3-тя секція (без ковша) МТЗ',
+                    'GENERAL-X (з ковшем в комплекті)', 'GENERAL-XL (з ковшем в комплекті)',
+                    'GENERAL-EURO (з ковшем комплекті)', 'Культиватор навісний КНС 2.6',
+                    'Культиватор навісний КНС 3.0', 'Культиватор навісний КНС 3.5',
+                    'Культиватор навісний КНС 4.0', 'Причіпний пристрій до КНС 4.0',
+                    'Культиватор причіпний КПС 4.0', 'Культиватор причіпний КПРС 5.0',
+                    'Культиватор причіпний КПРС 6.0', 'Лущильник 2.6 м.',
+                    'Лущильник 2.6 м. (причіпний)', 'Лущильник 3.2 м.',
+                    'Лущильник 3.2 м. (причіпний)', 'Лущильник 4.2 м. (причіпний)',
+                    'Лущильник 5.2 м. (причіпний)', 'Борона пружинна 6 м. (без опорних коліс)',
+                    'Борона пружинна 6 м з колесами (7-ка/10-ка)', 'Борона пружинна 9 м. (без опорних коліс)',
+                    'Борона пружинна 9 м. + опорні колеса', 'Універсальна пружинна борона 9 м',
+                    'КРН 4.2 навісний (міжрядний розкладний)', 'КРН 5.6 навісний РОЗКЛАДНА рама (міжрядний)',
+                    'КРН 5.6 навісний СУЦІЛЬНА рама (міжрядний)', 'Глибокорозпушувач 1.8 м.',
+                    'Глибокорозпушувач 2.5 м.', 'Глибокорозпушувач 3 м. 5 лап',
+                    'Глибокорозпушувач 3 м. 7 лап', 'Борона зубова 9 м. складна',
+                    'Кран-маніпулятор S-1500', 'Кран-маніпулятор SL-2000',
+                    'Бочка для внесення добрив 8 куб.'
+                ]);
+                if (aggregateNames.has(name)) aggQty += qty;
+            }
+
+            const proActive = hasLoaderWithBucket && hasJoystick && navisneQty >= 2;
+            const stdActive = hasLoader && hasJoystick && navisneQty >= 1;
+            const aggActive = aggQty >= 2;
+
+            // If package is active, show savings
+            if (appliedDiscount > 0) {
+                let packageName = '';
+                if (proActive) packageName = 'ПРОФЕСІЙНИЙ (-10%)';
+                else if (stdActive) packageName = 'СТАНДРАТНИЙ (-5%)';
+                else if (aggActive) packageName = 'АГРЕГАТ +АГРЕГАТ (-5%)';
+
+                title.innerHTML = `🎉 Активовано пакет "${packageName}"`;
+                content.innerHTML = `<p class="text-green-700 font-semibold">✅ Усі умови виконані!</p>`;
+                savings.innerHTML = `💰 Ви економите: <span class="text-xl">${Math.round(appliedDiscount).toLocaleString()} грн</span>`;
+                block.classList.remove('hidden');
+                return;
+            }
+
+            // Check if close to activating a package
+            let html = '';
+            let showBlock = false;
+            let potentialSavings = 0;
+
+            // Check Professional package (highest discount)
+            if (hasLoaderWithBucket && hasJoystick && navisneQty === 1) {
+                showBlock = true;
+                potentialSavings = Math.round(totalBeforeDiscount * 0.10);
+                title.innerHTML = 'До пакету "ПРОФЕСІЙНИЙ" (-10%)';
+                html += '<p class="text-gray-700">✅ Навантажувач зі стандартним ковшом</p>';
+                html += '<p class="text-gray-700">✅ Джойстик керування</p>';
+                html += '<p class="text-gray-700">✅ 1 аксесуар з "Навісне до кунів"</p>';
+                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібно ще 1 аксесуар з "Навісне до кунів"</p>';
+            }
+            // Check Standard package
+            else if (hasLoader && hasJoystick && navisneQty === 0) {
+                showBlock = true;
+                potentialSavings = Math.round(totalBeforeDiscount * 0.05);
+                title.innerHTML = 'До пакету "СТАНДРАТНИЙ" (-5%)';
+                html += '<p class="text-gray-700">✅ Навантажувач зі стандартним ковшом</p>';
+                html += '<p class="text-gray-700">✅ Джойстик керування</p>';
+                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібно 1 аксесуар з "Навісне до кунів"</p>';
+            }
+            else if (hasLoader && !hasJoystick && navisneQty >= 1) {
+                showBlock = true;
+                potentialSavings = Math.round(totalBeforeDiscount * 0.05);
+                title.innerHTML = 'До пакету "СТАНДРАТНИЙ" (-5%)';
+                html += '<p class="text-gray-700">✅ Навантажувач зі стандартним ковшом</p>';
+                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібен Джойстик (2Р-40 або 2Р-80)</p>';
+                html += '<p class="text-gray-700">✅ Аксесуари з "Навісне до кунів"</p>';
+            }
+            // Check Aggregate package
+            else if (aggQty === 1) {
+                showBlock = true;
+                potentialSavings = Math.round(totalBeforeDiscount * 0.05);
+                title.innerHTML = 'До пакету "АГРЕГАТ +АГРЕГАТ" (-5%)';
+                html += '<p class="text-gray-700">✅ 1 агрегат GM</p>';
+                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібен ще 1 агрегат на вибір</p>';
+            }
+
+            if (showBlock) {
+                content.innerHTML = html;
+                savings.innerHTML = `💰 Потенційна економія: <span class="text-xl">${potentialSavings.toLocaleString()} грн</span>`;
+                block.classList.remove('hidden');
+            } else {
+                block.classList.add('hidden');
+            }
+        }
+
+        // Detect ПАКЕТ «АГРЕГАТ +АГРЕГАТ» conditions
+        // Conditions: 2 x any aggregates from the allowed list (qty sum >= 2)
+        function isAggregatePairActive_() {
+            const aggregateNames = new Set([
+                'GENERAL-X (без ковша)',
+                'GENERAL-XL (без ковша)',
+                'GENERAL-EURO (без ковша)',
+                'GENERAL-XL 1221 (без ковша)',
+                'GENERAL-EURO + 3-тя секція (без ковша) МТЗ',
+                'GENERAL-X (з ковшем в комплекті)',
+                'GENERAL-XL (з ковшем в комплекті)',
+                'GENERAL-EURO (з ковшем комплекті)',
+
+                'Культиватор навісний КНС 2.6',
+                'Культиватор навісний КНС 3.0',
+                'Культиватор навісний КНС 3.5',
+                'Культиватор навісний КНС 4.0',
+                'Причіпний пристрій до КНС 4.0',
+                'Культиватор причіпний КПС 4.0',
+                'Культиватор причіпний КПРС 5.0',
+                'Культиватор причіпний КПРС 6.0',
+
+                'Лущильник 2.6 м.',
+                'Лущильник 2.6 м. (причіпний)',
+                'Лущильник 3.2 м.',
+                'Лущильник 3.2 м. (причіпний)',
+                'Лущильник 4.2 м. (причіпний)',
+                'Лущильник 5.2 м. (причіпний)',
+
+                'Борона пружинна 6 м. (без опорних коліс)',
+                'Борона пружинна 6 м з колесами (7-ка/10-ка)',
+                'Борона пружинна 9 м. (без опорних коліс)',
+                'Борона пружинна 9 м. + опорні колеса',
+                'Універсальна пружинна борона 9 м',
+
+                'КРН 4.2 навісний (міжрядний розкладний)',
+                'КРН 5.6 навісний РОЗКЛАДНА рама (міжрядний)',
+                'КРН 5.6 навісний СУЦІЛЬНА рама (міжрядний)',
+
+                'Глибокорозпушувач 1.8 м.',
+                'Глибокорозпушувач 2.5 м.',
+                'Глибокорозпушувач 3 м. 5 лап',
+                'Глибокорозпушувач 3 м. 7 лап',
+
+                'Борона зубова 9 м. складна',
+
+                'Кран-маніпулятор S-1500',
+                'Кран-маніпулятор SL-2000',
+
+                'Бочка для внесення добрив 8 куб.'
+            ]);
+
+            let aggQty = 0;
+            for (const k in cart) {
+                const it = cart[k] || {};
+                const name = String(it.name || '');
+                const qty = Math.max(1, Math.floor(Number(it.qty) || 1));
+                if (aggregateNames.has(name)) aggQty += qty;
+            }
+            return aggQty >= 2;
+        }
+
         function updateLastChangesFromPriceDocs_(docs) {
             const list = [];
             for (const d of docs || []) {
@@ -1786,6 +2138,26 @@
             if (closeCreditInfoModalBtn) closeCreditInfoModalBtn.addEventListener('click', closeCreditInfoModalFn);
             creditInfoModal.addEventListener('click', (e) => {
                 if (e.target === creditInfoModal) closeCreditInfoModalFn();
+            });
+
+            // Packages modal handlers
+            const packagesBtn = document.getElementById('packagesBtn');
+            const packagesModal = document.getElementById('packagesModal');
+            const closePackagesModal = document.getElementById('closePackagesModal');
+            const closePackagesModalBtn = document.getElementById('closePackagesModalBtn');
+
+            function openPackagesModal() {
+                packagesModal.classList.remove('hidden');
+            }
+            function closePackagesModalFn() {
+                packagesModal.classList.add('hidden');
+            }
+
+            if (packagesBtn) packagesBtn.addEventListener('click', openPackagesModal);
+            if (closePackagesModal) closePackagesModal.addEventListener('click', closePackagesModalFn);
+            if (closePackagesModalBtn) closePackagesModalBtn.addEventListener('click', closePackagesModalFn);
+            if (packagesModal) packagesModal.addEventListener('click', (e) => {
+                if (e.target === packagesModal) closePackagesModalFn();
             });
 
             // Advance input listeners
@@ -2849,8 +3221,12 @@
 
         async function onPriceApply_() {
             if (!priceEditUnlocked_ || !priceEditMode_) return;
+            
+            // If no changes, just close edit mode
             if (!priceEdits_.size && !categorySortEdits_.size) {
-                alert('Немає змін');
+                priceEditMode_ = false;
+                setAdminUi_();
+                renderCatalog();
                 return;
             }
 
@@ -3276,13 +3652,53 @@
             // "РАЗОМ" before compensation (includes adjustment).
             const totalBeforeComp = baseTotal + adjustmentVal;
 
+            // Package discounts: priority order: PROFESSIONAL (10%) > STANDARD (5%) > AGGREGATE PAIR (5%).
+            const proActive = isProfessionalPackageActive_();
+            const stdActive = isStandardPackageActive_();
+            const aggActive = isAggregatePairActive_();
+            let packageDiscount = 0;
+            const packageElem = document.getElementById('receipt-package-discount');
+            const packageProElem = document.getElementById('receipt-package-pro-discount');
+            const packageAggElem = document.getElementById('receipt-package-agg-discount');
+
+            if (proActive && totalBeforeComp > 0) {
+                packageDiscount = totalBeforeComp * 0.10;
+                if (packageProElem) {
+                    packageProElem.classList.remove('hidden');
+                    packageProElem.querySelector('span:last-child').textContent = `-${Math.round(packageDiscount).toLocaleString()} грн`;
+                }
+                if (packageElem) packageElem.classList.add('hidden');
+                if (packageAggElem) packageAggElem.classList.add('hidden');
+            } else if (stdActive && totalBeforeComp > 0) {
+                packageDiscount = totalBeforeComp * 0.05;
+                if (packageElem) {
+                    packageElem.classList.remove('hidden');
+                    packageElem.querySelector('span:last-child').textContent = `-${Math.round(packageDiscount).toLocaleString()} грн`;
+                }
+                if (packageProElem) packageProElem.classList.add('hidden');
+                if (packageAggElem) packageAggElem.classList.add('hidden');
+            } else if (aggActive && totalBeforeComp > 0) {
+                packageDiscount = totalBeforeComp * 0.05;
+                if (packageAggElem) {
+                    packageAggElem.classList.remove('hidden');
+                    packageAggElem.querySelector('span:last-child').textContent = `-${Math.round(packageDiscount).toLocaleString()} грн`;
+                }
+                if (packageElem) packageElem.classList.add('hidden');
+                if (packageProElem) packageProElem.classList.add('hidden');
+            } else {
+                if (packageElem) packageElem.classList.add('hidden');
+                if (packageProElem) packageProElem.classList.add('hidden');
+                if (packageAggElem) packageAggElem.classList.add('hidden');
+            }
+
             // 25% mode is a VISUAL "state compensation" indicator.
             // It must be calculated ONLY from the final total "РАЗОМ" (y) before compensation.
             // бухгалтерськи: ПДВ = y/6; база без ПДВ = y - ПДВ; компенсація = 25% від бази.
             let compensationVal = 0;
             const compElem = document.getElementById('receipt-compensation');
+            // y is the base for compensation: include package discount in the base
+            const y = Math.max(0, totalBeforeComp - packageDiscount);
             if (vatDiscount25Active_) {
-                const y = totalBeforeComp;
                 const vat = y > 0 ? (y / 6) : 0;
                 const net = y - vat;
                 compensationVal = net > 0 ? (net * 0.25) : 0;
@@ -3294,7 +3710,10 @@
                 if (compElem) compElem.classList.add('hidden');
             }
 
-            const finalTotal = totalBeforeComp - compensationVal;
+            const finalTotal = y - compensationVal;
+
+            // Show savings amount if package discount is active
+            const savingsText = packageDiscount > 0 ? ` (економія: ${Math.round(packageDiscount).toLocaleString()} грн)` : '';
 
             document.getElementById('receipt-subtotal').innerHTML = `<span>Сума товарів:</span> <span class="font-bold">${itemsTotal.toLocaleString()} грн</span>`;
             
@@ -3309,6 +3728,9 @@
             }
 
             document.getElementById('final-total').textContent = `${Math.round(finalTotal).toLocaleString()} грн`;
+
+            // Update package progress and recommendations
+            updatePackageProgress_(packageDiscount, totalBeforeComp);
 
             // Show/hide special calculator buttons for selected item
             updateGeneralXCalcPricesUi_();
