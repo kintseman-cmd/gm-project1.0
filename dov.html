@@ -55,7 +55,32 @@
     <style>
         html, body { overflow-x: hidden; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding-top: 60px; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* Glass effect - optimized for performance */
+        .glass { 
+            background: rgba(255, 255, 255, 0.97);
+            /* backdrop-filter disabled on desktop for performance */
+        }
+        @media (max-width: 768px) {
+            .glass { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        }
+        
+        /* Reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Toast animation */
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+        
         .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
         .salary-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
         .login-bg { background: radial-gradient(circle at top right, #3b82f6, #1e293b); }
@@ -158,7 +183,7 @@
                 opacity: 0;
                 transform: translateY(-6px);
                 pointer-events: none;
-                transition: opacity 160ms ease, transform 160ms ease;
+                transition: opacity 100ms ease, transform 100ms ease;
                 box-shadow: 2px 0 10px rgba(0,0,0,0.1);
                 z-index: 999;
             }
@@ -184,7 +209,7 @@
                 justify-content: center;
                 opacity: 0;
                 transform: translateX(-18px);
-                transition: transform 180ms ease, opacity 180ms ease;
+                transition: transform 100ms ease, opacity 100ms ease;
             }
 
             .nav-item:nth-child(even) {
@@ -260,9 +285,47 @@
             overscroll-behavior: contain;
             overscroll-behavior-x: none;
         }
+
+        /* Mobile: ensure content doesn't go under bottom nav */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: calc(var(--gm-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
+            }
+
+            /* Main content area needs bottom spacing */
+            main.container {
+                padding-bottom: calc(var(--gm-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 24px) !important;
+            }
+
+            /* History table bottom margin */
+            .max-h-\[300px\] table {
+                margin-bottom: calc(var(--gm-bottom-nav-height, 64px) + 60px) !important;
+            }
+
+            /* Modals: account for bottom nav */
+            #orderModal > div.relative,
+            #exportModal > div.relative {
+                padding-bottom: calc(var(--gm-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
+            }
+
+            .modal-scroll {
+                max-height: calc(100dvh - 200px - var(--gm-bottom-nav-height, 64px)) !important;
+            }
+
+            /* Filter dropdowns: ensure they don't get cut off */
+            #dateFilterDropdown,
+            #statusFilterDropdown {
+                max-height: calc(50vh - var(--gm-bottom-nav-height, 64px)) !important;
+            }
+
+            /* Auth overlay stays full screen */
+            #authOverlay {
+                padding-bottom: 0 !important;
+            }
+        }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-12 text-slate-900 gm-safe-bottom">
+<body class="bg-slate-100 min-h-screen pb-24 text-slate-900 gm-safe-bottom">
 
     <!-- Header -->
     <header class="header">
@@ -491,6 +554,10 @@
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 font-bold text-xs uppercase tracking-wider text-slate-500">
                                 <span>Мої продажі</span>
                                 <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+                                    <button type="button" id="showShipmentNotifBtn" title="Показати ближні відгрузки" class="w-10 sm:w-auto text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-truck"></i>
+                                        <span class="hidden sm:inline">Відгрузки</span>
+                                    </button>
                                     <button type="button" id="openExportModalBtn" class="w-full sm:w-auto text-xs font-bold tracking-wider px-3 py-2 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
                                         Експорт
                                     </button>
@@ -504,6 +571,20 @@
                                     <span>Дата</span>
                                     <i class="fa-solid fa-arrow-down text-[9px]" id="sortDateIcon"></i>
                                 </button>
+                                <div class="relative inline-block" id="dateFilterWrapper">
+                                    <button type="button" id="dateFilterBtn" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition">
+                                        <i class="fa-solid fa-calendar-week text-[10px]"></i>
+                                        <span id="dateFilterLabel">Всі дати</span>
+                                        <i class="fa-solid fa-chevron-down text-[8px]"></i>
+                                    </button>
+                                    <div id="dateFilterDropdown" class="hidden absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[100] min-w-[200px] py-1 max-h-[300px] overflow-y-auto">
+                                        <div data-filter-date="" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer border-b border-slate-100 font-medium">Всі дати</div>
+                                        <div data-filter-date="this_week" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer">Цей тиждень</div>
+                                        <div data-filter-date="last_week" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer">Минулий тиждень</div>
+                                        <div data-filter-date="this_month" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer">Цей місяць</div>
+                                        <div data-filter-date="last_month" class="px-3 py-2 text-xs hover:bg-slate-100 cursor-pointer">Минулий місяць</div>
+                                    </div>
+                                </div>
                                 <div class="relative inline-block" id="statusFilterWrapper">
                                     <button type="button" id="statusFilterBtn" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition">
                                         <i class="fa-solid fa-filter text-[10px]"></i>
@@ -518,7 +599,7 @@
                             </div>
                         </div>
                         <div class="max-h-[300px] lg:max-h-[375px] overflow-y-auto overflow-x-hidden relative z-10">
-                            <table class="w-full text-left table-fixed mb-40">
+                            <table class="w-full text-left table-fixed mb-24 sm:mb-4">
                                 <tbody id="historyBody" class="text-sm divide-y divide-slate-100">
                                     <tr><td class="p-10 text-center text-slate-400 italic">Синхронізація...</td></tr>
                                 </tbody>
@@ -537,8 +618,8 @@
             <div class="w-full max-w-xl glass rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
                 <div class="p-4 sm:p-6 bg-slate-50/60 flex items-center justify-between gap-3 border-b border-slate-100">
                     <div class="flex items-center gap-2 font-bold text-slate-800">
-                        <i class="fa-solid fa-plus-circle text-blue-600"></i>
-                        <span>Нове замовлення</span>
+                        <i id="orderModalIcon" class="fa-solid fa-plus-circle text-blue-600"></i>
+                        <span id="orderModalTitle">Нове замовлення</span>
                     </div>
                     <button type="button" id="closeOrderModalBtn" class="w-10 h-10 rounded-2xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center justify-center" aria-label="Закрити">
                         <i class="fa-solid fa-xmark"></i>
@@ -547,9 +628,16 @@
 
                 <div class="p-4 sm:p-6 modal-scroll">
                     <form id="orderForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="editingOrderId" value="">
+                        <input type="hidden" id="editingOrderPrevAmount" value="">
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Дата</label>
                             <input type="date" id="orderDate" required
+                                class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Дата відгрузки <span class="text-slate-300 font-normal normal-case">(опціонально)</span></label>
+                            <input type="date" id="orderShipmentDate"
                                 class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                         <div class="md:col-span-2">
@@ -608,6 +696,12 @@
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Коментар (опціонально)</label>
                             <input type="text" id="orderComment" placeholder="Будь-які примітки по замовленню"
                                 class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Статус</label>
+                            <select id="orderStatus" class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">-- Без статусу --</option>
+                            </select>
                         </div>
                         <div class="md:col-span-2 flex items-end">
                             <button type="submit" id="submitBtn" 
@@ -684,7 +778,7 @@
         };
 
         // Стан сортування та фільтрації
-        window.__sortFilterState = { sortDir: 'desc', filterStatus: '' };
+        window.__sortFilterState = { sortDir: 'desc', filterStatus: '', filterDate: '' };
 
         // Ініціалізація dropdown статусів для фільтру
         (function initStatusFilterDropdown() {
@@ -698,6 +792,15 @@
                 dropdown.appendChild(div);
             }
         })();
+
+        function escapeHtml_(v) {
+            return String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function getStatusOptions_(selectedValue) {
             let html = '<option value="">-- Без статусу --</option>';
@@ -917,6 +1020,7 @@
                     id,
                     rowId: id,
                     date: toIsoDate_(o.date),
+                    shipmentDate: o.shipmentDate ? toIsoDate_(o.shipmentDate) : '',
                     payer: o.payer || '',
                     region: o.region || '',
                     items: o.items || '',
@@ -945,6 +1049,9 @@
             const amount = normalizeAmount_(payload.amount);
             const dateStr = String(payload.date || '').trim();
             const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T00:00:00') : new Date();
+            
+            const shipmentDateStr = String(payload.shipmentDate || '').trim();
+            const shipmentDate = /^\d{4}-\d{2}-\d{2}$/.test(shipmentDateStr) ? new Date(shipmentDateStr + 'T00:00:00') : null;
 
             const docRef = await api.addDoc(api.collection(api.db, 'managers', managerId, 'orders'), {
                 managerId,
@@ -956,6 +1063,7 @@
                 status: payload.status || '',
                 amount,
                 date,
+                shipmentDate,
                 createdAt: api.serverTimestamp(),
                 updatedAt: api.serverTimestamp()
             });
@@ -976,6 +1084,9 @@
             const amount = normalizeAmount_(payload.amount);
             const dateStr = String(payload.date || '').trim();
             const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T00:00:00') : new Date();
+            
+            const shipmentDateStr = String(payload.shipmentDate || '').trim();
+            const shipmentDate = /^\d{4}-\d{2}-\d{2}$/.test(shipmentDateStr) ? new Date(shipmentDateStr + 'T00:00:00') : null;
 
             await api.setDoc(
                 api.doc(api.db, 'managers', managerId, 'orders', orderId),
@@ -988,6 +1099,7 @@
                     status: payload.status || '',
                     amount,
                     date,
+                    shipmentDate,
                     updatedAt: api.serverTimestamp()
                 },
                 { merge: true }
@@ -1208,7 +1320,7 @@
         const BASE_SALARY = 40000;
         // KPI model:
         // - Turnover KPI: up to 40k (0 if <=50% plan; proportional 51–100%; capped at 40k)
-        // - Conversion KPI: +20k if target is met AND turnover plan is reached (>=100%)
+        // - Conversion KPI: +20k if target is met
         // - Over-plan bonus: +1% of sales above goal
         const MAX_BONUS = 40000;
         const CONVERSION_BONUS = 20000;
@@ -2022,14 +2134,72 @@
         })();
 
         // --- Modal: New Order ---
-        function openOrderModal_() {
+        function initOrderStatusDropdown_() {
+            const statusSelect = document.getElementById('orderStatus');
+            if (!statusSelect || statusSelect.options.length > 1) return;
+            for (const [key, st] of Object.entries(ORDER_STATUSES)) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = st.label;
+                statusSelect.appendChild(opt);
+            }
+        }
+
+        function resetOrderModal_() {
+            // Reset to "new order" mode
+            document.getElementById('editingOrderId').value = '';
+            document.getElementById('editingOrderPrevAmount').value = '';
+            document.getElementById('orderModalTitle').textContent = 'Нове замовлення';
+            document.getElementById('orderModalIcon').className = 'fa-solid fa-plus-circle text-blue-600';
+            document.getElementById('submitBtn').textContent = 'Додати';
+            
+            // Clear form fields
+            document.getElementById('orderDate').value = '';
+            document.getElementById('orderShipmentDate').value = '';
+            document.getElementById('payer').value = '';
+            document.getElementById('orderCrmLink').value = '';
+            document.getElementById('regionSelect').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('orderItems').value = '';
+            document.getElementById('orderComment').value = '';
+            document.getElementById('orderStatus').value = '';
+        }
+
+        function openOrderModal_(editData = null) {
             const modal = document.getElementById('orderModal');
             if (!modal) return;
+            
+            initOrderStatusDropdown_();
+            
+            if (editData) {
+                // Edit mode
+                document.getElementById('editingOrderId').value = editData.id || '';
+                document.getElementById('editingOrderPrevAmount').value = editData.amount || '';
+                document.getElementById('orderModalTitle').textContent = 'Редагування замовлення';
+                document.getElementById('orderModalIcon').className = 'fa-solid fa-pen text-amber-600';
+                document.getElementById('submitBtn').textContent = 'Зберегти';
+                
+                // Fill form with existing data
+                const dateVal = toIsoDate_(editData.date);
+                document.getElementById('orderDate').value = dateVal;
+                document.getElementById('orderShipmentDate').value = editData.shipmentDate ? toIsoDate_(editData.shipmentDate) : '';
+                document.getElementById('payer').value = editData.payer || '';
+                document.getElementById('orderCrmLink').value = editData.crmLink || editData.link || '';
+                document.getElementById('regionSelect').value = editData.region || '';
+                document.getElementById('amount').value = editData.amount || '';
+                document.getElementById('orderItems').value = editData.items || '';
+                document.getElementById('orderComment').value = editData.comment || '';
+                document.getElementById('orderStatus').value = editData.status || '';
+            } else {
+                // New order mode
+                resetOrderModal_();
+                initDateInputs_();
+                applyOrderDraftToUi_();
+            }
+            
             modal.classList.remove('hidden');
             syncBodyScrollLock_();
-            initDateInputs_();
             bindOrderDraftAutosave_();
-            applyOrderDraftToUi_();
             setTimeout(() => {
                 const payer = document.getElementById('payer');
                 if (payer) payer.focus();
@@ -2041,13 +2211,25 @@
             if (!modal) return;
             modal.classList.add('hidden');
             syncBodyScrollLock_();
+            // Reset to new mode when closing
+            resetOrderModal_();
         }
 
-        document.getElementById('openOrderModalBtn')?.addEventListener('click', openOrderModal_);
+        document.getElementById('openOrderModalBtn')?.addEventListener('click', () => openOrderModal_(null));
         document.getElementById('closeOrderModalBtn')?.addEventListener('click', closeOrderModal_);
         document.getElementById('orderModalBackdrop')?.addEventListener('click', closeOrderModal_);
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeOrderModal_();
+        });
+
+        // --- Shipment Notifications Button ---
+        document.getElementById('showShipmentNotifBtn')?.addEventListener('click', () => {
+            const state = window.__historyState;
+            if (!state || !state.allHistory) {
+                alert('Історія замовлень ще не завантажена');
+                return;
+            }
+            showAllShipments_(state.allHistory);
         });
 
         // --- Modal: Export ---
@@ -2089,8 +2271,45 @@
             updateStats();
         });
 
+        const DATE_FILTER_LABELS = {
+            '': 'Всі дати',
+            this_week: 'Цей тиждень',
+            last_week: 'Минулий тиждень',
+            this_month: 'Цей місяць',
+            last_month: 'Минулий місяць'
+        };
+
+        document.getElementById('dateFilterBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('statusFilterDropdown')?.classList.add('hidden');
+            const dropdown = document.getElementById('dateFilterDropdown');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        });
+
+        document.getElementById('dateFilterDropdown')?.addEventListener('click', (e) => {
+            const option = e.target.closest('[data-filter-date]');
+            if (!option) return;
+            const dateKey = option.dataset.filterDate || '';
+            window.__sortFilterState.filterDate = dateKey;
+
+            const label = document.getElementById('dateFilterLabel');
+            const btn = document.getElementById('dateFilterBtn');
+            if (label) label.textContent = DATE_FILTER_LABELS[dateKey] || 'Всі дати';
+            if (btn) {
+                if (dateKey === '') {
+                    btn.className = 'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition';
+                } else {
+                    btn.className = 'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 hover:bg-slate-300 transition';
+                }
+            }
+
+            document.getElementById('dateFilterDropdown')?.classList.add('hidden');
+            updateStats();
+        });
+
         document.getElementById('statusFilterBtn')?.addEventListener('click', (e) => {
             e.stopPropagation();
+            document.getElementById('dateFilterDropdown')?.classList.add('hidden');
             const dropdown = document.getElementById('statusFilterDropdown');
             if (dropdown) dropdown.classList.toggle('hidden');
         });
@@ -2123,6 +2342,9 @@
             if (!e.target.closest('#statusFilterWrapper')) {
                 document.getElementById('statusFilterDropdown')?.classList.add('hidden');
             }
+            if (!e.target.closest('#dateFilterWrapper')) {
+                document.getElementById('dateFilterDropdown')?.classList.add('hidden');
+            }
         });
 
         // --- ЛОГІКА ТА UI ---
@@ -2143,8 +2365,8 @@
                 extra = (totalSales - goal) * 0.01;
             }
 
-            // Conversion KPI (20k) is counted only when the turnover plan is reached.
-            const convBonus = (conversionMet && totalSales >= goal) ? CONVERSION_BONUS : 0;
+            // Conversion KPI (20k)
+            const convBonus = (conversionMet) ? CONVERSION_BONUS : 0;
             bonus += convBonus;
 
             return { total: salary + bonus + extra, bonus, extra, percent: progress * 100 };
@@ -2177,16 +2399,78 @@
 
             // Історія з кнопкою видалення
             const historyBody = document.getElementById('historyBody');
-            historyBody.innerHTML = '';
+            
+            // Use DocumentFragment for better performance
+            const fragment = document.createDocumentFragment();
 
             const regionOptionsHtml = document.getElementById('regionSelect')?.innerHTML || '';
-            if (!window.__historyState) window.__historyState = { editingOrderId: null, byOrderId: {} };
+            if (!window.__historyState) window.__historyState = { editingOrderId: null, byOrderId: {}, allHistory: [] };
             const state = window.__historyState;
             state.byOrderId = {};
+            state.allHistory = history; // Store for shipment notifications
 
             // Застосувати сортування та фільтрацію
-            const sfState = window.__sortFilterState || { sortDir: 'desc', filterStatus: '' };
+            const sfState = window.__sortFilterState || { sortDir: 'desc', filterStatus: '', filterDate: '' };
             let filteredHistory = [...history];
+
+            const toDateOnly_ = (v) => {
+                const d = new Date(v);
+                if (!Number.isFinite(d.getTime())) return null;
+                return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            };
+
+            const getDateRangeForFilter_ = (key) => {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const startOfWeek = (d) => {
+                    const day = d.getDay();
+                    const diff = day === 0 ? -6 : 1 - day; // Monday as start
+                    const s = new Date(d);
+                    s.setDate(d.getDate() + diff);
+                    return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+                };
+
+                if (!key) return null;
+
+                if (key === 'this_week') {
+                    const from = startOfWeek(today);
+                    const to = new Date(from);
+                    to.setDate(from.getDate() + 6);
+                    return { from, to };
+                }
+                if (key === 'last_week') {
+                    const thisWeekStart = startOfWeek(today);
+                    const from = new Date(thisWeekStart);
+                    from.setDate(thisWeekStart.getDate() - 7);
+                    const to = new Date(thisWeekStart);
+                    to.setDate(thisWeekStart.getDate() - 1);
+                    return { from, to };
+                }
+                if (key === 'this_month') {
+                    const from = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    return { from, to };
+                }
+                if (key === 'last_month') {
+                    const from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    const to = new Date(today.getFullYear(), today.getMonth(), 0);
+                    return { from, to };
+                }
+
+                return null;
+            };
+
+            // Фільтрація по даті
+            if (sfState.filterDate) {
+                const range = getDateRangeForFilter_(sfState.filterDate);
+                if (range) {
+                    filteredHistory = filteredHistory.filter(item => {
+                        const d = toDateOnly_(item.date);
+                        if (!d) return false;
+                        return d >= range.from && d <= range.to;
+                    });
+                }
+            }
 
             // Фільтрація по статусу
             if (sfState.filterStatus) {
@@ -2215,12 +2499,8 @@
                 return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
             };
 
-            const escapeHtml = (v) => String(v ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+            // Use global escapeHtml_ function
+            const escapeHtml = escapeHtml_;
 
             history.forEach(item => {
                 const orderId = String(item.id || '');
@@ -2243,86 +2523,42 @@
 
                 const rowId = String(item.rowId);
                 const orderIdAttr = String(item.id || '');
-                const editKey = orderIdAttr || rowId;
-                const isEditing = String(state.editingOrderId || '') === editKey;
-
-                if (isEditing) {
-                    const dateVal = toInputDate(item.date);
-                    const payerVal = escapeHtml(item.payer);
-                    const crmLinkVal = escapeHtml(item.crmLink || item.link || '');
-                    const itemsVal = escapeHtml(item.items || '');
-                    const commentVal = escapeHtml(item.comment || '');
-                    const amountVal = escapeHtml(item.amount || '');
-                    const statusVal = escapeHtml(item.status || '');
-                    const statusOptionsHtml = getStatusOptions_(item.status || '');
-
-                    historyBody.innerHTML += `
-                        <tr class="bg-slate-50">
-                            <td class="p-4 align-top" colspan="4">
-                                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                                    <div class="sm:col-span-4">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Дата</label>
-                                        <input type="date" data-field="date" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${dateVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
-                                    </div>
-                                    <div class="sm:col-span-8">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Платник</label>
-                                        <input type="text" data-field="payer" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${payerVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" />
-                                    </div>
-
-                                    <div class="sm:col-span-12">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Статус</label>
-                                        <select data-field="status" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full p-2 rounded-xl bg-white border border-slate-200">${statusOptionsHtml}</select>
-                                    </div>
-
-                                    <div class="sm:col-span-12">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Посилання в CRM (опціонально)</label>
-                                        <input type="url" data-field="crmLink" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${crmLinkVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="https://..." />
-                                    </div>
-
-                                    <div class="sm:col-span-8">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Область</label>
-                                        <select data-field="region" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full p-2 rounded-xl bg-white border border-slate-200">${regionOptionsHtml}</select>
-                                    </div>
-                                    <div class="sm:col-span-4">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Сума (₴)</label>
-                                        <input type="number" min="0" data-field="amount" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${amountVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200 text-right font-bold text-slate-800" />
-                                    </div>
-
-                                    <div class="sm:col-span-6">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Додаткові пункти</label>
-                                        <input type="text" data-field="items" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${itemsVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Додаткові пункти" />
-                                    </div>
-                                    <div class="sm:col-span-6">
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Коментар</label>
-                                        <input type="text" data-field="comment" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" value="${commentVal}" class="w-full p-2 rounded-xl bg-white border border-slate-200" placeholder="Коментар" />
-                                    </div>
-
-                                    <div class="sm:col-span-12">
-                                        <div class="flex flex-col sm:flex-row justify-end gap-2">
-                                            <button type="button" data-action="save" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">Зберегти</button>
-                                            <button type="button" data-action="cancel" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold">Скасувати</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-
-                    // Set region and status select values after insertion
-                    setTimeout(() => {
-                        const sel = historyBody.querySelector(`select[data-field="region"][data-rowid="${rowId}"]`);
-                        if (sel) sel.value = String(item.region || '');
-                        const statusSel = historyBody.querySelector(`select[data-field="status"][data-rowid="${rowId}"]`);
-                        if (statusSel) statusSel.value = String(item.status || '');
-                    }, 0);
-                    return;
-                }
 
                 const statusBadge = renderStatusBadge_(item.status);
                 const quickStatusBtns = renderQuickStatusButtons_(orderIdAttr, rowId, item.status);
+                
+                // Shipment date badge with color coding
+                let shipmentBadge = '';
+                if (item.shipmentDate) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const shipDate = new Date(item.shipmentDate);
+                    shipDate.setHours(0, 0, 0, 0);
+                    const daysUntil = Math.ceil((shipDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    let badgeClass = '';
+                    let badgeTitle = '';
+                    if (daysUntil < 0) {
+                        badgeClass = 'bg-slate-200 text-slate-500';
+                        badgeTitle = 'Прострочено';
+                    } else if (daysUntil <= 3) {
+                        badgeClass = 'bg-red-100 text-red-700';
+                        badgeTitle = daysUntil === 0 ? 'Сьогодні!' : `Через ${daysUntil} дн.`;
+                    } else if (daysUntil <= 7) {
+                        badgeClass = 'bg-amber-100 text-amber-700';
+                        badgeTitle = `Через ${daysUntil} дн.`;
+                    } else if (daysUntil <= 10) {
+                        badgeClass = 'bg-blue-100 text-blue-700';
+                        badgeTitle = `Через ${daysUntil} дн.`;
+                    } else {
+                        badgeClass = 'bg-slate-100 text-slate-600';
+                        badgeTitle = `Через ${daysUntil} дн.`;
+                    }
+                    shipmentBadge = `<div class="shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-medium ${badgeClass}" title="${badgeTitle}"><i class="fa-solid fa-truck mr-1"></i>${new Date(item.shipmentDate).toLocaleDateString('uk-UA')}</div>`;
+                }
 
-                historyBody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors group">
+                const rowHtml = `
+                    <tr class="hover:bg-slate-50 group">
                         <td class="p-0" colspan="4">
                             <div class="px-4 py-3">
                                 <div class="min-w-0">
@@ -2335,6 +2571,7 @@
                                             ${escapeHtml(regionLabel)}
                                         </div>
                                         ${statusBadge ? `<div class="shrink-0">${statusBadge}</div>` : ''}
+                                        ${shipmentBadge}
                                     </div>
 
                                     <div class="mt-1 min-w-0 text-[11px] font-medium text-slate-900 truncate whitespace-nowrap leading-tight" title="${escapeHtml(item.payer)}">
@@ -2350,7 +2587,7 @@
                                             ${Number(item.amount).toLocaleString()} ₴
                                         </div>
 
-                                        <div class="shrink-0 flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div class="shrink-0 flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100">
                                             <div class="flex items-center space-x-2">
                                                 ${quickStatusBtns}
                                                 <button type="button" title="Редагувати" aria-label="Редагувати" data-action="edit" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-9 h-9 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center">
@@ -2367,6 +2604,231 @@
                         </td>
                     </tr>
                 `;
+                
+                // Add row to fragment
+                const tempDiv = document.createElement('tbody');
+                tempDiv.innerHTML = rowHtml;
+                while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                }
+            });
+            
+            // Single DOM update
+            historyBody.innerHTML = '';
+            historyBody.appendChild(fragment);
+            
+            // Check for upcoming shipments (3 days before)
+            checkUpcomingShipments_(history);
+        }
+
+        // --- Shipment Notification System ---
+        function checkUpcomingShipments_(history, force = false) {
+            if (!history || !history.length) return;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const upcomingShipments = history.filter(order => {
+                if (!order.shipmentDate) return false;
+                const shipDate = new Date(order.shipmentDate);
+                shipDate.setHours(0, 0, 0, 0);
+                // Show notification for orders shipping in 3 days or less (but not past)
+                const daysUntil = Math.ceil((shipDate - today) / (1000 * 60 * 60 * 24));
+                return daysUntil >= 0 && daysUntil <= 3;
+            });
+            
+            if (upcomingShipments.length === 0) {
+                console.log('[Shipment] Немає замовлень з відгрузкою в найближчі 3 дні');
+                return;
+            }
+            
+            // Check if we already showed notification today (skip if force=true)
+            if (!force) {
+                const lastNotifDate = localStorage.getItem('lastShipmentNotifDate_' + loggedInManagerId);
+                const todayStr = today.toISOString().split('T')[0];
+                if (lastNotifDate === todayStr) {
+                    console.log('[Shipment] Сповіщення вже показано сьогодні');
+                    return;
+                }
+                localStorage.setItem('lastShipmentNotifDate_' + loggedInManagerId, todayStr);
+            }
+            
+            // Request notification permission if needed
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            
+            // Show notification
+            showShipmentNotification_(upcomingShipments);
+        }
+        
+        function showShipmentNotification_(orders) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const messages = orders.map(o => {
+                const shipDate = new Date(o.shipmentDate);
+                shipDate.setHours(0, 0, 0, 0);
+                const daysUntil = Math.ceil((shipDate - today) / (1000 * 60 * 60 * 24));
+                let dayText = '';
+                if (daysUntil === 0) dayText = 'сьогодні';
+                else if (daysUntil === 1) dayText = 'завтра';
+                else if (daysUntil === 2) dayText = 'післязавтра';
+                else dayText = `через ${daysUntil} дні`;
+                return `• ${o.payer} (${dayText})`;
+            }).join('\n');
+            
+            // Browser notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(`🚚 Відгрузка: ${orders.length} замовл.`, {
+                    body: messages,
+                    icon: '/images/icon-192.png',
+                    tag: 'shipment-reminder'
+                });
+            }
+            
+            // Also show in-page toast
+            showShipmentToast_(orders);
+        }
+        
+        function showShipmentToast_(orders) {
+            // Remove existing toast if any
+            document.getElementById('shipmentToast')?.remove();
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const listHtml = orders.map(o => {
+                const shipDate = new Date(o.shipmentDate);
+                shipDate.setHours(0, 0, 0, 0);
+                const daysUntil = Math.ceil((shipDate - today) / (1000 * 60 * 60 * 24));
+                let dayText = '';
+                let urgencyClass = 'bg-slate-100 text-slate-600';
+                if (daysUntil === 0) { dayText = 'Сьогодні'; urgencyClass = 'bg-red-100 text-red-700'; }
+                else if (daysUntil === 1) { dayText = 'Завтра'; urgencyClass = 'bg-orange-100 text-orange-700'; }
+                else if (daysUntil === 2) { dayText = 'Післязавтра'; urgencyClass = 'bg-amber-100 text-amber-700'; }
+                else { dayText = `Через ${daysUntil} дні`; urgencyClass = 'bg-amber-100 text-amber-700'; }
+                return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
+                    <span class="text-sm font-medium text-slate-800 truncate">${escapeHtml_(o.payer)}</span>
+                    <span class="shrink-0 px-2 py-1 rounded-lg text-xs font-bold ${urgencyClass}">${dayText}</span>
+                </div>`;
+            }).join('');
+            
+            const toast = document.createElement('div');
+            toast.id = 'shipmentToast';
+            toast.className = 'fixed bottom-20 sm:bottom-6 right-4 left-4 sm:left-auto sm:w-80 z-50 glass rounded-2xl shadow-2xl border border-amber-200 overflow-hidden animate-slide-up';
+            toast.innerHTML = `
+                <div class="p-4 bg-amber-50/80">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2 text-amber-700 font-bold">
+                            <i class="fa-solid fa-truck"></i>
+                            <span>Ближні відгрузки</span>
+                        </div>
+                        <button id="closeShipmentToast" class="w-8 h-8 rounded-xl bg-amber-200 text-amber-700 hover:bg-amber-300 flex items-center justify-center">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="max-h-48 overflow-y-auto">${listHtml}</div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            document.getElementById('closeShipmentToast')?.addEventListener('click', () => {
+                toast.remove();
+            });
+            
+            // Auto-hide after 15 seconds
+            setTimeout(() => toast.remove(), 15000);
+        }
+        
+        // Show all shipments sorted by date
+        function showAllShipments_(history) {
+            if (!history || !history.length) {
+                alert('Немає замовлень');
+                return;
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Filter orders with shipmentDate and sort by date
+            const shipmentsWithDate = history
+                .filter(order => order.shipmentDate)
+                .map(order => {
+                    const shipDate = new Date(order.shipmentDate);
+                    shipDate.setHours(0, 0, 0, 0);
+                    const daysUntil = Math.ceil((shipDate - today) / (1000 * 60 * 60 * 24));
+                    return { ...order, shipDate, daysUntil };
+                })
+                .sort((a, b) => a.shipDate - b.shipDate); // Sort by shipment date ascending
+            
+            if (shipmentsWithDate.length === 0) {
+                alert('Немає замовлень з датою відгрузки');
+                return;
+            }
+            
+            // Remove existing toast
+            document.getElementById('shipmentToast')?.remove();
+            
+            const listHtml = shipmentsWithDate.map(o => {
+                let dayText = '';
+                let urgencyClass = 'bg-slate-100 text-slate-600';
+                
+                if (o.daysUntil < 0) {
+                    dayText = `${Math.abs(o.daysUntil)} дн. тому`;
+                    urgencyClass = 'bg-slate-200 text-slate-500';
+                } else if (o.daysUntil === 0) {
+                    dayText = 'Сьогодні';
+                    urgencyClass = 'bg-red-100 text-red-700';
+                } else if (o.daysUntil === 1) {
+                    dayText = 'Завтра';
+                    urgencyClass = 'bg-red-100 text-red-700';
+                } else if (o.daysUntil <= 3) {
+                    dayText = `${o.daysUntil} дні`;
+                    urgencyClass = 'bg-red-100 text-red-700';
+                } else if (o.daysUntil <= 7) {
+                    dayText = `${o.daysUntil} дн.`;
+                    urgencyClass = 'bg-amber-100 text-amber-700';
+                } else if (o.daysUntil <= 10) {
+                    dayText = `${o.daysUntil} дн.`;
+                    urgencyClass = 'bg-blue-100 text-blue-700';
+                } else {
+                    dayText = `${o.daysUntil} дн.`;
+                    urgencyClass = 'bg-slate-100 text-slate-600';
+                }
+                
+                const dateStr = new Date(o.shipmentDate).toLocaleDateString('uk-UA');
+                
+                return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 last:border-0">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-medium text-slate-800 truncate">${escapeHtml_(o.payer)}</div>
+                        <div class="text-[10px] text-slate-400">${dateStr}</div>
+                    </div>
+                    <span class="shrink-0 px-2 py-1 rounded-lg text-xs font-bold ${urgencyClass}">${dayText}</span>
+                </div>`;
+            }).join('');
+            
+            const toast = document.createElement('div');
+            toast.id = 'shipmentToast';
+            toast.className = 'fixed bottom-20 sm:bottom-6 right-4 left-4 sm:left-auto sm:w-96 z-50 glass rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-slide-up';
+            toast.innerHTML = `
+                <div class="p-4 bg-white/90">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2 text-slate-700 font-bold">
+                            <i class="fa-solid fa-truck"></i>
+                            <span>Всі відгрузки (${shipmentsWithDate.length})</span>
+                        </div>
+                        <button id="closeShipmentToast" class="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 flex items-center justify-center">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto">${listHtml}</div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            document.getElementById('closeShipmentToast')?.addEventListener('click', () => {
+                toast.remove();
             });
         }
 
@@ -2460,13 +2922,13 @@
             const editKey = orderId || rowId;
 
             if (action === 'edit') {
-                state.editingOrderId = editKey;
-                updateStats();
-                return;
-            }
-            if (action === 'cancel') {
-                state.editingOrderId = null;
-                updateStats();
+                // Open modal with order data for editing
+                const orderData = state.byOrderId?.[orderId];
+                if (!orderData) {
+                    alert('Не вдалося знайти дані замовлення');
+                    return;
+                }
+                openOrderModal_(orderData);
                 return;
             }
             if (action === 'delete') {
@@ -2490,56 +2952,6 @@
                     alert('Помилка видалення в базі. Спробуйте ще раз.');
                     return;
                 }
-                state.editingOrderId = null;
-                setTimeout(updateStats, 600);
-                return;
-            }
-            if (action === 'save') {
-                const date = document.querySelector(`input[data-field="date"][data-rowid="${rowId}"]`)?.value;
-                const payer = document.querySelector(`input[data-field="payer"][data-rowid="${rowId}"]`)?.value?.trim() || '';
-                const crmLinkRaw = document.querySelector(`input[data-field="crmLink"][data-rowid="${rowId}"]`)?.value?.trim() || '';
-                const crmLink = normalizeCrmUrl_(crmLinkRaw);
-                const region = document.querySelector(`select[data-field="region"][data-rowid="${rowId}"]`)?.value || '';
-                const items = document.querySelector(`input[data-field="items"][data-rowid="${rowId}"]`)?.value?.trim() || '';
-                const comment = document.querySelector(`input[data-field="comment"][data-rowid="${rowId}"]`)?.value?.trim() || '';
-                const amount = document.querySelector(`input[data-field="amount"][data-rowid="${rowId}"]`)?.value;
-                const status = document.querySelector(`select[data-field="status"][data-rowid="${rowId}"]`)?.value || '';
-
-                if (!date) {
-                    alert('Оберіть дату');
-                    return;
-                }
-                if (!payer) {
-                    alert('Вкажіть платника');
-                    return;
-                }
-
-                if (crmLinkRaw && !crmLink) {
-                    alert('Некоректне посилання в CRM');
-                    return;
-                }
-
-                const prevAmount = state.byOrderId?.[orderId]?.amount;
-                if (!orderId) {
-                    alert('Не вдалося визначити ID замовлення для редагування');
-                    return;
-                }
-
-                try {
-                    await fs_updateOrder_(loggedInManagerId, orderId, { date, payer, crmLink, region, items, comment, amount, status }, prevAmount);
-                    console.info('[CRM] updateOrder source: firebase');
-
-                    // Sheets backup: try now; if fails, queue for later.
-                    const payload = { action: 'updateOrder', managerId: loggedInManagerId, id: orderId, date, payer, crmLink, region, items, comment, amount, status };
-                    const ok = await postToScript_(payload);
-                    if (!ok) enqueueSheetsOp_({ type: 'updateOrder', payload });
-                } catch (e) {
-                    console.warn('[CRM] updateOrder firebase failed', e);
-                    alert('Помилка збереження в базі. Спробуйте ще раз.');
-                    return;
-                }
-
-                state.editingOrderId = null;
                 setTimeout(updateStats, 600);
                 return;
             }
@@ -2606,7 +3018,12 @@
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
+            const editingOrderId = document.getElementById('editingOrderId')?.value || '';
+            const editingOrderPrevAmount = document.getElementById('editingOrderPrevAmount')?.value || '';
+            const isEditing = !!editingOrderId;
+            
             const orderDate = document.getElementById('orderDate')?.value;
+            const shipmentDate = document.getElementById('orderShipmentDate')?.value || '';
             const payer = document.getElementById('payer').value.trim();
             const crmLinkRaw = document.getElementById('orderCrmLink')?.value?.trim() || '';
             const crmLink = normalizeCrmUrl_(crmLinkRaw);
@@ -2614,6 +3031,7 @@
             const amount = document.getElementById('amount').value;
             const items = document.getElementById('orderItems')?.value?.trim() || '';
             const comment = document.getElementById('orderComment')?.value?.trim() || '';
+            const status = document.getElementById('orderStatus')?.value || '';
 
             if (!orderDate) {
                 alert('Оберіть дату');
@@ -2626,35 +3044,66 @@
             }
 
             btn.disabled = true;
-            btn.innerText = 'Зберігаємо...';
+            btn.innerText = isEditing ? 'Зберігаємо...' : 'Додаємо...';
 
             try {
-                let newId = '';
-                try {
-                    newId = await fs_addOrder_(loggedInManagerId, { date: orderDate, payer, crmLink, region, items, comment, amount });
-                    window.__crmDataSource = 'firebase';
-                    console.info('[CRM] addOrder source: firebase');
-                } catch (e) {
-                    console.warn('[CRM] addOrder firebase failed', e);
-                    alert('Помилка збереження в базі. Спробуйте ще раз.');
-                    return;
-                }
+                if (isEditing) {
+                    // Update existing order
+                    try {
+                        await fs_updateOrder_(loggedInManagerId, editingOrderId, { 
+                            date: orderDate, shipmentDate, payer, crmLink, region, items, comment, amount, status 
+                        }, editingOrderPrevAmount);
+                        console.info('[CRM] updateOrder source: firebase');
+                        
+                        // Sheets backup
+                        const payload = { 
+                            action: 'updateOrder', 
+                            managerId: loggedInManagerId, 
+                            id: editingOrderId, 
+                            date: orderDate, shipmentDate, payer, crmLink, region, items, comment, amount, status 
+                        };
+                        const ok = await postToScript_(payload);
+                        if (!ok) enqueueSheetsOp_({ type: 'updateOrder', payload });
+                    } catch (err) {
+                        console.warn('[CRM] updateOrder firebase failed', err);
+                        alert('Помилка збереження в базі. Спробуйте ще раз.');
+                        btn.disabled = false;
+                        btn.innerText = 'Зберегти';
+                        return;
+                    }
+                } else {
+                    // Create new order
+                    let newId = '';
+                    try {
+                        newId = await fs_addOrder_(loggedInManagerId, { date: orderDate, shipmentDate, payer, crmLink, region, items, comment, amount, status });
+                        window.__crmDataSource = 'firebase';
+                        console.info('[CRM] addOrder source: firebase');
+                    } catch (err) {
+                        console.warn('[CRM] addOrder firebase failed', err);
+                        alert('Помилка збереження в базі. Спробуйте ще раз.');
+                        btn.disabled = false;
+                        btn.innerText = 'Додати';
+                        return;
+                    }
 
-                // Backup to Sheets (best-effort, do not block UI)
-                if (newId) {
-                    const payload = {
-                        managerId: loggedInManagerId,
-                        id: newId,
-                        date: orderDate,
-                        payer,
-                        crmLink,
-                        region,
-                        items,
-                        comment,
-                        amount
-                    };
-                    const ok = await postToScript_(payload);
-                    if (!ok) enqueueSheetsOp_({ type: 'createOrder', payload });
+                    // Backup to Sheets (best-effort, do not block UI)
+                    if (newId) {
+                        const payload = {
+                            managerId: loggedInManagerId,
+                            id: newId,
+                            date: orderDate,
+                            shipmentDate,
+                            payer,
+                            crmLink,
+                            region,
+                            items,
+                            comment,
+                            amount,
+                            status
+                        };
+                        const ok = await postToScript_(payload);
+                        if (!ok) enqueueSheetsOp_({ type: 'createOrder', payload });
+                    }
                 }
 
                 setTimeout(() => {
@@ -2670,7 +3119,7 @@
                 }, 800);
             } catch (err) {
                 btn.disabled = false;
-                btn.innerText = 'Додати';
+                btn.innerText = isEditing ? 'Зберегти' : 'Додати';
             }
         });
 
