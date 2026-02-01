@@ -26,6 +26,7 @@
     <meta name="theme-color" content="#F4C430">
     <title>CRM - Авторизація та Менеджери</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>
         (function () {
@@ -402,6 +403,9 @@
                     <button onclick="loadLeads()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
                         <i class="fa-solid fa-users"></i> <span>Ліди</span>
                     </button>
+                    <button onclick="loadKP()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-500/90 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                        <i class="fa-solid fa-file-invoice"></i> <span>КП</span>
+                    </button>
                     <button onclick="loadPlans()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
                         <i class="fa-solid fa-flag"></i> <span>Плани</span>
                     </button>
@@ -432,7 +436,7 @@
                                 <div>
                                     <div class="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs mb-1 opacity-70 min-w-0">
                                         <span class="whitespace-nowrap">Ставка: 40к</span>
-                                        <span class="sm:text-right">План (50%): <span id="goalMidLabel">500к</span></span>
+                                        <span class="sm:text-right">План (50%): <span id="goalMidLabel">500 000</span></span>
                                     </div>
                                     <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
                                         <div id="salaryBar" class="bg-blue-500 h-full transition-all" style="width: 0%"></div>
@@ -488,6 +492,39 @@
                             <div class="text-right">
                                 <div class="text-slate-400 text-[10px] uppercase font-bold text-red-400">Залишилось</div>
                                 <div id="remainingLabel" class="font-bold text-red-500 text-lg break-words">0 ₴</div>
+                            </div>
+                        </div>
+
+                        <!-- Денна норма + Прогноз + Середній чек -->
+                        <div class="mt-4 pt-4 border-t border-slate-100 space-y-3 px-4">
+                            <!-- Денна норма -->
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-calendar-day text-blue-500"></i>
+                                    <span class="text-slate-500 font-medium">Денна норма</span>
+                                </div>
+                                <div id="dailyNormLabel" class="font-bold text-blue-600">0 ₴/день</div>
+                            </div>
+                            
+                            <!-- Прогноз до кінця місяця -->
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                                    <span class="text-slate-500 font-medium">Прогноз</span>
+                                </div>
+                                <div class="text-right">
+                                    <div id="forecastLabel" class="font-bold text-emerald-600">0 ₴</div>
+                                    <div id="forecastPercent" class="text-[10px] text-slate-400">0% плану</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Середній чек -->
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-receipt text-amber-500"></i>
+                                    <span class="text-slate-500 font-medium">Середній чек</span>
+                                </div>
+                                <div id="avgCheckLabel" class="font-bold text-amber-600">0 ₴</div>
                             </div>
                         </div>
                     </div>
@@ -1521,7 +1558,7 @@
             const view = buildProgressView_(allHistory);
             currentGoal = Number(view.goal) || currentGoal;
             currentMonth = view.label || currentMonth;
-            updateUI(view.total || 0, allHistory);
+            updateUI(view.total || 0, view.history || []);
         }
 
         function getProgressPeriodsStorageKey_(managerId) {
@@ -1948,13 +1985,21 @@
                 loggedInManagerId = mId;
                 localStorage.setItem('crm_logged_manager', mId);
                 error.classList.add('hidden');
+                
+                // Відновлюємо головний контент до початкового стану перед показом
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent && window.__defaultMainContent) {
+                    mainContent.innerHTML = window.__defaultMainContent;
+                    window.__originalMainContent = window.__defaultMainContent;
+                }
+                
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('appContent').classList.remove('hidden');
                 document.getElementById('currentManagerName').innerText = MANAGERS[mId].name;
                 initDateInputs_();
                 renderLocalPlans_();
                 renderProgressPeriodPicker_();
-                updateStats();
+                await updateStats();
             } else {
                 error.classList.remove('hidden');
             }
@@ -1966,6 +2011,20 @@
             document.getElementById('passInput').value = '';
             document.getElementById('authOverlay').classList.remove('hidden');
             document.getElementById('appContent').classList.add('hidden');
+            
+            // Очищаємо кешований контент попереднього менеджера
+            window.__originalMainContent = null;
+            
+            // Відновлюємо головний контент до початкового стану
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent && window.__defaultMainContent) {
+                mainContent.innerHTML = window.__defaultMainContent;
+            }
+            
+            // Очищаємо відображення даних
+            const ordersTableBody = document.querySelector('#ordersTable tbody');
+            if (ordersTableBody) ordersTableBody.innerHTML = '';
+            
             renderProgressPeriodPicker_();
             // Do not clear drafts globally; they are per-manager.
         }
@@ -2181,7 +2240,13 @@
             resetOrderModal_();
         }
 
-        document.getElementById('openOrderModalBtn')?.addEventListener('click', () => openOrderModal_(null));
+        // Використовуємо делегування подій для кнопки, яка може перестворюватись
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#openOrderModalBtn')) {
+                openOrderModal_(null);
+            }
+        });
+
         document.getElementById('closeOrderModalBtn')?.addEventListener('click', closeOrderModal_);
         document.getElementById('orderModalBackdrop')?.addEventListener('click', closeOrderModal_);
         document.addEventListener('keydown', (e) => {
@@ -2358,7 +2423,71 @@
             const offset = circumference - (Math.min(stats.percent, 100) / 100 * circumference);
             document.getElementById('progressCircle').style.strokeDashoffset = offset;
             document.getElementById('displayMonth').innerText = currentMonth;
-            document.getElementById('goalMidLabel').innerText = (currentGoal / 2 / 1000) + 'к';
+            document.getElementById('goalMidLabel').innerText = Math.round(currentGoal / 2).toLocaleString('uk-UA');
+
+            // === Нові показники: денна норма, прогноз, середній чек ===
+            const now = new Date();
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const currentDay = now.getDate();
+            const daysRemaining = daysInMonth - currentDay + 1;
+            const daysPassed = currentDay;
+
+            // Денна норма (скільки потрібно продавати щодня, щоб виконати 100% плану)
+            const dailyNorm = remaining > 0 ? Math.ceil(remaining / daysRemaining) : 0;
+            const dailyNormEl = document.getElementById('dailyNormLabel');
+            if (dailyNormEl) {
+                dailyNormEl.innerText = dailyNorm.toLocaleString('uk-UA') + ' ₴/день';
+            }
+
+            // Прогноз до кінця місяця (на основі поточної швидкості)
+            const dailyAvg = daysPassed > 0 ? total / daysPassed : 0;
+            const forecast = Math.round(dailyAvg * daysInMonth);
+            const forecastPercent = currentGoal > 0 ? Math.round((forecast / currentGoal) * 100) : 0;
+            const forecastEl = document.getElementById('forecastLabel');
+            const forecastPercentEl = document.getElementById('forecastPercent');
+            if (forecastEl) {
+                forecastEl.innerText = forecast.toLocaleString('uk-UA') + ' ₴';
+                // Колір залежно від прогнозу
+                forecastEl.classList.remove('text-emerald-600', 'text-amber-600', 'text-red-600');
+                if (forecastPercent >= 100) {
+                    forecastEl.classList.add('text-emerald-600');
+                } else if (forecastPercent >= 50) {
+                    forecastEl.classList.add('text-amber-600');
+                } else {
+                    forecastEl.classList.add('text-red-600');
+                }
+            }
+            if (forecastPercentEl) {
+                forecastPercentEl.innerText = forecastPercent + '% плану';
+            }
+
+            // Середній чек (рахується тільки для поточного вибраного місяця)
+            // Фільтруємо замовлення за вибраним періодом
+            const selectedPeriods = loadSelectedProgressPeriods_();
+            let periodOrders = history || [];
+            if (selectedPeriods.length > 0) {
+                const periodSet = new Set(selectedPeriods);
+                periodOrders = (history || []).filter(item => {
+                    const d = new Date(item.date);
+                    if (!Number.isFinite(d.getTime())) return false;
+                    const p = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    return periodSet.has(p);
+                });
+            } else {
+                // Якщо період не вибрано — поточний місяць
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+                periodOrders = (history || []).filter(item => {
+                    const d = new Date(item.date);
+                    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+                });
+            }
+            const orderCount = periodOrders.length;
+            const avgCheck = orderCount > 0 ? Math.round(total / orderCount) : 0;
+            const avgCheckEl = document.getElementById('avgCheckLabel');
+            if (avgCheckEl) {
+                avgCheckEl.innerText = avgCheck.toLocaleString('uk-UA') + ' ₴';
+            }
 
             const conv = document.getElementById('conversionToggle');
             if (conv) conv.checked = !!conversionMet;
@@ -3213,6 +3342,1240 @@
             }
         }
 
+        // Load КП (комерційна пропозиція) page
+        async function loadKP() {
+            const mainContent = document.getElementById('mainContent');
+            if (!mainContent) return;
+
+            // Зберігаємо оригінальний контент якщо ще не збережено
+            if (!window.__originalMainContent) {
+                window.__originalMainContent = mainContent.innerHTML;
+            }
+
+            const kpHTML = `
+                <div class="mb-4">
+                    <button onclick="restoreMainContent()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors text-sm font-semibold">
+                        <i class="fa-solid fa-arrow-left"></i> <span>Назад до продажів</span>
+                    </button>
+                </div>
+
+                <div class="glass p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-file-invoice text-emerald-600"></i>
+                            Комерційна пропозиція
+                        </h2>
+                    </div>
+
+                    <form id="kpForm" class="space-y-6">
+                        <!-- Інформація про клієнта -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <h3 class="text-sm font-bold text-slate-600 uppercase mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-user"></i> Клієнт
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Ім'я / Компанія</label>
+                                    <input type="text" id="kpClientName" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition" placeholder="Введіть назву клієнта">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Звернення</label>
+                                    <select id="kpClientSalutation" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition">
+                                        <option value="Шановний">Шановний</option>
+                                        <option value="Шановна">Шановна</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Вибір продукту -->
+                        <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                            <h3 class="text-sm font-bold text-blue-600 uppercase mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-cogs"></i> Тип агрегату
+                            </h3>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-2">Виберіть агрегат для КП</label>
+                                <select id="kpProductSelector" class="w-full px-4 py-2 rounded-xl border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" onchange="handleProductChange(this.value)">
+                                    <option value="kns35dv">Культиватор КНС 3.5 DV</option>
+                                    <option value="kprs60">Тест</option>
+                                </select>
+                                <p class="text-xs text-slate-500 mt-2">Поточний агрегат: <strong id="currentProductDisplay">Культиватор КНС 3.5 DV</strong></p>
+                            </div>
+                        </div>
+
+                        <!-- Товари/послуги -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <h3 class="text-sm font-bold text-slate-600 uppercase mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-box"></i> Товари / Послуги
+                            </h3>
+                            <div id="kpItemsContainer" class="space-y-3">
+                                <!-- Items will be added here -->
+                            </div>
+                            <button type="button" onclick="addKPItem()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors text-sm font-semibold">
+                                <i class="fa-solid fa-plus"></i> Додати позицію
+                            </button>
+                        </div>
+
+                        <!-- Підсумок -->
+                        <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-bold text-slate-600 uppercase">Загальна сума:</span>
+                                <span id="kpTotalSum" class="text-2xl font-bold text-emerald-600">0 ₴</span>
+                            </div>
+                        </div>
+
+                        <!-- ПДВ -->
+                        <div>
+                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                                <input id="kpIncludeVAT" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
+                                <span>Ціна з ПДВ</span>
+                            </label>
+                        </div>
+
+                        <!-- Дії -->
+                        <div class="flex flex-wrap gap-3 pt-4">
+                            <button type="button" onclick="previewKP()" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white transition-colors font-semibold">
+                                <i class="fa-solid fa-eye"></i> Переглянути
+                            </button>
+                            <button type="button" onclick="generateKP()" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors font-semibold">
+                                <i class="fa-solid fa-file-pdf"></i> Створити КП
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Preview Modal -->
+                <div id="kpPreviewModal" class="fixed inset-0 bg-black/50 z-50 hidden items-start justify-center pt-20 pb-4 px-4 overflow-auto">
+                    <div class="bg-white rounded-3xl shadow-2xl my-4" style="width: 210mm; max-width: 100%;">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-bold text-slate-800">Попередній перегляд КП (A4)</h3>
+                                <button onclick="closeKPPreview()" class="p-2 hover:bg-slate-100 rounded-xl transition">
+                                    <i class="fa-solid fa-times text-slate-500"></i>
+                                </button>
+                            </div>
+                            <div id="kpPreviewContent" class="prose max-w-none">
+                                <!-- Preview content will be inserted here -->
+                            </div>
+                            <div class="mt-6 flex gap-3">
+                                <button onclick="closeKPPreview()" class="flex-1 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold transition">
+                                    Закрити
+                                </button>
+                                <button onclick="generateKP()" class="flex-1 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition">
+                                    <i class="fa-solid fa-file-pdf"></i> Створити КП
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            mainContent.innerHTML = kpHTML;
+
+            // Додаємо першу позицію
+            addKPItem();
+
+            // Підтягуємо ціну з Firestore для Культиватор навісний КНС 3.5 DV
+            await loadKPCatalogFromFirestore_();
+        }
+
+        const KP_CATALOG = [
+            { name: 'Культиватор КНС 3.5 DV', price: 0, firestoreName: 'Культиватор навісний КНС 3.5 DV' }
+        ];
+
+        async function loadKPCatalogFromFirestore_() {
+            try {
+                const api = await initFirebaseForManager_(loggedInManagerId || '');
+                if (!api) return;
+
+                const targetName = KP_CATALOG[0]?.firestoreName;
+                if (!targetName) return;
+
+                let snap = null;
+                try {
+                    const q = api.query(
+                        api.collection(api.db, 'priceItems'),
+                        api.where('name', '==', targetName),
+                        api.limit(1)
+                    );
+                    snap = await api.getDocs(q);
+                } catch (e) {
+                    snap = null;
+                }
+
+                let docData = null;
+                if (snap && !snap.empty) {
+                    docData = snap.docs[0]?.data() || null;
+                } else {
+                    const fallbackSnap = await api.getDocs(api.collection(api.db, 'priceItems'));
+                    fallbackSnap.forEach((d) => {
+                        if (docData) return;
+                        const data = d.data() || {};
+                        const name = String(data.name || '').trim();
+                        if (name === targetName) docData = data;
+                    });
+                }
+
+                if (docData) {
+                    const price = normalizeAmount_(docData.price2 || docData.price1 || 0);
+                    KP_CATALOG[0].price = price;
+                    refreshKPCatalogOptions_();
+                }
+            } catch (e) {
+                console.warn('[KP] price load failed', e);
+            }
+        }
+
+        function refreshKPCatalogOptions_() {
+            const selects = document.querySelectorAll('.kp-item-name');
+            if (!selects.length) return;
+
+            const optionsHtml = buildKPCatalogOptions();
+            selects.forEach((select) => {
+                const selectedIndex = select.selectedIndex;
+                select.innerHTML = optionsHtml;
+                if (selectedIndex >= 0 && selectedIndex < select.options.length) {
+                    select.selectedIndex = selectedIndex;
+                }
+            });
+
+            document.querySelectorAll('.kp-item').forEach((item) => {
+                const itemId = item.getAttribute('data-item-id');
+                if (itemId) handleKPItemChange(itemId);
+            });
+        }
+
+        let kpManagerContactCache_ = null;
+
+        async function getManagerContactForKP_() {
+            if (kpManagerContactCache_) return kpManagerContactCache_;
+            if (!loggedInManagerId) return { phone: '', email: '' };
+
+            try {
+                const api = await initFirebaseForManager_(loggedInManagerId);
+                if (!api) return { phone: '', email: '' };
+
+                const docRef = api.doc(api.db, 'managers', loggedInManagerId, 'settings', 'profile');
+                const docSnap = await api.getDoc(docRef);
+                const data = docSnap.exists() ? (docSnap.data() || {}) : {};
+                kpManagerContactCache_ = {
+                    name: data.name || '',
+                    phone: data.phone || '',
+                    email: data.email || ''
+                };
+                return kpManagerContactCache_;
+            } catch (e) {
+                console.warn('[KP] manager contact load failed', e);
+                return { name: '', phone: '', email: '' };
+            }
+        }
+
+        function buildKPCatalogOptions() {
+            return KP_CATALOG.map((item, index) => {
+                const priceAttr = Number.isFinite(item.price) ? String(item.price) : '0';
+                return `<option value="${index}" data-price="${priceAttr}">${item.name}</option>`;
+            }).join('');
+        }
+
+        // Додати позицію в КП
+        function addKPItem() {
+            const container = document.getElementById('kpItemsContainer');
+            if (!container) return;
+
+            const itemId = Date.now();
+            const itemHTML = `
+                <div class="kp-item flex flex-col md:flex-row gap-3 p-3 bg-white rounded-xl border border-slate-200" data-item-id="${itemId}">
+                    <div class="flex-1">
+                        <select class="kp-item-name w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 outline-none text-sm" onchange="handleKPItemChange(${itemId})">
+                            ${buildKPCatalogOptions()}
+                        </select>
+                    </div>
+                    <div class="w-full md:w-24">
+                        <input type="number" placeholder="К-сть" min="1" value="1" class="kp-item-qty w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 outline-none text-sm text-center" onchange="calculateKPTotal()">
+                    </div>
+                    <div class="w-full md:w-32">
+                        <input type="number" placeholder="Ціна" min="0" class="kp-item-price w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 outline-none text-sm" oninput="calculateKPTotal()">
+                    </div>
+                    <button type="button" onclick="removeKPItem(${itemId})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition self-center">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', itemHTML);
+            handleKPItemChange(itemId);
+        }
+
+        function handleKPItemChange(itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (!item) return;
+
+            const select = item.querySelector('.kp-item-name');
+            const priceInput = item.querySelector('.kp-item-price');
+
+            if (!select || !priceInput) return;
+
+            const selectedOption = select.options[select.selectedIndex];
+            const price = parseFloat(selectedOption?.dataset?.price || '0');
+            priceInput.value = Number.isFinite(price) ? price : 0;
+            calculateKPTotal();
+        }
+
+        // Видалити позицію з КП
+        function removeKPItem(itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (item) {
+                item.remove();
+                calculateKPTotal();
+            }
+        }
+
+        // Обчислити загальну суму КП
+        function calculateKPTotal() {
+            const items = document.querySelectorAll('.kp-item');
+            let total = 0;
+
+            items.forEach(item => {
+                const qty = parseFloat(item.querySelector('.kp-item-qty')?.value) || 0;
+                const price = parseFloat(item.querySelector('.kp-item-price')?.value) || 0;
+                total += qty * price;
+            });
+
+            const totalEl = document.getElementById('kpTotalSum');
+            if (totalEl) {
+                totalEl.textContent = total.toLocaleString('uk-UA') + ' ₴';
+            }
+
+            return total;
+        }
+
+        // Зібрати дані КП
+        function collectKPData() {
+            const items = [];
+            document.querySelectorAll('.kp-item').forEach(item => {
+                const name = item.querySelector('.kp-item-name')?.selectedOptions?.[0]?.textContent?.trim() || '';
+                const qty = parseFloat(item.querySelector('.kp-item-qty')?.value) || 0;
+                const price = parseFloat(item.querySelector('.kp-item-price')?.value) || 0;
+                if (name && qty > 0) {
+                    items.push({ name, qty, price, sum: qty * price });
+                }
+            });
+
+            return {
+                client: {
+                    name: document.getElementById('kpClientName')?.value?.trim() || '',
+                    salutation: document.getElementById('kpClientSalutation')?.value || 'Шановний'
+                },
+                items,
+                total: calculateKPTotal(),
+                date: new Date().toLocaleDateString('uk-UA'),
+                manager: document.getElementById('currentManagerName')?.textContent || 'Менеджер',
+                includeVAT: document.getElementById('kpIncludeVAT')?.checked || false,
+                product: window.currentKPProduct || { id: 'kns35dv', name: 'Культиватор КНС 3.5 DV' }
+            };
+        }
+
+        // Завантажити конфіг продукту для КП
+        async function loadKPProductConfig(productId = 'kns35dv') {
+            try {
+                const response = await fetch(`assets/kp-products/${productId}.json`);
+                if (!response.ok) throw new Error('Product config not found');
+                window.currentKPProduct = await response.json();
+                return window.currentKPProduct;
+            } catch (error) {
+                console.error('Error loading product config:', error);
+                // Fallback to default
+                window.currentKPProduct = { 
+                    id: 'kns35dv', 
+                    name: 'Культиватор КНС 3.5 DV',
+                    folder: 'KNS-3.5-DV'
+                };
+                return window.currentKPProduct;
+            }
+        }
+
+        // Ініціалізація при завантаженні сторінки
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadKPProductConfig('kns35dv');
+            document.getElementById('currentProductDisplay').textContent = window.currentKPProduct?.name || 'Культиватор КНС 3.5 DV';
+        });
+
+        // Функція для зміни продукту в КП
+        async function handleProductChange(productId) {
+            await loadKPProductConfig(productId);
+            const productName = window.currentKPProduct?.name || 'Агрегат';
+            document.getElementById('currentProductDisplay').textContent = productName;
+            console.log('🔄 Продукт змінено:', productName);
+        }
+
+        // Попередній перегляд КП
+        async function previewKP() {
+            const data = collectKPData();
+            const modal = document.getElementById('kpPreviewModal');
+            const content = document.getElementById('kpPreviewContent');
+
+            if (!modal || !content) return;
+
+            const contact = await getManagerContactForKP_();
+            const sanitized = sanitizeKPData(data, contact);
+            const managerPhone = contact.phone || '—';
+            const managerEmail = sanitized.sanitizedEmail || '—';
+            const managerName = sanitized.sanitizedManagerName;
+            const clientName = sanitized.client.name || 'клієнт';
+
+            // CSS для попереднього перегляду
+            const previewStyles = `
+                <style>
+                    .pdf-container {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                        font-size: 14px;
+                        color: #2d3748;
+                        line-height: 1.6;
+                        background: #fff;
+                    }
+                    .pdf-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        margin-bottom: 32px;
+                        border-bottom: 3px solid #fbbf24;
+                        padding-bottom: 20px;
+                        gap: 16px;
+                    }
+                    .pdf-header-left {
+                        font-size: 11px;
+                        line-height: 1.8;
+                        color: #4a5568;
+                        flex: 1;
+                    }
+                    .pdf-header-left div {
+                        margin-bottom: 3px;
+                    }
+                    .pdf-header-left div:first-child {
+                        font-weight: 700;
+                        color: #1a202c;
+                        font-size: 12px;
+                    }
+                    .pdf-header-right {
+                        text-align: right;
+                        font-size: 11px;
+                        line-height: 1.8;
+                        color: #4a5568;
+                        flex: 1;
+                    }
+                    .pdf-header-right div:first-child {
+                        font-weight: 700;
+                        color: #1a202c;
+                        font-size: 11px;
+                        margin-bottom: 4px;
+                    }
+                    .pdf-logo {
+                        height: 120px;
+                        flex: 0 0 auto;
+                    }
+                    .pdf-title {
+                        text-align: center;
+                        margin: 28px 0 24px 0;
+                    }
+                    .pdf-title-badge {
+                        display: inline-block;
+                        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                        color: #1a202c;
+                        font-size: 22px;
+                        font-weight: 700;
+                        padding: 14px 32px;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25);
+                    }
+                    .pdf-title-badge-dark {
+                        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                        color: #fbbf24;
+                        padding: 14px 32px;
+                        box-shadow: 0 4px 15px rgba(45, 55, 72, 0.25);
+                    }
+                    .pdf-card {
+                        border-left: 5px solid #fbbf24;
+                        background: linear-gradient(to right, rgba(251, 191, 36, 0.05), transparent);
+                        padding: 16px 16px 16px 18px;
+                        margin-bottom: 14px;
+                        border-radius: 10px;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                    }
+                    .pdf-card-title {
+                        font-weight: 700;
+                        font-size: 15px;
+                        color: #1a202c;
+                        border-bottom: 2px solid #fbbf24;
+                        display: inline-block;
+                        padding-bottom: 4px;
+                        margin-bottom: 10px;
+                    }
+                    .pdf-card ul {
+                        margin: 0;
+                        padding-left: 20px;
+                    }
+                    .pdf-card li {
+                        margin-bottom: 6px;
+                        color: #4a5568;
+                    }
+                    .pdf-card li strong {
+                        color: #1a202c;
+                        font-weight: 700;
+                    }
+                    .pdf-photos {
+                        display: flex;
+                        gap: 14px;
+                        justify-content: center;
+                        margin-top: 24px;
+                        flex-wrap: wrap;
+                    }
+                    .pdf-photo {
+                        width: 31%;
+                        height: 130px;
+                        object-fit: cover;
+                        border-radius: 10px;
+                        border: 2px solid #e2e8f0;
+                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                    }
+                    .pdf-price-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 20px;
+                        padding: 18px;
+                        background: #f7fafc;
+                        border-radius: 10px;
+                        border-left: 5px solid #fbbf24;
+                    }
+                    .pdf-price-row > div:first-child {
+                        font-weight: 700;
+                        font-size: 15px;
+                        color: #1a202c;
+                    }
+                    .pdf-price-badge {
+                        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                        color: #1a202c;
+                        font-weight: 800;
+                        font-size: 18px;
+                        padding: 10px 20px;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+                    }
+                    .pdf-check-item {
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 10px;
+                        margin-bottom: 10px;
+                        padding: 8px 0;
+                        color: #2d3748;
+                    }
+                    .pdf-check {
+                        color: #fbbf24;
+                        font-weight: 900;
+                        font-size: 16px;
+                        flex-shrink: 0;
+                        margin-top: -2px;
+                    }
+                    .pdf-bonus {
+                        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                        border-radius: 12px;
+                        padding: 18px 16px;
+                        margin-bottom: 20px;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 14px;
+                        box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25);
+                    }
+                    .pdf-bonus > div:first-child {
+                        font-size: 28px;
+                        flex-shrink: 0;
+                    }
+                    .pdf-bonus > div:last-child {
+                        font-weight: 700;
+                        color: #1a202c;
+                        font-size: 15px;
+                    }
+                    .pdf-footer {
+                        margin-top: 48px;
+                        text-align: center;
+                        border-top: 3px solid #fbbf24;
+                        padding-top: 20px;
+                        color: #4a5568;
+                    }
+                    .pdf-footer > div:first-child {
+                        font-size: 16px;
+                        font-weight: 700;
+                        color: #1a202c;
+                        margin-bottom: 12px;
+                    }
+                    .pdf-footer > div:nth-child(2) {
+                        margin-bottom: 16px;
+                        font-weight: 600;
+                        color: #1a202c;
+                    }
+                    .pdf-contact-buttons {
+                        display: flex;
+                        justify-content: center;
+                        gap: 12px;
+                        flex-wrap: wrap;
+                    }
+                    .pdf-contact-btn {
+                        display: inline-block;
+                        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                        color: #1a202c;
+                        padding: 10px 18px;
+                        border-radius: 8px;
+                        font-weight: 700;
+                        font-size: 13px;
+                        text-decoration: none;
+                        border: 2px solid #fbbf24;
+                        box-shadow: 0 3px 8px rgba(251, 191, 36, 0.3);
+                    }
+                    .pdf-greeting {
+                        text-align: center;
+                        margin-bottom: 24px;
+                        padding: 16px;
+                        background: rgba(251, 191, 36, 0.08);
+                        border-radius: 10px;
+                        border-left: 5px solid #fbbf24;
+                    }
+                    .pdf-greeting > div:first-child {
+                        font-weight: 700;
+                        font-size: 16px;
+                        color: #1a202c;
+                        margin-bottom: 8px;
+                    }
+                    .pdf-greeting > div:last-child {
+                        color: #4a5568;
+                        line-height: 1.6;
+                    }
+                </style>
+            `;
+
+            content.innerHTML = `
+                ${previewStyles}
+                <div class="pdf-container">
+                    <div class="pdf-header">
+                        <div class="pdf-header-left">
+                            <div>ТОВ «АГРОКУБ»</div>
+                            <div>Код ЄДРПОУ: 41408616</div>
+                            <div>70502, Україна, Запорізька область</div>
+                            <div>вул. Лесі Українки, 45/112</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="images/logo.png" alt="АГРОКУБ" class="pdf-logo" />
+                        </div>
+                        <div class="pdf-header-right">
+                            <div>Контакти менеджера</div>
+                            <div>${managerName}</div>
+                            <div>${managerPhone}</div>
+                            <div>${managerEmail}</div>
+                            <div style="margin-top: 8px; color: #64748b; font-size: 10px;">${data.date}</div>
+                        </div>
+                    </div>
+
+                    <div class="pdf-greeting">
+                        <div>${data.client.salutation || 'Шановний'} ${clientName}!</div>
+                        <div>${window.currentKPProduct?.intro || 'Пропонуємо вам ознайомитись з нашою пропозицією'}</div>
+                    </div>
+
+                    <div class="pdf-title">
+                        <span class="pdf-title-badge">Проблеми, які вирішить наш агрегат</span>
+                    </div>
+
+                    ${window.currentKPProduct?.benefits?.map(benefit => `
+                        <div class="pdf-card">
+                            <div class="pdf-card-title">${benefit.title}</div>
+                            <ul>
+                                ${benefit.items.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('') || ''}
+
+                    <div class="pdf-title">
+                        <span class="pdf-title-badge">Характеристики агрегату</span>
+                    </div>
+
+                    ${window.currentKPProduct?.specs?.map(spec => `
+                        <div class="pdf-card">
+                            <div class="pdf-card-title">${spec.title}</div>
+                            <ul>
+                                ${spec.items.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('') || ''}
+
+                    ${window.currentKPProduct?.photos ? `
+                    <div class="pdf-photos">
+                        ${window.currentKPProduct.photos.slice(0, 3).map(photo => 
+                            `<img src="images/${window.currentKPProduct.folder}/${photo}" alt="${window.currentKPProduct.name}" class="pdf-photo" />`
+                        ).join('')}
+                    </div>
+                    ${window.currentKPProduct.photos.length > 3 ? `
+                    <div class="pdf-photos" style="margin-top: 14px;">
+                        ${window.currentKPProduct.photos.slice(3).map(photo => 
+                            `<img src="images/${window.currentKPProduct.folder}/${photo}" alt="${window.currentKPProduct.name}" class="pdf-photo" />`
+                        ).join('')}
+                    </div>
+                    ` : ''}
+                    ` : ''}
+
+                    <div class="pdf-title">
+                        <span class="pdf-title-badge pdf-title-badge-dark">Ціна, умови та терміни поставки</span>
+                    </div>
+
+                    <div class="pdf-price-row">
+                        <div>Культиватор КНС 3.5 DV</div>
+                        <div class="pdf-price-badge">${data.total.toLocaleString('uk-UA')} грн${data.includeVAT ? ' з ПДВ' : ''}</div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct?.manufacturing_time || 'Термін виготовлення та відвантаження: до 14 робочих днів.'}</span></div>
+                        <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Оплата: безготівковий розрахунок з ПДВ.</span></div>
+                        <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Доставка: <strong>ВКЛЮЧЕНА У ВАРТІСТЬ</strong>.</span></div>
+                        <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Гарантія: 12 місяців.</span></div>
+                    </div>
+
+                    ${window.currentKPProduct?.bonus ? `
+                    <div class="pdf-bonus">
+                        <div>🎁</div>
+                        <div>${window.currentKPProduct.bonus}</div>
+                    </div>
+                    ` : ''}
+
+                    ${window.currentKPProduct?.loyalty ? `
+                    <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct.loyalty}</span></div>
+                    ` : ''}
+
+                    <div class="pdf-footer">
+                        <div>Дякуємо за увагу!</div>
+                        <div>З повагою, ${managerName}</div>
+                        <div class="pdf-contact-buttons">
+                            <a href="tel:${managerPhone.replace(/\\s+/g, '')}" class="pdf-contact-btn">📞 ${managerPhone}</a>
+                            <a href="mailto:${managerEmail}" class="pdf-contact-btn">✉️ ${managerEmail}</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        // Закрити попередній перегляд
+        function closeKPPreview() {
+            const modal = document.getElementById('kpPreviewModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Функція санітизації даних КП
+        function sanitizeKPData(data, contact) {
+            // Виправлення email (.cor -> .com, .ner -> .net)
+            let email = String(contact.email || '').trim();
+            email = email.replace(/\.cor$/i, '.com').replace(/\.ner$/i, '.net').replace(/\.cpm$/i, '.com');
+            
+            // Виправлення типових помилок в іменах
+            let clientName = String(data.client?.name || '').trim();
+            const nameCorrections = {
+                'Олександ': 'Олександр',
+                'Володими': 'Володимир',
+                'Дмитр': 'Дмитро',
+                'Сергі': 'Сергій',
+                'Андрі': 'Андрій',
+                'Миколай': 'Микола',
+                'Олексі': 'Олексій'
+            };
+            for (const [wrong, correct] of Object.entries(nameCorrections)) {
+                if (clientName === wrong) clientName = correct;
+            }
+
+            let managerName = String(contact.name || '').trim();
+            for (const [wrong, correct] of Object.entries(nameCorrections)) {
+                if (managerName === wrong) managerName = correct;
+            }
+
+            return {
+                ...data,
+                client: { ...data.client, name: clientName },
+                sanitizedEmail: email,
+                sanitizedManagerName: managerName || 'Менеджер'
+            };
+        }
+
+        // Функція попереднього завантаження зображень
+        function preloadImages(urls) {
+            return Promise.all(urls.map(url => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(url);
+                    img.onerror = () => resolve(url); // продовжуємо навіть якщо не вдалось
+                    img.src = url;
+                });
+            }));
+        }
+
+        // Згенерувати КП PDF
+        async function generateKP() {
+            const data = collectKPData();
+
+            if (data.items.length === 0) {
+                alert('Додайте хоча б одну позицію');
+                return;
+            }
+
+            // Показуємо індикатор завантаження
+            const generateBtn = document.querySelector('[onclick="generateKP()"]');
+            if (generateBtn) {
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Генерація PDF...';
+            }
+
+            try {
+                const contact = await getManagerContactForKP_();
+                
+                // Санітизація даних
+                const sanitized = sanitizeKPData(data, contact);
+                const managerPhone = contact.phone || '—';
+                const managerEmail = sanitized.sanitizedEmail || '—';
+                const managerName = sanitized.sanitizedManagerName;
+                const clientName = sanitized.client.name || 'клієнт';
+
+                // Попереднє завантаження зображень
+                const imageUrls = ['images/logo.png'];
+                if (window.currentKPProduct?.photos) {
+                    window.currentKPProduct.photos.forEach(photo => {
+                        imageUrls.push(`images/${window.currentKPProduct.folder}/${photo}`);
+                    });
+                }
+                await preloadImages(imageUrls);
+
+                // CSS для PDF з сучасним та читабельним стилем
+                const pdfStyles = `
+                    <style>
+                        * { box-sizing: border-box; }
+                        .pdf-container {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+                            font-size: 14px;
+                            color: #2d3748;
+                            line-height: 1.6;
+                            width: 210mm;
+                            min-height: 297mm;
+                            padding: 20mm;
+                            margin: 0 auto;
+                            background: #fff;
+                            letter-spacing: 0.3px;
+                        }
+                        .pdf-page {
+                            page-break-inside: avoid;
+                            margin-bottom: 0;
+                        }
+                        .pdf-page:not(:last-child) {
+                            page-break-after: always;
+                        }
+                        .no-break {
+                            page-break-inside: avoid;
+                            break-inside: avoid;
+                        }
+                        .pdf-section {
+                            page-break-inside: avoid;
+                            margin-bottom: 18px;
+                        }
+                        .pdf-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                            margin-bottom: 32px;
+                            border-bottom: 3px solid #fbbf24;
+                            padding-bottom: 20px;
+                            gap: 16px;
+                        }
+                        .pdf-header-left {
+                            font-size: 11px;
+                            line-height: 1.8;
+                            color: #4a5568;
+                            flex: 1;
+                        }
+                        .pdf-header-left div {
+                            margin-bottom: 3px;
+                        }
+                        .pdf-header-left div:first-child {
+                            font-weight: 700;
+                            color: #1a202c;
+                            font-size: 12px;
+                        }
+                        .pdf-header-right {
+                            text-align: right;
+                            font-size: 11px;
+                            line-height: 1.8;
+                            color: #4a5568;
+                            flex: 1;
+                        }
+                        .pdf-header-right div:first-child {
+                            font-weight: 700;
+                            color: #1a202c;
+                            font-size: 11px;
+                            margin-bottom: 4px;
+                        }
+                        .pdf-logo {
+                            height: 120px;
+                            flex: 0 0 auto;
+                        }
+                        .pdf-title {
+                            text-align: center;
+                            margin: 28px 0 24px 0;
+                        }
+                        .pdf-title-badge {
+                            display: inline-block;
+                            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                            color: #1a202c;
+                            font-size: 22px;
+                            font-weight: 700;
+                            padding: 14px 32px;
+                            border-radius: 12px;
+                            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25);
+                            letter-spacing: 0.5px;
+                        }
+                        .pdf-title-badge-dark {
+                            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                            color: #fbbf24;
+                            padding: 14px 32px;
+                            box-shadow: 0 4px 15px rgba(45, 55, 72, 0.25);
+                        }
+                        .pdf-card {
+                            border-left: 5px solid #fbbf24;
+                            background: linear-gradient(to right, rgba(251, 191, 36, 0.05), transparent);
+                            padding: 16px 16px 16px 18px;
+                            margin-bottom: 14px;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                            page-break-inside: avoid;
+                            border-top: 1px solid rgba(251, 191, 36, 0.1);
+                            border-right: 1px solid rgba(251, 191, 36, 0.1);
+                            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+                        }
+                        .pdf-card-title {
+                            font-weight: 700;
+                            font-size: 15px;
+                            color: #1a202c;
+                            border-bottom: 2px solid #fbbf24;
+                            display: inline-block;
+                            padding-bottom: 4px;
+                            margin-bottom: 10px;
+                        }
+                        .pdf-card ul {
+                            margin: 0;
+                            padding-left: 20px;
+                        }
+                        .pdf-card li {
+                            margin-bottom: 6px;
+                            color: #4a5568;
+                        }
+                        .pdf-card li strong {
+                            color: #1a202c;
+                            font-weight: 700;
+                        }
+                        .pdf-photos {
+                            display: flex;
+                            gap: 14px;
+                            justify-content: center;
+                            margin-top: 24px;
+                            page-break-inside: avoid;
+                        }
+                        .pdf-photo {
+                            width: 31%;
+                            height: 130px;
+                            object-fit: cover;
+                            border-radius: 10px;
+                            border: 2px solid #e2e8f0;
+                            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                        }
+                        .pdf-price-row {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 20px;
+                            padding: 18px;
+                            background: #f7fafc;
+                            border-radius: 10px;
+                            border-left: 5px solid #fbbf24;
+                        }
+                        .pdf-price-row > div:first-child {
+                            font-weight: 700;
+                            font-size: 15px;
+                            color: #1a202c;
+                        }
+                        .pdf-price-badge {
+                            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                            color: #1a202c;
+                            font-weight: 800;
+                            font-size: 18px;
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+                        }
+                        .pdf-check-item {
+                            display: flex;
+                            align-items: flex-start;
+                            gap: 10px;
+                            margin-bottom: 10px;
+                            padding: 8px 0;
+                            color: #2d3748;
+                        }
+                        .pdf-check {
+                            color: #fbbf24;
+                            font-weight: 900;
+                            font-size: 16px;
+                            flex-shrink: 0;
+                            margin-top: -2px;
+                        }
+                        .pdf-bonus {
+                            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                            border-radius: 12px;
+                            padding: 18px 16px;
+                            margin-bottom: 20px;
+                            display: flex;
+                            align-items: flex-start;
+                            gap: 14px;
+                            page-break-inside: avoid;
+                            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25);
+                        }
+                        .pdf-bonus > div:first-child {
+                            font-size: 28px;
+                            flex-shrink: 0;
+                        }
+                        .pdf-bonus > div:last-child {
+                            font-weight: 700;
+                            color: #1a202c;
+                            font-size: 15px;
+                        }
+                        .pdf-footer {
+                            margin-top: 48px;
+                            text-align: center;
+                            border-top: 3px solid #fbbf24;
+                            padding-top: 20px;
+                            color: #4a5568;
+                        }
+                        .pdf-footer > div:first-child {
+                            font-size: 16px;
+                            font-weight: 700;
+                            color: #1a202c;
+                            margin-bottom: 12px;
+                        }
+                        .pdf-footer > div:nth-child(2) {
+                            margin-bottom: 16px;
+                            font-weight: 600;
+                            color: #1a202c;
+                        }
+                        .pdf-contact-buttons {
+                            display: flex;
+                            justify-content: center;
+                            gap: 12px;
+                            flex-wrap: wrap;
+                        }
+                        .pdf-contact-btn {
+                            display: inline-block;
+                            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                            color: #1a202c;
+                            padding: 10px 18px;
+                            border-radius: 8px;
+                            font-weight: 700;
+                            font-size: 13px;
+                            text-decoration: none;
+                            border: 2px solid #fbbf24;
+                            box-shadow: 0 3px 8px rgba(251, 191, 36, 0.3);
+                        }
+                        .pdf-greeting {
+                            text-align: center;
+                            margin-bottom: 24px;
+                            padding: 16px;
+                            background: rgba(251, 191, 36, 0.08);
+                            border-radius: 10px;
+                            border-left: 5px solid #fbbf24;
+                        }
+                        .pdf-greeting > div:first-child {
+                            font-weight: 700;
+                            font-size: 16px;
+                            color: #1a202c;
+                            margin-bottom: 8px;
+                        }
+                        .pdf-greeting > div:last-child {
+                            color: #4a5568;
+                            line-height: 1.6;
+                        }
+                        @media print {
+                            .pdf-page:not(:last-child) { page-break-after: always; }
+                            .pdf-section { page-break-inside: avoid; }
+                            .pdf-card { page-break-inside: avoid; }
+                            .no-break { page-break-inside: avoid; }
+                            .pdf-photos { page-break-inside: avoid; }
+                        }
+                    </style>
+                `;
+
+                // HTML контент PDF
+                const pdfContent = `
+                    ${pdfStyles}
+                    <div class="pdf-container">
+                        <!-- Сторінка 1: Шапка + Переваги -->
+                        <div class="pdf-page">
+                            <div class="pdf-header">
+                                <div class="pdf-header-left">
+                                    <div style="font-weight: bold;">ТОВ «АГРОКУБ»</div>
+                                    <div>Код ЄДРПОУ: 41408616</div>
+                                    <div>70502, Україна, Запорізька область</div>
+                                    <div>вул. Лесі Українки, 45/112</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <img src="images/logo.png" alt="АГРОКУБ" class="pdf-logo" />
+                                </div>
+                                <div class="pdf-header-right">
+                                    <div style="font-weight: 600;">Контакти менеджера</div>
+                                    <div>${managerName}</div>
+                                    <div>${managerPhone}</div>
+                                    <div>${managerEmail}</div>
+                                    <div style="margin-top: 8px; color: #64748b; font-size: 10px;">${data.date}</div>
+                                </div>
+                            </div>
+
+                            <div class="pdf-greeting">
+                                <div style="font-weight: 600; font-size: 14px;">${data.client.salutation || 'Шановний'} ${clientName}!</div>
+                                <div style="margin-top: 6px;">${window.currentKPProduct?.intro || 'Пропонуємо вам ознайомитись з нашою пропозицією'}</div>
+                            </div>
+
+                            <div class="pdf-title">
+                                <span class="pdf-title-badge">Проблеми, які вирішить наш агрегат</span>
+                            </div>
+
+                            ${window.currentKPProduct?.benefits?.map(benefit => `
+                                <div class="pdf-card pdf-section">
+                                    <div class="pdf-card-title">${benefit.title}</div>
+                                    <ul>
+                                        ${benefit.items.map(item => `<li>${item}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `).join('') || ''}
+                        </div>
+
+                        <!-- Сторінка 2: Характеристики + Фото -->
+                        <div class="pdf-page">
+                            <div class="pdf-title">
+                                <span class="pdf-title-badge">Характеристики агрегату</span>
+                            </div>
+
+                            ${window.currentKPProduct?.specs?.map(spec => `
+                                <div class="pdf-card pdf-section">
+                                    <div class="pdf-card-title">${spec.title}</div>
+                                    <ul>
+                                        ${spec.items.map(item => `<li>${item}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `).join('') || ''}
+
+                            ${window.currentKPProduct?.photos ? `
+                                <div class="pdf-photos">
+                                    ${window.currentKPProduct.photos.slice(0, 3).map(photo => 
+                                        `<img src="images/${window.currentKPProduct.folder}/${photo}" alt="${window.currentKPProduct.name}" class="pdf-photo" />`
+                                    ).join('')}
+                                </div>
+                                ${window.currentKPProduct.photos.length > 3 ? `
+                                    <div class="pdf-photos" style="margin-top: 14px;">
+                                        ${window.currentKPProduct.photos.slice(3).map(photo => 
+                                            `<img src="images/${window.currentKPProduct.folder}/${photo}" alt="${window.currentKPProduct.name}" class="pdf-photo" />`
+                                        ).join('')}
+                                    </div>
+                                ` : ''}
+                            ` : ''}
+                        </div>
+
+                        <!-- Сторінка 3: Ціна, умови та терміни поставки -->
+                        <div class="pdf-page">
+                            <div class="pdf-title">
+                                <span class="pdf-title-badge pdf-title-badge-dark">Ціна, умови та терміни поставки</span>
+                            </div>
+
+                            <div class="pdf-price-row">
+                                <div style="font-weight: 600;">${window.currentKPProduct?.name || 'Агрегат'}</div>
+                                <div class="pdf-price-badge">${data.total.toLocaleString('uk-UA')} грн${data.includeVAT ? ' з ПДВ' : ''}</div>
+                            </div>
+
+                            <div style="margin-bottom: 16px;">
+                                <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct?.manufacturing_time || 'Термін виготовлення та відвантаження: до 14 робочих днів.'}</span></div>
+                                <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Оплата: безготівковий розрахунок з ПДВ.</span></div>
+                                <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Доставка: <strong>ВКЛЮЧЕНА У ВАРТІСТЬ</strong>.</span></div>
+                                <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Гарантія: 12 місяців.</span></div>
+                            </div>
+
+                            ${window.currentKPProduct?.bonus ? `
+                            <div class="pdf-bonus pdf-section">
+                                <div style="font-size: 24px;">🎁</div>
+                                <div style="font-weight: 600;">${window.currentKPProduct.bonus}</div>
+                            </div>
+                            ` : ''}
+
+                            ${window.currentKPProduct?.loyalty ? `
+                            <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct.loyalty}</span></div>
+                            ` : ''}
+
+                            <div class="pdf-footer">
+                                <div>Дякую за увагу!</div>
+                                <div>З повагою, ${managerName}</div>
+                                <div class="pdf-contact-buttons">
+                                    <a href="tel:${managerPhone.replace(/\\s+/g, '')}" class="pdf-contact-btn">📞 ${managerPhone}</a>
+                                    <a href="mailto:${managerEmail}" class="pdf-contact-btn">✉️ ${managerEmail}</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Створюємо тимчасовий елемент для рендерингу PDF
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = pdfContent;
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.width = '210mm';
+                tempDiv.style.boxSizing = 'border-box';
+                document.body.appendChild(tempDiv);
+
+                // Даємо час для рендерингу зображень
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const opt = {
+                    margin: [0, 0, 0, 0],
+                    filename: `КП_${window.currentKPProduct?.name || 'КНС_3.5_DV'}_${clientName}_${data.date.replace(/\./g, '-')}.pdf`,
+                    image: { type: 'jpeg', quality: 1.0 },
+                    html2canvas: { 
+                        scale: 3,
+                        useCORS: true,
+                        logging: false,
+                        scrollY: 0,
+                        backgroundColor: '#ffffff',
+                        allowTaint: true,
+                        letterRendering: true
+                    },
+                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+                };
+
+                await html2pdf().set(opt).from(tempDiv.querySelector('.pdf-container')).save();
+                alert('✓ КП успішно збережено!');
+                
+                document.body.removeChild(tempDiv);
+                closeKPPreview();
+            } catch (e) {
+                console.error('PDF generation error:', e);
+                alert('Помилка генерації PDF: ' + e.message);
+            } finally {
+                // Відновлюємо кнопку
+                if (generateBtn) {
+                    generateBtn.disabled = false;
+                    generateBtn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Створити КП';
+                }
+            }
+        }
+
         // Load plans page
         async function loadPlans() {
             try {
@@ -3307,9 +4670,10 @@
 
         // Восстановление сессии при загрузке страницы
         document.addEventListener('DOMContentLoaded', async () => {
-            // Зберігаємо оригінальний контент при завантаженні
+            // Зберігаємо початковий контент сторінки (шаблон без даних)
             const mainContent = document.getElementById('mainContent');
-            if (mainContent && !window.__originalMainContent) {
+            if (mainContent) {
+                window.__defaultMainContent = mainContent.innerHTML;
                 window.__originalMainContent = mainContent.innerHTML;
             }
 
