@@ -683,6 +683,28 @@
                             <input type="number" id="amount" required placeholder="0.00"
                                 class="w-full p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
+                        <div class="md:col-span-2 p-3 rounded-2xl bg-blue-50/50 border border-blue-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fa-solid fa-share-nodes text-blue-600 text-sm"></i>
+                                <span class="text-xs font-bold text-blue-700 uppercase">Розподіл продажу</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Цільовий менеджер <span class="text-slate-300 font-normal normal-case">(опціонально)</span></label>
+                                    <select id="targetManager" class="w-full p-3 rounded-2xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option value="">— Не обрано —</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">% для цільового</label>
+                                    <input type="number" id="targetPercent" min="0" max="100" value="10" placeholder="10"
+                                        class="w-full p-3 rounded-2xl bg-white border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <div class="mt-2 text-[10px] text-slate-500 italic">
+                                <i class="fa-solid fa-info-circle"></i> За замовчуванням: 90% автору, 10% цільовому менеджеру
+                            </div>
+                        </div>
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-0 sm:ml-1 text-center sm:text-left">Додаткові пункти / позиції (опціонально)</label>
                             <input type="text" id="orderItems" placeholder="Напр.: ЛН 2.6; ковш 2.2; доставка"
@@ -746,6 +768,28 @@
                             Експорт
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Order Details View -->
+    <div id="viewOrderModal" class="hidden fixed inset-0 z-50">
+        <div id="viewOrderModalBackdrop" class="absolute inset-0 bg-slate-900/50"></div>
+        <div class="relative w-full h-full flex items-end sm:items-center justify-center p-3 sm:p-6">
+            <div class="w-full max-w-2xl glass rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+                <div class="p-4 sm:p-6 bg-slate-50/60 flex items-center justify-between gap-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2 font-bold text-slate-800">
+                        <i class="fa-solid fa-eye text-blue-600"></i>
+                        <span>Деталі замовлення</span>
+                    </div>
+                    <button type="button" id="closeViewOrderModalBtn" class="w-10 h-10 rounded-2xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center justify-center" aria-label="Закрити">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="p-4 sm:p-6 modal-scroll max-h-[70vh]" id="viewOrderContent">
+                    <!-- Content will be filled by JavaScript -->
                 </div>
             </div>
         </div>
@@ -1023,7 +1067,14 @@
                     comment: o.comment || '',
                     crmLink: String(o.crmLink || o.link || ''),
                     status: o.status || '',
-                    amount: Number(o.amount) || 0
+                    amount: Number(o.amount) || 0,
+                    managerId: o.managerId || managerId,
+                    authorManagerId: o.authorManagerId || '',
+                    targetManagerId: o.targetManagerId || '',
+                    targetManagerPercent: Number(o.targetManagerPercent) || 0,
+                    isAuthor: o.isAuthor,
+                    linkedOrderId: o.linkedOrderId || '',
+                    fullAmount: Number(o.fullAmount) || 0
                 });
             });
 
@@ -1049,34 +1100,80 @@
             const shipmentDateStr = String(payload.shipmentDate || '').trim();
             const shipmentDate = /^\d{4}-\d{2}-\d{2}$/.test(shipmentDateStr) ? new Date(shipmentDateStr + 'T00:00:00') : null;
 
-            const docRef = await api.addDoc(api.collection(api.db, 'managers', managerId, 'orders'), {
-                managerId,
+            const targetManagerId = String(payload.targetManagerId || '').trim();
+            const targetPercent = Number(payload.targetManagerPercent) || 0;
+            const hasTarget = targetManagerId && targetPercent > 0 && targetPercent <= 100;
+            
+            // Розраховуємо суми
+            const authorAmount = hasTarget ? Math.round(amount * (100 - targetPercent) / 100) : amount;
+            const targetAmount = hasTarget ? Math.round(amount * targetPercent / 100) : 0;
+
+            // Спільні дані замовлення
+            const orderData = {
                 payer: payload.payer || '',
                 region: payload.region || '',
                 items: payload.items || '',
                 comment: payload.comment || '',
                 crmLink: payload.crmLink || '',
                 status: payload.status || '',
-                amount,
+                fullAmount: amount,
                 date,
                 shipmentDate,
                 createdAt: api.serverTimestamp(),
                 updatedAt: api.serverTimestamp()
-            });
+            };
 
+            let authorDocId = null;
+
+            // Створюємо документ для автора (основного менеджера)
+            const authorDoc = await api.addDoc(api.collection(api.db, 'managers', managerId, 'orders'), {
+                ...orderData,
+                managerId,
+                amount: authorAmount,
+                authorManagerId: managerId,
+                targetManagerId: hasTarget ? targetManagerId : '',
+                targetManagerPercent: hasTarget ? targetPercent : 0,
+                isAuthor: true
+            });
+            authorDocId = authorDoc.id;
+
+            // Оновлюємо totalSales автора
             await api.setDoc(
                 api.doc(api.db, 'managers', managerId),
-                { totalSales: api.increment(amount), updatedAt: api.serverTimestamp() },
+                { totalSales: api.increment(authorAmount), updatedAt: api.serverTimestamp() },
                 { merge: true }
             );
 
-            return docRef.id;
+            // Якщо є цільовий менеджер - створюємо документ для нього
+            if (hasTarget) {
+                await api.addDoc(api.collection(api.db, 'managers', targetManagerId, 'orders'), {
+                    ...orderData,
+                    managerId: targetManagerId,
+                    amount: targetAmount,
+                    authorManagerId: managerId,
+                    targetManagerId: targetManagerId,
+                    targetManagerPercent: targetPercent,
+                    isAuthor: false,
+                    linkedOrderId: authorDocId
+                });
+
+                // Оновлюємо totalSales цільового менеджера
+                await api.setDoc(
+                    api.doc(api.db, 'managers', targetManagerId),
+                    { totalSales: api.increment(targetAmount), updatedAt: api.serverTimestamp() },
+                    { merge: true }
+                );
+            }
+
+            return authorDocId;
         }
 
         async function fs_updateOrder_(managerId, orderId, payload, prevAmount) {
             const api = await initFirebaseForManager_(managerId);
             if (!api) throw new Error('Firebase not configured');
 
+            // ВАЖЛИВО: Редагування розподілених замовлень не підтримується в цій версії
+            // Тільки оновлення звичайних полів для документа автора
             const amount = normalizeAmount_(payload.amount);
             const dateStr = String(payload.date || '').trim();
             const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T00:00:00') : new Date();
@@ -1114,12 +1211,14 @@
             }
         }
 
-        async function fs_deleteOrder_(managerId, orderId, prevAmount) {
+        async function fs_deleteOrder_(managerId, orderId, prevAmount, orderData) {
             const api = await initFirebaseForManager_(managerId);
             if (!api) throw new Error('Firebase not configured');
 
+            // Видаляємо основний документ
             await api.deleteDoc(api.doc(api.db, 'managers', managerId, 'orders', orderId));
 
+            // Оновлюємо totalSales автора
             const oldAmount = Number(prevAmount);
             if (Number.isFinite(oldAmount) && oldAmount) {
                 await api.setDoc(
@@ -1127,6 +1226,31 @@
                     { totalSales: api.increment(-oldAmount), updatedAt: api.serverTimestamp() },
                     { merge: true }
                 );
+            }
+
+            // Якщо це розподілене замовлення (автор) - видаляємо документ цільового менеджера
+            if (orderData && orderData.isAuthor && orderData.targetManagerId) {
+                try {
+                    // Знаходимо linkedOrderId у цільового менеджера
+                    const targetOrders = await api.getDocs(api.collection(api.db, 'managers', orderData.targetManagerId, 'orders'));
+                    for (const doc of targetOrders.docs) {
+                        const data = doc.data();
+                        if (data.linkedOrderId === orderId) {
+                            await api.deleteDoc(doc.ref);
+                            // Оновлюємо totalSales цільового менеджера
+                            if (Number.isFinite(data.amount) && data.amount) {
+                                await api.setDoc(
+                                    api.doc(api.db, 'managers', orderData.targetManagerId),
+                                    { totalSales: api.increment(-data.amount), updatedAt: api.serverTimestamp() },
+                                    { merge: true }
+                                );
+                            }
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[CRM] Failed to delete linked order', e);
+                }
             }
         }
 
@@ -1986,6 +2110,17 @@
                 localStorage.setItem('crm_logged_manager', mId);
                 error.classList.add('hidden');
                 
+                // Перезавантажуємо сторінку після логіну для оновлення всього стану
+                // Використовуємо sessionStorage щоб не перезавантажувати повторно
+                if (!sessionStorage.getItem('crm_just_logged_in')) {
+                    sessionStorage.setItem('crm_just_logged_in', 'true');
+                    window.location.reload();
+                    return;
+                }
+                
+                // Видаляємо маркер після першого рендеру
+                sessionStorage.removeItem('crm_just_logged_in');
+                
                 // Відновлюємо головний контент до початкового стану перед показом
                 const mainContent = document.getElementById('mainContent');
                 if (mainContent && window.__defaultMainContent) {
@@ -2170,6 +2305,26 @@
             }
         }
 
+        function initTargetManagerDropdown_() {
+            const targetSelect = document.getElementById('targetManager');
+            if (!targetSelect || !loggedInManagerId) return;
+            
+            // Clear existing options except first
+            while (targetSelect.options.length > 1) {
+                targetSelect.remove(1);
+            }
+            
+            // Add all managers except current
+            for (const [mId, mData] of Object.entries(MANAGERS)) {
+                if (mId !== loggedInManagerId) {
+                    const opt = document.createElement('option');
+                    opt.value = mId;
+                    opt.textContent = mData.name;
+                    targetSelect.appendChild(opt);
+                }
+            }
+        }
+
         function resetOrderModal_() {
             // Reset to "new order" mode
             document.getElementById('editingOrderId').value = '';
@@ -2188,6 +2343,8 @@
             document.getElementById('orderItems').value = '';
             document.getElementById('orderComment').value = '';
             document.getElementById('orderStatus').value = '';
+            document.getElementById('targetManager').value = '';
+            document.getElementById('targetPercent').value = '10';
         }
 
         function openOrderModal_(editData = null) {
@@ -2195,6 +2352,7 @@
             if (!modal) return;
             
             initOrderStatusDropdown_();
+            initTargetManagerDropdown_();
             
             if (editData) {
                 // Edit mode
@@ -2215,6 +2373,8 @@
                 document.getElementById('orderItems').value = editData.items || '';
                 document.getElementById('orderComment').value = editData.comment || '';
                 document.getElementById('orderStatus').value = editData.status || '';
+                document.getElementById('targetManager').value = editData.targetManagerId || '';
+                document.getElementById('targetPercent').value = editData.targetManagerPercent || '10';
             } else {
                 // New order mode
                 resetOrderModal_();
@@ -2282,6 +2442,151 @@
             modal.classList.add('hidden');
             syncBodyScrollLock_();
         }
+
+        // --- Modal: View Order Details ---
+        function openViewOrderModal_(orderData) {
+            const modal = document.getElementById('viewOrderModal');
+            const content = document.getElementById('viewOrderContent');
+            if (!modal || !content || !orderData) return;
+
+            const statusBadge = renderStatusBadge_(orderData.status);
+            const crmUrl = normalizeCrmUrl_(orderData.crmLink || '');
+            
+            // Форматування дат
+            const dateFormatted = orderData.date ? new Date(orderData.date).toLocaleDateString('uk-UA', { 
+                year: 'numeric', month: 'long', day: 'numeric' 
+            }) : '—';
+            const shipmentDateFormatted = orderData.shipmentDate ? new Date(orderData.shipmentDate).toLocaleDateString('uk-UA', { 
+                year: 'numeric', month: 'long', day: 'numeric' 
+            }) : '—';
+
+            // Інформація про розподіл
+            let sharedInfo = '';
+            if (orderData.authorManagerId || orderData.targetManagerId) {
+                const authorName = MANAGERS[orderData.authorManagerId]?.name || orderData.authorManagerId || '—';
+                const targetName = MANAGERS[orderData.targetManagerId]?.name || orderData.targetManagerId || '—';
+                const isAuthor = !orderData.authorManagerId || orderData.authorManagerId === loggedInManagerId;
+                
+                sharedInfo = `
+                    <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="fa-solid fa-share-nodes text-purple-600"></i>
+                            <span class="font-bold text-purple-800">Розподілене замовлення</span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Менеджер-автор:</span>
+                                <span class="font-semibold text-slate-800">${escapeHtml_(authorName)}</span>
+                            </div>
+                            ${orderData.targetManagerId ? `
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Цільовий менеджер:</span>
+                                <span class="font-semibold text-slate-800">${escapeHtml_(targetName)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Розподіл:</span>
+                                <span class="font-semibold text-slate-800">${100 - (orderData.targetManagerPercent || 0)}% / ${orderData.targetManagerPercent || 0}%</span>
+                            </div>
+                            ${orderData.fullAmount ? `
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Повна сума:</span>
+                                <span class="font-semibold text-slate-800">${Number(orderData.fullAmount).toLocaleString('uk-UA')} ₴</span>
+                            </div>
+                            ` : ''}
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Ваша частка:</span>
+                                <span class="font-semibold text-purple-700">${Number(orderData.amount).toLocaleString('uk-UA')} ₴</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    ${sharedInfo}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 rounded-xl p-4">
+                            <div class="text-xs font-bold text-slate-400 uppercase mb-1">Дата створення</div>
+                            <div class="text-slate-800 font-semibold">${dateFormatted}</div>
+                        </div>
+                        
+                        <div class="bg-slate-50 rounded-xl p-4">
+                            <div class="text-xs font-bold text-slate-400 uppercase mb-1">Дата відгрузки</div>
+                            <div class="text-slate-800 font-semibold">${shipmentDateFormatted}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Платник</div>
+                        <div class="text-slate-800 font-semibold">${escapeHtml_(orderData.payer || '—')}</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 rounded-xl p-4">
+                            <div class="text-xs font-bold text-slate-400 uppercase mb-1">Область</div>
+                            <div class="text-slate-800 font-semibold">${escapeHtml_(orderData.region || '—')}</div>
+                        </div>
+                        
+                        ${!sharedInfo ? `
+                        <div class="bg-slate-50 rounded-xl p-4">
+                            <div class="text-xs font-bold text-slate-400 uppercase mb-1">Сума</div>
+                            <div class="text-blue-600 font-bold text-lg">${Number(orderData.amount).toLocaleString('uk-UA')} ₴</div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    ${orderData.status ? `
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Статус</div>
+                        <div class="mt-2">${statusBadge}</div>
+                    </div>
+                    ` : ''}
+
+                    ${orderData.items ? `
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Позиції / Додаткові пункти</div>
+                        <div class="text-slate-800 whitespace-pre-wrap">${escapeHtml_(orderData.items)}</div>
+                    </div>
+                    ` : ''}
+
+                    ${orderData.comment ? `
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Коментар</div>
+                        <div class="text-slate-800 whitespace-pre-wrap">${escapeHtml_(orderData.comment)}</div>
+                    </div>
+                    ` : ''}
+
+                    ${crmUrl ? `
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Посилання в CRM</div>
+                        <a href="${escapeHtml_(crmUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">
+                            ${escapeHtml_(crmUrl)}
+                        </a>
+                    </div>
+                    ` : ''}
+
+                    <div class="text-xs text-slate-400 text-center pt-2">
+                        ID: ${escapeHtml_(orderData.id || '—')}
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            syncBodyScrollLock_();
+        }
+
+        function closeViewOrderModal_() {
+            const modal = document.getElementById('viewOrderModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            syncBodyScrollLock_();
+        }
+
+        document.getElementById('closeViewOrderModalBtn')?.addEventListener('click', closeViewOrderModal_);
+        document.getElementById('viewOrderModalBackdrop')?.addEventListener('click', closeViewOrderModal_);
 
         document.getElementById('openExportModalBtn')?.addEventListener('click', openExportModal_);
         document.getElementById('closeExportModalBtn')?.addEventListener('click', closeExportModal_);
@@ -2439,9 +2744,38 @@
                 dailyNormEl.innerText = dailyNorm.toLocaleString('uk-UA') + ' ₴/день';
             }
 
-            // Прогноз до кінця місяця (на основі поточної швидкості)
-            const dailyAvg = daysPassed > 0 ? total / daysPassed : 0;
-            const forecast = Math.round(dailyAvg * daysInMonth);
+            // Прогноз до кінця періоду (на основі поточної швидкості)
+            // Рахуємо загальну кількість днів у вибраних періодах
+            const selectedPeriods = loadSelectedProgressPeriods_();
+            let totalDaysInSelectedPeriods = daysInMonth;
+            let daysPastInSelectedPeriods = daysPassed;
+            
+            if (selectedPeriods.length > 0) {
+                totalDaysInSelectedPeriods = 0;
+                daysPastInSelectedPeriods = 0;
+                
+                for (const period of selectedPeriods) {
+                    const [y, m] = period.split('-').map(Number);
+                    const daysInPeriod = new Date(y, m, 0).getDate();
+                    totalDaysInSelectedPeriods += daysInPeriod;
+                    
+                    // Якщо це поточний або минулий місяць - рахуємо пройдені дні
+                    const periodDate = new Date(y, m - 1, 1);
+                    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    
+                    if (periodDate < new Date(now.getFullYear(), now.getMonth(), 1)) {
+                        // Минулий місяць - всі дні пройшли
+                        daysPastInSelectedPeriods += daysInPeriod;
+                    } else if (y === now.getFullYear() && m === now.getMonth() + 1) {
+                        // Поточний місяць - рахуємо пройдені дні
+                        daysPastInSelectedPeriods += currentDay;
+                    }
+                    // Майбутні місяці не додаємо до пройдених днів
+                }
+            }
+            
+            const dailyAvg = daysPastInSelectedPeriods > 0 ? total / daysPastInSelectedPeriods : 0;
+            const forecast = Math.round(dailyAvg * totalDaysInSelectedPeriods);
             const forecastPercent = currentGoal > 0 ? Math.round((forecast / currentGoal) * 100) : 0;
             const forecastEl = document.getElementById('forecastLabel');
             const forecastPercentEl = document.getElementById('forecastPercent');
@@ -2462,8 +2796,7 @@
             }
 
             // Середній чек (рахується тільки для поточного вибраного місяця)
-            // Фільтруємо замовлення за вибраним періодом
-            const selectedPeriods = loadSelectedProgressPeriods_();
+            // Фільтруємо замовлення за вибраним періодом (використовуємо вже завантажену змінну)
             let periodOrders = history || [];
             if (selectedPeriods.length > 0) {
                 const periodSet = new Set(selectedPeriods);
@@ -2622,6 +2955,19 @@
                 const statusBadge = renderStatusBadge_(item.status);
                 const quickStatusBtns = renderQuickStatusButtons_(orderIdAttr, rowId, item.status);
                 
+                // Shared order badge (if this order is split between managers)
+                let sharedBadge = '';
+                if (item.targetManagerId || item.isAuthor === false) {
+                    const isAuthor = item.isAuthor !== false;
+                    const targetName = MANAGERS[item.targetManagerId]?.name || item.targetManagerId;
+                    const authorName = MANAGERS[item.authorManagerId]?.name || item.authorManagerId;
+                    const tooltipText = isAuthor 
+                        ? `Розподілено з ${targetName}: ${item.targetManagerPercent || 0}%`
+                        : `Частка від ${authorName}`;
+                    const badgeText = isAuthor ? 'Спільне' : `${item.targetManagerPercent || 0}%`;
+                    sharedBadge = `<div class="shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-medium bg-purple-100 text-purple-700 border border-purple-300" title="${escapeHtml(tooltipText)}"><i class="fa-solid fa-share-nodes mr-1"></i>${badgeText}</div>`;
+                }
+                
                 // Shipment date badge with color coding
                 let shipmentBadge = '';
                 if (item.shipmentDate) {
@@ -2666,6 +3012,7 @@
                                             ${escapeHtml(regionLabel)}
                                         </div>
                                         ${statusBadge ? `<div class="shrink-0">${statusBadge}</div>` : ''}
+                                        ${sharedBadge}
                                         ${shipmentBadge}
                                     </div>
 
@@ -2684,13 +3031,18 @@
 
                                         <div class="shrink-0 flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100">
                                             <div class="flex items-center space-x-2">
+                                                <button type="button" title="Переглянути деталі" aria-label="Переглянути" data-action="view" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </button>
                                                 ${quickStatusBtns}
+                                                ${!item.authorManagerId || item.authorManagerId === loggedInManagerId ? `
                                                 <button type="button" title="Редагувати" aria-label="Редагувати" data-action="edit" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-9 h-9 rounded-xl bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
                                                 <button type="button" title="Видалити" aria-label="Видалити" data-action="delete" data-rowid="${rowId}" data-orderid="${escapeHtml(orderIdAttr)}" class="w-9 h-9 rounded-xl bg-red-100 text-red-700 text-xs font-bold flex items-center justify-center">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
+                                                ` : `<span class="text-[10px] text-slate-400 italic px-2">Тільки перегляд</span>`}
                                             </div>
                                         </div>
                                     </div>
@@ -3016,6 +3368,17 @@
 
             const editKey = orderId || rowId;
 
+            if (action === 'view') {
+                // Open view modal with order details
+                const orderData = state.byOrderId?.[orderId];
+                if (!orderData) {
+                    alert('Не вдалося знайти дані замовлення');
+                    return;
+                }
+                openViewOrderModal_(orderData);
+                return;
+            }
+
             if (action === 'edit') {
                 // Open modal with order data for editing
                 const orderData = state.byOrderId?.[orderId];
@@ -3023,19 +3386,44 @@
                     alert('Не вдалося знайти дані замовлення');
                     return;
                 }
+                // Перевірка прав: блокуємо якщо це розподілене замовлення і поточний менеджер не автор
+                if (orderData.authorManagerId && orderData.authorManagerId !== loggedInManagerId) {
+                    alert('Це замовлення зможе редагувати тільки менеджер-автор');
+                    return;
+                }
+                // Додаткова перевірка: якщо є targetManagerId але немає authorManagerId, перевіряємо managerId
+                if (!orderData.authorManagerId && orderData.targetManagerId && orderData.managerId !== loggedInManagerId) {
+                    alert('Це замовлення зможе редагувати тільки менеджер-автор');
+                    return;
+                }
                 openOrderModal_(orderData);
                 return;
             }
             if (action === 'delete') {
+                const orderData = state.byOrderId?.[orderId];
+                if (!orderData) {
+                    alert('Не вдалося знайти дані замовлення');
+                    return;
+                }
+                // Перевірка прав: блокуємо якщо це розподілене замовлення і поточний менеджер не автор
+                if (orderData.authorManagerId && orderData.authorManagerId !== loggedInManagerId) {
+                    alert('Це замовлення зможе видалити тільки менеджер-автор');
+                    return;
+                }
+                // Додаткова перевірка: якщо є targetManagerId але немає authorManagerId, перевіряємо managerId
+                if (!orderData.authorManagerId && orderData.targetManagerId && orderData.managerId !== loggedInManagerId) {
+                    alert('Це замовлення зможе видалити тільки менеджер-автор');
+                    return;
+                }
                 if (!confirm('Видалити це замовлення?')) return;
-                const prevAmount = state.byOrderId?.[orderId]?.amount;
+                const prevAmount = orderData.amount;
                 if (!orderId) {
                     alert('Не вдалося визначити ID замовлення для видалення');
                     return;
                 }
 
                 try {
-                    await fs_deleteOrder_(loggedInManagerId, orderId, prevAmount);
+                    await fs_deleteOrder_(loggedInManagerId, orderId, prevAmount, orderData);
                     console.info('[CRM] deleteOrder source: firebase');
 
                     // Sheets backup: try now; if fails, queue for later.
@@ -3131,6 +3519,8 @@
             const items = document.getElementById('orderItems')?.value?.trim() || '';
             const comment = document.getElementById('orderComment')?.value?.trim() || '';
             const status = document.getElementById('orderStatus')?.value || '';
+            const targetManagerId = document.getElementById('targetManager')?.value || '';
+            const targetManagerPercent = document.getElementById('targetPercent')?.value || '10';
 
             if (!orderDate) {
                 alert('Оберіть дату');
@@ -3174,7 +3564,10 @@
                     // Create new order
                     let newId = '';
                     try {
-                        newId = await fs_addOrder_(loggedInManagerId, { date: orderDate, shipmentDate, payer, crmLink, region, items, comment, amount, status });
+                        newId = await fs_addOrder_(loggedInManagerId, { 
+                            date: orderDate, shipmentDate, payer, crmLink, region, items, comment, amount, status,
+                            targetManagerId, targetManagerPercent
+                        });
                         window.__crmDataSource = 'firebase';
                         console.info('[CRM] addOrder source: firebase');
                     } catch (err) {
