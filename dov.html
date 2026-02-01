@@ -399,10 +399,13 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
-                    <button onclick="togglePlans()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                    <button onclick="loadLeads()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                        <i class="fa-solid fa-users"></i> <span>Ліди</span>
+                    </button>
+                    <button onclick="loadPlans()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
                         <i class="fa-solid fa-flag"></i> <span>Плани</span>
                     </button>
-                    <button onclick="toggleSettings()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                    <button onclick="loadSettings()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
                         <i class="fa-solid fa-gear"></i> <span>Налаштування</span>
                     </button>
                     <button onclick="logout()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-200 transition-colors text-sm font-semibold whitespace-nowrap">
@@ -413,55 +416,9 @@
         </nav>
 
         <main class="container mx-auto px-4 max-w-6xl">
-            <!-- Settings Panel -->
-            <div id="settingsPanel" class="hidden mb-8 glass p-6 rounded-2xl border border-blue-200 shadow-xl">
-                <div class="flex items-center justify-between gap-3 mb-2">
-                    <h3 class="text-lg font-bold">Налаштування</h3>
-                    <span class="text-xs text-slate-500">Скоро</span>
-                </div>
-                <div class="text-sm text-slate-500">Поки що немає налаштувань.</div>
-            </div>
 
-            <!-- Plans Panel -->
-            <div id="plansPanel" class="hidden mb-8 glass p-6 rounded-2xl border border-blue-200 shadow-xl">
-                <div class="flex items-center justify-between gap-3 mb-2">
-                    <h3 class="text-lg font-bold">Плани</h3>
-                    <span class="text-xs text-slate-500">Зберігається в БД</span>
-                </div>
-                <div class="flex items-center justify-end">
-                    <button type="button" id="addPlanBtn" class="px-4 py-3 rounded-2xl bg-blue-600 text-white font-semibold">Додати план</button>
-                </div>
-
-                <div id="addPlanPanel" class="hidden mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Рік</label>
-                            <input type="number" id="addPlanYear" min="2000" max="2100" placeholder="2025" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Місяць</label>
-                            <select id="addPlanMonth" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Сума, ₴</label>
-                            <input type="number" id="addPlanGoal" min="0" placeholder="0" class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                        </div>
-                        <div class="md:col-span-3 flex justify-end gap-2">
-                                    <button type="button" id="addPlanCancelBtn" class="px-4 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold transition-colors">Скасувати</button>
-                                    <button type="button" id="addPlanSaveBtn" class="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-semibold transition-colors disabled:cursor-not-allowed">Зберегти</button>
-                                </div>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Збережені плани</div>
-                        <div class="text-xs text-slate-400">Редагування локально</div>
-                    </div>
-                    <div id="plansList" class="space-y-2"></div>
-                </div>
-            </div>
-
+            <!-- Main Content Container -->
+            <div id="mainContent">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
                 <!-- Left Column: Salary & Stats -->
@@ -608,6 +565,8 @@
                     </div>
                 </div>
             </div>
+            </div>
+            <!-- End Main Content Container -->
         </main>
     </div>
 
@@ -1324,7 +1283,14 @@
         // - Over-plan bonus: +1% of sales above goal
         const MAX_BONUS = 40000;
         const CONVERSION_BONUS = 20000;
-        let conversionMet = true;
+        let conversionMet = (() => {
+            try {
+                const saved = localStorage.getItem('conversionToggle');
+                return saved !== null ? saved === 'true' : true;
+            } catch (e) {
+                return true;
+            }
+        })();
 
         const MONTH_LABELS = {
             '01': 'Січень',
@@ -3004,10 +2970,14 @@
             try {
                 const conv = document.getElementById('conversionToggle');
                 if (!conv) return;
-                conv.checked = true;
-                conversionMet = true;
+                // Відновлюємо стан з localStorage
+                conv.checked = conversionMet;
                 conv.addEventListener('change', () => {
                     conversionMet = !!conv.checked;
+                    // Зберігаємо стан в localStorage
+                    try {
+                        localStorage.setItem('conversionToggle', conversionMet.toString());
+                    } catch (e) {}
                     const allHistory = Array.isArray(window.__lastAllHistory) ? window.__lastAllHistory : [];
                     const view = buildProgressView_(allHistory);
                     updateUI(view.total || 0, allHistory);
@@ -3213,16 +3183,136 @@
             setTimeout(updateStats, 600);
         });
 
-        function toggleSettings() {
-            document.getElementById('settingsPanel').classList.toggle('hidden');
+        // Load settings page
+        async function loadSettings() {
+            try {
+                const mainContent = document.getElementById('mainContent');
+                if (!mainContent) return;
+
+                // Показуємо індикатор завантаження
+                mainContent.innerHTML = '<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-4xl text-slate-400"></i></div>';
+
+                // Завантажуємо контент з settings.html
+                const response = await fetch('settings.html');
+                if (!response.ok) throw new Error('Failed to load settings page');
+                
+                const html = await response.text();
+                
+                // Додаємо кнопку повернення
+                const backButton = '<div class="mb-4"><button onclick="restoreMainContent()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors text-sm font-semibold"><i class="fa-solid fa-arrow-left"></i> <span>Назад до продажів</span></button></div>';
+                mainContent.innerHTML = backButton + html;
+
+                // Завантажуємо налаштування
+                await loadSettingsData();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.innerHTML = '<div class="glass p-6 rounded-3xl shadow-sm border border-red-200"><div class="text-center text-red-600"><i class="fa-solid fa-exclamation-triangle mb-2"></i><p>Помилка завантаження сторінки</p></div></div>';
+                }
+            }
         }
 
-        function togglePlans() {
-            document.getElementById('plansPanel').classList.toggle('hidden');
+        // Load plans page
+        async function loadPlans() {
+            try {
+                const mainContent = document.getElementById('mainContent');
+                if (!mainContent) return;
+
+                // Показуємо індикатор завантаження
+                mainContent.innerHTML = '<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-4xl text-slate-400"></i></div>';
+
+                // Завантажуємо контент з plans.html
+                const response = await fetch('plans.html');
+                if (!response.ok) throw new Error('Failed to load plans page');
+                
+                const html = await response.text();
+                
+                // Додаємо кнопку повернення
+                const backButton = '<div class="mb-4"><button onclick="restoreMainContent()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors text-sm font-semibold"><i class="fa-solid fa-arrow-left"></i> <span>Назад до продажів</span></button></div>';
+                mainContent.innerHTML = backButton + html;
+
+                // Ініціалізуємо UI планів
+                initAddPlanUI_();
+                renderLocalPlans_();
+            } catch (error) {
+                console.error('Error loading plans:', error);
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.innerHTML = '<div class="glass p-6 rounded-3xl shadow-sm border border-red-200"><div class="text-center text-red-600"><i class="fa-solid fa-exclamation-triangle mb-2"></i><p>Помилка завантаження сторінки</p></div></div>';
+                }
+            }
+        }
+
+        // Load external content
+        async function loadLeads() {
+            try {
+                const mainContent = document.getElementById('mainContent');
+                if (!mainContent) return;
+
+                // Показуємо індикатор завантаження
+                mainContent.innerHTML = '<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-4xl text-slate-400"></i></div>';
+
+                // Завантажуємо контент з leads.html
+                const response = await fetch('leads.html');
+                if (!response.ok) throw new Error('Failed to load leads page');
+                
+                const html = await response.text();
+                
+                // Додаємо кнопку повернення
+                const backButton = '<div class="mb-4"><button onclick="restoreMainContent()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors text-sm font-semibold"><i class="fa-solid fa-arrow-left"></i> <span>Назад до продажів</span></button></div>';
+                mainContent.innerHTML = backButton + html;
+
+                // Default month filter to current month
+                const monthInput = document.getElementById('leadMonthFilter');
+                if (monthInput && !monthInput.value) {
+                    const now = new Date();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    monthInput.value = `${now.getFullYear()}-${month}`;
+                }
+                if (monthInput) {
+                    monthInput.addEventListener('change', () => {
+                        renderLeads();
+                    });
+                }
+                const statusFilter = document.getElementById('leadStatusFilter');
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', () => {
+                        renderLeads();
+                    });
+                }
+
+                    // Завантажуємо та відображаємо дані лідів
+                    await renderLeads();
+            } catch (error) {
+                console.error('Error loading leads:', error);
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.innerHTML = '<div class="glass p-6 rounded-3xl shadow-sm border border-red-200"><div class="text-center text-red-600"><i class="fa-solid fa-exclamation-triangle mb-2"></i><p>Помилка завантаження сторінки</p></div></div>';
+                }
+            }
+        }
+
+        // Restore original main content
+        async function restoreMainContent() {
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent && window.__originalMainContent) {
+                mainContent.innerHTML = window.__originalMainContent;
+                // Перерендерюємо дані після відновлення
+                if (loggedInManagerId) {
+                    await updateStats();
+                }
+            }
         }
 
         // Восстановление сессии при загрузке страницы
         document.addEventListener('DOMContentLoaded', async () => {
+            // Зберігаємо оригінальний контент при завантаженні
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent && !window.__originalMainContent) {
+                window.__originalMainContent = mainContent.innerHTML;
+            }
+
             initAddPlanUI_();
             renderProgressPeriodPicker_();
 
@@ -3247,6 +3337,399 @@
         });
 
         // Hamburger menu toggle
+        
+        // === SETTINGS FUNCTIONS ===
+        
+        // Load settings data from Firebase
+        async function loadSettingsData() {
+            if (!loggedInManagerId) return;
+            
+            try {
+                const api = await initFirebaseForManager_(loggedInManagerId);
+                if (!api) return;
+                
+                const docRef = api.doc(api.db, 'managers', loggedInManagerId, 'settings', 'profile');
+                const docSnap = await api.getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('settingsName').value = data.name || '';
+                    document.getElementById('settingsPhone').value = data.phone || '';
+                    document.getElementById('settingsEmail').value = data.email || '';
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+        
+        // Save settings to Firebase
+        async function saveSettingsData(settingsData) {
+            if (!loggedInManagerId) throw new Error('Not logged in');
+            
+            const api = await initFirebaseForManager_(loggedInManagerId);
+            if (!api) throw new Error('Firebase not configured');
+            
+            const docRef = api.doc(api.db, 'managers', loggedInManagerId, 'settings', 'profile');
+            await api.setDoc(docRef, {
+                name: settingsData.name || '',
+                phone: settingsData.phone || '',
+                email: settingsData.email || '',
+                updatedAt: api.serverTimestamp()
+            });
+        }
+        
+        // Handle settings form submission
+        if (typeof document !== 'undefined') {
+            document.addEventListener('submit', async (e) => {
+                if (e.target.id === 'settingsForm') {
+                    e.preventDefault();
+                    
+                    const submitBtn = document.getElementById('saveSettingsBtn');
+                    if (!submitBtn) return;
+                    
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Збереження...';
+                    
+                    try {
+                        const settingsData = {
+                            name: document.getElementById('settingsName').value.trim(),
+                            phone: document.getElementById('settingsPhone').value.trim(),
+                            email: document.getElementById('settingsEmail').value.trim()
+                        };
+                        
+                        await saveSettingsData(settingsData);
+                        showToast('Налаштування збережено');
+                    } catch (error) {
+                        console.error('Error saving settings:', error);
+                        showToast('Помилка збереження');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fa-solid fa-save mr-2"></i>Зберегти';
+                    }
+                }
+            });
+        }
+        
+        // === LEADS FUNCTIONS ===
+        
+        // Open lead modal
+        function openLeadModal(leadId = null) {
+            const modal = document.getElementById('leadModal');
+            const form = document.getElementById('leadForm');
+            const title = document.getElementById('leadModalTitle');
+            const submitBtn = document.getElementById('submitLeadBtn');
+            
+            if (!modal || !form) return;
+            
+            form.reset();
+            document.getElementById('editingLeadId').value = '';
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('leadDate').value = today;
+            
+            if (leadId && window.__leadsData) {
+                const lead = window.__leadsData.find(l => l.id === leadId);
+                if (lead) {
+                    title.textContent = 'Редагувати вхідний';
+                    submitBtn.textContent = 'Оновити';
+                    document.getElementById('editingLeadId').value = leadId;
+                    document.getElementById('leadDate').value = lead.date || today;
+                    document.getElementById('leadPhone').value = lead.phone || '';
+                    document.getElementById('leadCrmLink').value = lead.crmLink || '';
+                    document.getElementById('leadComment').value = lead.comment || '';
+                    document.getElementById('leadSale').checked = !!lead.sale;
+                    const statusRadio = document.querySelector(`input[name="leadStatus"][value="${lead.status}"]`);
+                    if (statusRadio) statusRadio.checked = true;
+                }
+            } else {
+                title.textContent = 'Новий вхідний дзвінок';
+                submitBtn.textContent = 'Зберегти';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Close lead modal
+        function closeLeadModal() {
+            const modal = document.getElementById('leadModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // Save lead to Firebase
+        async function saveLead(leadData) {
+            if (!loggedInManagerId) throw new Error('Not logged in');
+            
+            const api = await initFirebaseForManager_(loggedInManagerId);
+            if (!api) throw new Error('Firebase not configured');
+            
+            const leadId = leadData.id || api.doc(api.collection(api.db, 'managers', loggedInManagerId, 'leads')).id;
+            const docRef = api.doc(api.db, 'managers', loggedInManagerId, 'leads', leadId);
+            
+            await api.setDoc(docRef, {
+                date: leadData.date,
+                phone: leadData.phone || '',
+                crmLink: leadData.crmLink || '',
+                comment: leadData.comment || '',
+                status: leadData.status,
+                sale: !!leadData.sale,
+                createdAt: leadData.createdAt || api.serverTimestamp(),
+                updatedAt: api.serverTimestamp()
+            });
+            
+            return leadId;
+        }
+
+        // Load leads from Firebase
+        async function loadLeadsData() {
+            if (!loggedInManagerId) return [];
+            
+            try {
+                const api = await initFirebaseForManager_(loggedInManagerId);
+                if (!api) return [];
+                
+                const leadsCol = api.collection(api.db, 'managers', loggedInManagerId, 'leads');
+                const snapshot = await api.getDocs(leadsCol);
+                
+                const leads = [];
+                snapshot.forEach(doc => {
+                    leads.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort by date descending
+                leads.sort((a, b) => {
+                    const dateA = new Date(a.date || 0);
+                    const dateB = new Date(b.date || 0);
+                    return dateB - dateA;
+                });
+                
+                window.__leadsData = leads;
+                return leads;
+            } catch (error) {
+                console.error('Error loading leads:', error);
+                return [];
+            }
+        }
+
+        // Delete lead
+        async function deleteLead(leadId) {
+            if (!confirm('Видалити цей запис?')) return;
+            
+            try {
+                const api = await initFirebaseForManager_(loggedInManagerId);
+                if (!api) throw new Error('Firebase not configured');
+                
+                await api.deleteDoc(api.doc(api.db, 'managers', loggedInManagerId, 'leads', leadId));
+                await renderLeads();
+                showToast('Запис видалено');
+            } catch (error) {
+                console.error('Error deleting lead:', error);
+                showToast('Помилка видалення');
+            }
+        }
+
+        function getFilteredLeads_(leads) {
+            const monthFilter = document.getElementById('leadMonthFilter')?.value || '';
+            const statusFilter = document.getElementById('leadStatusFilter')?.value || 'all';
+            return leads.filter((l) => {
+                if (monthFilter) {
+                    if (!l.date || !String(l.date).startsWith(monthFilter)) return false;
+                }
+                if (statusFilter !== 'all' && l.status !== statusFilter) return false;
+                return true;
+            });
+        }
+
+        // Render leads table and stats
+        async function renderLeads() {
+            const leads = await loadLeadsData();
+            const filteredLeads = getFilteredLeads_(leads);
+            
+            // Update stats
+            const totalCount = filteredLeads.length;
+            const targetCount = filteredLeads.filter(l => l.status === 'target').length;
+            const nonTargetCount = filteredLeads.filter(l => l.status === 'non-target').length;
+            const salesCount = filteredLeads.filter(l => l.sale).length;
+            const conversion = totalCount > 0 ? Math.round((salesCount / totalCount) * 100) : 0;
+            
+            const totalEl = document.getElementById('totalLeadsCount');
+            const targetEl = document.getElementById('targetLeadsCount');
+            const nonTargetEl = document.getElementById('nonTargetLeadsCount');
+            const conversionEl = document.getElementById('conversionRate');
+            
+            if (totalEl) totalEl.textContent = totalCount;
+            if (targetEl) targetEl.textContent = targetCount;
+            if (nonTargetEl) nonTargetEl.textContent = nonTargetCount;
+            if (conversionEl) conversionEl.textContent = `${conversion}%`;
+            
+            // Render table
+            const tbody = document.getElementById('leadsTableBody');
+            if (!tbody) return;
+            
+            if (filteredLeads.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-slate-400 text-sm">
+                            <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
+                            Немає записів. Додайте перший вхідний дзвінок
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredLeads.map(lead => {
+                const date = lead.date ? new Date(lead.date).toLocaleDateString('uk-UA') : '—';
+                const phone = lead.phone || '—';
+                const crmLink = lead.crmLink ? `<a href="${lead.crmLink}" target="_blank" class="text-blue-600 hover:underline"><i class="fa-solid fa-link"></i></a>` : '—';
+                const comment = lead.comment || '—';
+                const statusBadge = lead.status === 'target' 
+                    ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold"><i class="fa-solid fa-check-circle"></i> Цільовий</span>'
+                    : '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold"><i class="fa-solid fa-times-circle"></i> Нецільовий</span>';
+                
+                const saleChecked = lead.sale ? 'checked' : '';
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 text-sm font-medium text-slate-800">${date}</td>
+                        <td class="px-4 py-3 text-sm text-slate-600">${phone}</td>
+                        <td class="px-4 py-3 text-sm text-center">${crmLink}</td>
+                        <td class="px-4 py-3 text-sm text-slate-600">${comment}</td>
+                        <td class="px-4 py-3 text-center">${statusBadge}</td>
+                        <td class="px-4 py-3 text-center">
+                            <input type="checkbox" class="h-4 w-4 rounded border-slate-300" ${saleChecked} onchange="toggleLeadSale('${lead.id}', this.checked)">
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openLeadModal('${lead.id}')" class="text-blue-600 hover:text-blue-700 p-2" title="Редагувати">
+                                <i class="fa-solid fa-edit"></i>
+                            </button>
+                            <button onclick="deleteLead('${lead.id}')" class="text-red-600 hover:text-red-700 p-2" title="Видалити">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Export leads to Excel
+        async function exportLeadsToExcel() {
+            try {
+                const leads = await loadLeadsData();
+                const filteredLeads = getFilteredLeads_(leads);
+                const XLSX = await loadXlsx_();
+
+                const rows = filteredLeads.map((lead) => ({
+                    'Дата': lead.date ? new Date(lead.date).toLocaleDateString('uk-UA') : '',
+                    'Телефон': lead.phone || '',
+                    'CRM': lead.crmLink || '',
+                    'Коментар': lead.comment || '',
+                    'Статус': lead.status === 'target' ? 'Цільовий' : 'Нецільовий',
+                    'Продаж': lead.sale ? 'Так' : 'Ні'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false });
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+
+                const monthFilter = document.getElementById('leadMonthFilter')?.value || 'all';
+                const statusFilter = document.getElementById('leadStatusFilter')?.value || 'all';
+                const statusLabel = statusFilter === 'all' ? 'all' : statusFilter;
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                const filename = `GM-leads-${loggedInManagerId}-${monthFilter}-${statusLabel}-${yyyy}${mm}${dd}.xlsx`;
+
+                const arr = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                showToast('Експорт завершено');
+            } catch (error) {
+                console.error('Error exporting leads:', error);
+                showToast('Помилка експорту');
+            }
+        }
+
+        // Toggle sale checkbox for lead
+        async function toggleLeadSale(leadId, checked) {
+            try {
+                const api = await initFirebaseForManager_(loggedInManagerId);
+                if (!api) throw new Error('Firebase not configured');
+                await api.setDoc(
+                    api.doc(api.db, 'managers', loggedInManagerId, 'leads', leadId),
+                    { sale: !!checked, updatedAt: api.serverTimestamp() },
+                    { merge: true }
+                );
+                if (Array.isArray(window.__leadsData)) {
+                    const lead = window.__leadsData.find(l => l.id === leadId);
+                    if (lead) lead.sale = !!checked;
+                }
+                await renderLeads();
+            } catch (error) {
+                console.error('Error updating sale status:', error);
+                showToast('Помилка оновлення');
+            }
+        }
+
+        // Handle lead form submission
+        if (typeof document !== 'undefined') {
+            document.addEventListener('submit', async (e) => {
+                if (e.target.id === 'leadForm') {
+                    e.preventDefault();
+                    
+                    const submitBtn = document.getElementById('submitLeadBtn');
+                    if (!submitBtn) return;
+                    
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Збереження...';
+                    
+                    try {
+                        const editingId = document.getElementById('editingLeadId').value;
+                        const status = document.querySelector('input[name="leadStatus"]:checked')?.value || 'target';
+                        
+                        const leadData = {
+                            date: document.getElementById('leadDate').value,
+                            phone: document.getElementById('leadPhone').value.trim(),
+                            crmLink: document.getElementById('leadCrmLink').value.trim(),
+                            comment: document.getElementById('leadComment').value.trim(),
+                            status: status,
+                            sale: document.getElementById('leadSale').checked
+                        };
+                        
+                        if (editingId) {
+                            leadData.id = editingId;
+                        }
+                        
+                        await saveLead(leadData);
+                        await renderLeads();
+                        closeLeadModal();
+                        showToast(editingId ? 'Запис оновлено' : 'Запис додано');
+                    } catch (error) {
+                        console.error('Error saving lead:', error);
+                        showToast('Помилка збереження');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Зберегти';
+                    }
+                }
+            });
+        }
+
+        // Close modal on backdrop click
+        if (typeof document !== 'undefined') {
+            document.addEventListener('click', (e) => {
+                if (e.target.id === 'leadModalBackdrop') {
+                    closeLeadModal();
+                }
+            });
+        }
         const hamburger = document.getElementById('hamburger');
         const nav = document.querySelector('.nav');
         hamburger.addEventListener('click', () => {

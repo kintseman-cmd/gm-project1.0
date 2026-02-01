@@ -316,6 +316,7 @@
 	<label for="product-select" style="font-weight:600; margin-right:12px;">Виберіть агрегат:</label>
 	<select id="product-select" style="font-size:15px; padding:7px 18px; border-radius:8px; margin-bottom:18px;">
 		<option value="kprs6">КПРС 6.0</option>
+		<option value="kns35dv">КНС 3.5 DV</option>
 		<option value="test">Тестовий агрегат</option>
 	</select>
 	<br>
@@ -491,6 +492,73 @@ const products = {
 			</ul>
 		</div>`
 	},
+	kns35dv: {
+		title: 'Комерційна пропозиція: Культиватор КНС 3.5 DV',
+		greeting: 'Шановний <b contenteditable="true">Клієнт</b>!',
+		intro: 'Пропонуємо вам культиватор КНС 3.5 DV з робочим захватом 3,5 метра — надійне та ефективне рішення для передпосівної підготовки ґрунту.',
+		cards: [
+			`<div class="floating-card">
+				<h2>Конструкція стійок</h2>
+				<ul>
+					<li><b>16 двовиткових стійок 30×30 мм (Bianchi).</b> Висота 560 мм.</li>
+					<li>Розташовані у 3 ряди в шахматному порядку, що дозволяє ідеально вирізати підошву під посів і забезпечує точне копіювання рельєфу ґрунту.</li>
+					<li>Лапа 280 мм — оптимальний розмір для вирізання підошви, забезпечує хороше перекриття та гарантує високу якість обробки ґрунту до 12 см.</li>
+				</ul>
+			</div>`,
+			`<div class="floating-card">
+				<h2>Котки та рама</h2>
+				<ul>
+					<li>Рама виготовлена з профільної труби <b>80×80 мм, товщина металу 5 мм</b> — забезпечує високу міцність і довговічність конструкції. Вага ~870 кг.</li>
+					<li>Котки діаметром 320 мм доступні у двох варіантах: зі спіральною полосою або з трубою.</li>
+					<li><b>Безосьова система</b> — конструктивна перевага, яка відрізняє наш агрегат від конкурентів. Запобігає забиванню котків, підвищує продуктивність і дозволяє працювати без зупинок на очищення.</li>
+				</ul>
+			</div>`,
+			`<div class="floating-card">
+				<h2>Виготовлення та якість</h2>
+				<ul>
+					<li>Повний цикл виробництва на нашому заводі: ґрунтування, фарбування, зварювання напівавтоматами, різка на плазморізах, лазерах, ЧПУ.</li>
+					<li>Гарантована якість та надійність на багато років роботи.</li>
+				</ul>
+			</div>`
+		],
+		gallery: `<div class="product-image-container break-before">
+			<div class="gallery-row">
+				<img src="../../images/KNS-3.5-DV/KNS35-1.jpg" alt="Фото 1" style="width: 32%; max-width: 200px; border-radius: 6px; box-shadow: 0 2px 8px #0002;">
+				<img src="../../images/KNS-3.5-DV/KNS35-2.jpg" alt="Фото 2" style="width: 32%; max-width: 200px; border-radius: 6px; box-shadow: 0 2px 8px #0002;">
+				<img src="../../images/KNS-3.5-DV/KNS35-3.jpg" alt="Фото 3" style="width: 32%; max-width: 200px; border-radius: 6px; box-shadow: 0 2px 8px #0002;">
+			</div>
+		</div>`,
+		priceBlock: `<div class="floating-card" style="border-left-color: var(--gm-dark);"> <h2 style="border-bottom-color: var(--gm-dark);">Вартість та умови придбання</h2>
+			<table style="font-size:14px; margin-bottom:8px;">
+				<thead>
+					<tr>
+						<th style="font-size:15px; padding:10px 8px;">Найменування агрегату</th>
+						<th style="font-size:15px; padding:10px 8px;">Ціна з ПДВ</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td style="padding:10px 8px;">Культиватор КНС 3.5 DV</td>
+						<td style="padding:10px 8px;">
+							<div class="price-highlight" contenteditable="true" style="font-size:17px; padding:6px 14px;">
+								210 000 грн
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<ul class="terms-list" style="font-size:13px; margin-top:6px;">
+				<li style="margin-bottom:6px;">Термін виготовлення та відвантаження: до 14 робочих днів.</li>
+				<li style="margin-bottom:6px;">Оплата: безготівковий розрахунок з ПДВ.</li>
+				<li style="margin-bottom:6px;">Доставка: <b>ВКЛЮЧЕНА У ВАРТІСТЬ</b>.</li>
+				<li style="margin-bottom:6px;">Гарантія: 12 місяців.</li>
+				<li class="highlight-yellow-block" style="font-size:14px; padding:10px 10px; margin-left:-10px; margin-right:-10px;">
+					Підпадає під державну компенсацію 25% вартості!
+				</li>
+				<li style="margin-bottom:6px;">2% від суми покупки зможете використати на наступне замовлення.</li>
+			</ul>
+		</div>`
+	},
 	test: {
 		title: 'Комерційна пропозиція: Тестовий агрегат',
 		greeting: 'Шановний <b contenteditable="true">Тестовий Клієнт</b>!',
@@ -574,7 +642,15 @@ document.getElementById('product-select').addEventListener('change', function(e)
 function downloadPDF() {
 	const element = document.getElementById('offer');
 	const selected = document.getElementById('product-select').value;
-	let filename = 'КП_General_Machines_' + (selected === 'kprs6' ? 'КПРС_6.0' : 'Тестовий_агрегат') + '.pdf';
+	let filename = 'КП_General_Machines_';
+	if (selected === 'kprs6') {
+		filename += 'КПРС_6.0';
+	} else if (selected === 'kns35dv') {
+		filename += 'КНС_3.5_DV';
+	} else {
+		filename += 'Тестовий_агрегат';
+	}
+	filename += '.pdf';
 	const opt = {
 		margin: [0, 0, 0, 0],
 		filename,

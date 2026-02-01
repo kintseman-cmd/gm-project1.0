@@ -1,0 +1,163 @@
+<div class="space-y-6">
+    <!-- Header Section -->
+    <div class="glass p-6 rounded-3xl shadow-sm border border-slate-200">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                    <i class="fa-solid fa-phone-volume text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Вхідні дзвінки</h2>
+                    <p class="text-sm text-slate-500">Класифікація та аналіз вхідних лідів</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+                    <i class="fa-solid fa-calendar text-slate-400"></i>
+                    <input type="month" id="leadMonthFilter" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none">
+                </div>
+                <div class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+                    <i class="fa-solid fa-filter text-slate-400"></i>
+                    <select id="leadStatusFilter" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none">
+                        <option value="all">Всі статуси</option>
+                        <option value="target">Цільові</option>
+                        <option value="non-target">Нецільові</option>
+                    </select>
+                </div>
+                <button type="button" onclick="exportLeadsToExcel()" class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold px-5 py-3 shadow-lg transition-all">
+                    <i class="fa-solid fa-file-excel"></i>
+                    Експорт в Excel
+                </button>
+                <button type="button" id="addLeadBtn" onclick="openLeadModal()" class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 shadow-lg transition-all">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    Додати вхідний
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="glass p-5 rounded-2xl border border-slate-200">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-1">Всього дзвінків</div>
+            <div id="totalLeadsCount" class="text-3xl font-black text-slate-800">0</div>
+        </div>
+        <div class="glass p-5 rounded-2xl border border-green-200 bg-green-50/30">
+            <div class="text-xs font-bold text-green-600 uppercase mb-1">Цільові</div>
+            <div id="targetLeadsCount" class="text-3xl font-black text-green-600">0</div>
+        </div>
+        <div class="glass p-5 rounded-2xl border border-red-200 bg-red-50/30">
+            <div class="text-xs font-bold text-red-600 uppercase mb-1">Нецільові</div>
+            <div id="nonTargetLeadsCount" class="text-3xl font-black text-red-600">0</div>
+        </div>
+        <div class="glass p-5 rounded-2xl border border-blue-200 bg-blue-50/30">
+            <div class="text-xs font-bold text-blue-600 uppercase mb-1">Конверсія</div>
+            <div id="conversionRate" class="text-3xl font-black text-blue-600">0%</div>
+        </div>
+    </div>
+
+    <!-- Leads List -->
+    <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-5 bg-slate-50/50 border-b border-slate-100">
+            <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Історія вхідних</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-bold">Дата</th>
+                        <th class="px-4 py-3 text-left font-bold">Телефон</th>
+                        <th class="px-4 py-3 text-left font-bold">CRM</th>
+                        <th class="px-4 py-3 text-left font-bold">Коментар</th>
+                        <th class="px-4 py-3 text-center font-bold">Статус</th>
+                        <th class="px-4 py-3 text-center font-bold">Продаж</th>
+                        <th class="px-4 py-3 text-center font-bold w-20">Дії</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTableBody" class="divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-slate-400 text-sm">
+                            <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
+                            Немає записів. Додайте перший вхідний дзвінок
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Lead -->
+<div id="leadModal" class="hidden fixed inset-0 z-50">
+    <div id="leadModalBackdrop" class="absolute inset-0 bg-slate-900/50"></div>
+    <div class="relative w-full h-full flex items-end sm:items-center justify-center p-3 sm:p-6">
+        <div class="w-full max-w-xl glass rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="p-4 sm:p-6 bg-slate-50/60 flex items-center justify-between gap-3 border-b border-slate-100">
+                <div class="flex items-center gap-2 font-bold text-slate-800">
+                    <i class="fa-solid fa-phone-volume text-blue-600"></i>
+                    <span id="leadModalTitle">Новий вхідний дзвінок</span>
+                </div>
+                <button type="button" onclick="closeLeadModal()" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-200 transition-colors">
+                    <i class="fa-solid fa-times text-slate-600"></i>
+                </button>
+            </div>
+            <form id="leadForm" class="p-4 sm:p-6 space-y-4">
+                <input type="hidden" id="editingLeadId" value="">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Дата дзвінка</label>
+                    <input type="date" id="leadDate" required class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Номер телефону</label>
+                    <input type="tel" id="leadPhone" placeholder="+380..." class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Посилання в СРМ</label>
+                    <input type="url" id="leadCrmLink" placeholder="https://..." class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Коментар</label>
+                    <textarea id="leadComment" rows="3" placeholder="Деталі дзвінка..." class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Статус ліда</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="leadStatus" value="target" checked class="peer sr-only">
+                            <div class="p-4 rounded-2xl border-2 border-slate-200 peer-checked:border-green-500 peer-checked:bg-green-50 transition-all text-center">
+                                <i class="fa-solid fa-check-circle text-2xl text-green-500 mb-1"></i>
+                                <div class="font-bold text-sm text-slate-800">Цільовий</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="leadStatus" value="non-target" class="peer sr-only">
+                            <div class="p-4 rounded-2xl border-2 border-slate-200 peer-checked:border-red-500 peer-checked:bg-red-50 transition-all text-center">
+                                <i class="fa-solid fa-times-circle text-2xl text-red-500 mb-1"></i>
+                                <div class="font-bold text-sm text-slate-800">Нецільовий</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="leadSale" class="h-5 w-5 rounded border-slate-300">
+                    <label for="leadSale" class="text-sm font-semibold text-slate-700">Продаж</label>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeLeadModal()" class="flex-1 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold transition-colors">
+                        Скасувати
+                    </button>
+                    <button type="submit" id="submitLeadBtn" class="flex-1 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Зберегти
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
