@@ -3832,6 +3832,7 @@
                                 <label class="block text-xs font-semibold text-slate-500 mb-2">Виберіть агрегат для КП</label>
                                 <select id="kpProductSelector" class="w-full px-4 py-2 rounded-xl border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" onchange="handleProductChange(this.value)">
                                     <option value="kns35dv">Культиватор КНС 3.5 DV</option>
+                                    <option value="generalx">General X, ківш 2м, 2Р80</option>
                                     <option value="kprs60">Тест</option>
                                 </select>
                                 <p class="text-xs text-slate-500 mt-2">Поточний агрегат: <strong id="currentProductDisplay">Культиватор КНС 3.5 DV</strong></p>
@@ -3915,7 +3916,8 @@
         }
 
         const KP_CATALOG = [
-            { name: 'Культиватор КНС 3.5 DV', price: 0, firestoreName: 'Культиватор навісний КНС 3.5 DV' }
+            { name: 'Культиватор КНС 3.5 DV', price: 0, firestoreName: 'Культиватор навісний КНС 3.5 DV', productId: 'kns35dv' },
+            { name: 'Фронтальний навантажувач General X (ківш 2м, 2Р80)', price: 0, firestoreName: 'general_x', productId: 'generalx' }
         ];
 
         async function loadKPCatalogFromFirestore_() {
@@ -3923,39 +3925,43 @@
                 const api = await initFirebaseForManager_(loggedInManagerId || '');
                 if (!api) return;
 
-                const targetName = KP_CATALOG[0]?.firestoreName;
-                if (!targetName) return;
+                // Завантажуємо ціни для всіх продуктів у каталозі
+                for (let i = 0; i < KP_CATALOG.length; i++) {
+                    const targetName = KP_CATALOG[i]?.firestoreName;
+                    if (!targetName) continue;
 
-                let snap = null;
-                try {
-                    const q = api.query(
-                        api.collection(api.db, 'priceItems'),
-                        api.where('name', '==', targetName),
-                        api.limit(1)
-                    );
-                    snap = await api.getDocs(q);
-                } catch (e) {
-                    snap = null;
-                }
+                    let snap = null;
+                    try {
+                        const q = api.query(
+                            api.collection(api.db, 'priceItems'),
+                            api.where('name', '==', targetName),
+                            api.limit(1)
+                        );
+                        snap = await api.getDocs(q);
+                    } catch (e) {
+                        snap = null;
+                    }
 
-                let docData = null;
-                if (snap && !snap.empty) {
-                    docData = snap.docs[0]?.data() || null;
-                } else {
-                    const fallbackSnap = await api.getDocs(api.collection(api.db, 'priceItems'));
-                    fallbackSnap.forEach((d) => {
-                        if (docData) return;
-                        const data = d.data() || {};
-                        const name = String(data.name || '').trim();
-                        if (name === targetName) docData = data;
-                    });
-                }
+                    let docData = null;
+                    if (snap && !snap.empty) {
+                        docData = snap.docs[0]?.data() || null;
+                    } else {
+                        const fallbackSnap = await api.getDocs(api.collection(api.db, 'priceItems'));
+                        fallbackSnap.forEach((d) => {
+                            if (docData) return;
+                            const data = d.data() || {};
+                            const name = String(data.name || '').trim();
+                            if (name === targetName) docData = data;
+                        });
+                    }
 
-                if (docData) {
-                    const price = normalizeAmount_(docData.price2 || docData.price1 || 0);
-                    KP_CATALOG[0].price = price;
-                    refreshKPCatalogOptions_();
+                    if (docData) {
+                        const price = normalizeAmount_(docData.price2 || docData.price1 || 0);
+                        KP_CATALOG[i].price = price;
+                    }
                 }
+                
+                refreshKPCatalogOptions_();
             } catch (e) {
                 console.warn('[KP] price load failed', e);
             }
@@ -4212,6 +4218,12 @@
                         text-align: center;
                         margin: 28px 0 24px 0;
                     }
+                    .pdf-product-subtitle {
+                        font-size: 12px;
+                        color: #4a5568;
+                        margin-top: 4px;
+                        font-weight: 600;
+                    }
                     .pdf-title-badge {
                         display: inline-block;
                         background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
@@ -4295,6 +4307,17 @@
                         padding: 10px 20px;
                         border-radius: 10px;
                         box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+                        display: inline-flex;
+                        flex-direction: column;
+                        align-items: center;
+                        line-height: 1.2;
+                        text-align: center;
+                    }
+                    .pdf-price-badge small {
+                        font-size: 11px;
+                        font-weight: 700;
+                        margin-top: 2px;
+                        opacity: 0.9;
                     }
                     .pdf-check-item {
                         display: flex;
@@ -4317,9 +4340,11 @@
                         padding: 18px 16px;
                         margin-bottom: 20px;
                         display: flex;
-                        align-items: flex-start;
+                        align-items: center;
+                        justify-content: center;
                         gap: 14px;
                         box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25);
+                        text-align: center;
                     }
                     .pdf-bonus > div:first-child {
                         font-size: 28px;
@@ -4415,7 +4440,7 @@
                     </div>
 
                     <div class="pdf-title">
-                        <span class="pdf-title-badge">Проблеми, які вирішить наш агрегат</span>
+                        <span class="pdf-title-badge">${window.currentKPProduct?.benefits_title || 'Проблеми, які вирішить наш агрегат'}</span>
                     </div>
 
                     ${window.currentKPProduct?.benefits?.map(benefit => `
@@ -4460,14 +4485,20 @@
                     </div>
 
                     <div class="pdf-price-row">
-                        <div>Культиватор КНС 3.5 DV</div>
-                        <div class="pdf-price-badge">${data.total.toLocaleString('uk-UA')} грн${data.includeVAT ? ' з ПДВ' : ''}</div>
+                        <div>
+                            ${window.currentKPProduct?.name || 'Агрегат'}
+                            ${window.currentKPProduct?.product_subtitle ? `<div class="pdf-product-subtitle">${window.currentKPProduct.product_subtitle}</div>` : ''}
+                        </div>
+                        <div class="pdf-price-badge">
+                            <span>${data.total.toLocaleString('uk-UA')} грн</span>
+                            ${data.includeVAT ? '<small>З ПДВ</small>' : ''}
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 16px;">
                         <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct?.manufacturing_time || 'Термін виготовлення та відвантаження: до 14 робочих днів.'}</span></div>
                         <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Оплата: безготівковий розрахунок з ПДВ.</span></div>
-                        <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Доставка: <strong>ВКЛЮЧЕНА У ВАРТІСТЬ</strong>.</span></div>
+                        <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct?.delivery_info || 'Доставка: <strong>ВКЛЮЧЕНА У ВАРТІСТЬ</strong>'}.</span></div>
                         <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Гарантія: 12 місяців.</span></div>
                     </div>
 
@@ -4661,6 +4692,12 @@
                             text-align: center;
                             margin: 28px 0 24px 0;
                         }
+                        .pdf-product-subtitle {
+                            font-size: 12px;
+                            color: #4a5568;
+                            margin-top: 4px;
+                            font-weight: 600;
+                        }
                         .pdf-title-badge {
                             display: inline-block;
                             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
@@ -4749,6 +4786,17 @@
                             padding: 10px 20px;
                             border-radius: 10px;
                             box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+                            display: inline-flex;
+                            flex-direction: column;
+                            align-items: center;
+                            line-height: 1.2;
+                            text-align: center;
+                        }
+                        .pdf-price-badge small {
+                            font-size: 11px;
+                            font-weight: 700;
+                            margin-top: 2px;
+                            opacity: 0.9;
                         }
                         .pdf-check-item {
                             display: flex;
@@ -4771,10 +4819,12 @@
                             padding: 18px 16px;
                             margin-bottom: 20px;
                             display: flex;
-                            align-items: flex-start;
+                            align-items: center;
+                            justify-content: center;
                             gap: 14px;
                             page-break-inside: avoid;
                             box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25);
+                            text-align: center;
                         }
                         .pdf-bonus > div:first-child {
                             font-size: 28px;
@@ -4880,7 +4930,7 @@
                             </div>
 
                             <div class="pdf-title">
-                                <span class="pdf-title-badge">Проблеми, які вирішить наш агрегат</span>
+                                <span class="pdf-title-badge">${window.currentKPProduct?.benefits_title || 'Проблеми, які вирішить наш агрегат'}</span>
                             </div>
 
                             ${window.currentKPProduct?.benefits?.map(benefit => `
@@ -4931,14 +4981,20 @@
                             </div>
 
                             <div class="pdf-price-row">
-                                <div style="font-weight: 600;">${window.currentKPProduct?.name || 'Агрегат'}</div>
-                                <div class="pdf-price-badge">${data.total.toLocaleString('uk-UA')} грн${data.includeVAT ? ' з ПДВ' : ''}</div>
+                                <div style="font-weight: 600;">
+                                    ${window.currentKPProduct?.name || 'Агрегат'}
+                                    ${window.currentKPProduct?.product_subtitle ? `<div class="pdf-product-subtitle">${window.currentKPProduct.product_subtitle}</div>` : ''}
+                                </div>
+                                <div class="pdf-price-badge">
+                                    <span>${data.total.toLocaleString('uk-UA')} грн</span>
+                                    ${data.includeVAT ? '<small>З ПДВ</small>' : ''}
+                                </div>
                             </div>
 
                             <div style="margin-bottom: 16px;">
                                 <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct?.manufacturing_time || 'Термін виготовлення та відвантаження: до 14 робочих днів.'}</span></div>
                                 <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Оплата: безготівковий розрахунок з ПДВ.</span></div>
-                                <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Доставка: <strong>ВКЛЮЧЕНА У ВАРТІСТЬ</strong>.</span></div>
+                                <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>${window.currentKPProduct?.delivery_info || 'Доставка: <strong>ВКЛЮЧЕНА У ВАРТІСТЬ</strong>'}.</span></div>
                                 <div class="pdf-check-item"><span class="pdf-check">✓</span> <span>Гарантія: 12 місяців.</span></div>
                             </div>
 
@@ -5076,6 +5132,24 @@
                 const statusFilter = document.getElementById('leadStatusFilter');
                 if (statusFilter) {
                     statusFilter.addEventListener('change', () => {
+                        renderLeads();
+                    });
+                }
+
+                const dateSortBtn = document.getElementById('leadDateSortBtn');
+                if (dateSortBtn) {
+                    if (!window.__leadsSortDir) window.__leadsSortDir = 'desc';
+                    const updateSortIcon_ = () => {
+                        const icon = dateSortBtn.querySelector('i');
+                        if (!icon) return;
+                        icon.className = window.__leadsSortDir === 'asc'
+                            ? 'fa-solid fa-arrow-up text-xs'
+                            : 'fa-solid fa-arrow-down text-xs';
+                    };
+                    updateSortIcon_();
+                    dateSortBtn.addEventListener('click', () => {
+                        window.__leadsSortDir = window.__leadsSortDir === 'asc' ? 'desc' : 'asc';
+                        updateSortIcon_();
                         renderLeads();
                     });
                 }
@@ -5225,7 +5299,12 @@
             
             // Set default date to today
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('leadDate').value = today;
+            const dateInput = document.getElementById('leadDate');
+            if (dateInput) {
+                dateInput.value = today;
+                dateInput.readOnly = false;
+                dateInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+            }
             
             if (leadId && window.__leadsData) {
                 const lead = window.__leadsData.find(l => l.id === leadId);
@@ -5233,7 +5312,11 @@
                     title.textContent = 'Редагувати вхідний';
                     submitBtn.textContent = 'Оновити';
                     document.getElementById('editingLeadId').value = leadId;
-                    document.getElementById('leadDate').value = lead.date || today;
+                    if (dateInput) {
+                        dateInput.value = lead.date || today;
+                        dateInput.readOnly = true;
+                        dateInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+                    }
                     document.getElementById('leadPhone').value = lead.phone || '';
                     document.getElementById('leadCrmLink').value = lead.crmLink || '';
                     document.getElementById('leadComment').value = lead.comment || '';
@@ -5279,6 +5362,24 @@
             return leadId;
         }
 
+        function leadSortTs_(lead) {
+            const pickTs_ = (v) => {
+                if (!v) return null;
+                if (typeof v?.toDate === 'function') return v.toDate().getTime();
+                if (typeof v?.seconds === 'number') return v.seconds * 1000;
+                if (typeof v === 'number') return v;
+                if (typeof v === 'string') {
+                    const parsed = Date.parse(v);
+                    return Number.isNaN(parsed) ? null : parsed;
+                }
+                return null;
+            };
+            const created = pickTs_(lead?.createdAt);
+            if (created !== null) return created;
+            const dateOnly = pickTs_(lead?.date);
+            return dateOnly !== null ? dateOnly : 0;
+        }
+
         // Load leads from Firebase
         async function loadLeadsData() {
             if (!loggedInManagerId) return [];
@@ -5295,12 +5396,8 @@
                     leads.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Sort by date descending
-                leads.sort((a, b) => {
-                    const dateA = new Date(a.date || 0);
-                    const dateB = new Date(b.date || 0);
-                    return dateB - dateA;
-                });
+                // Sort by date/time descending (newest first)
+                leads.sort((a, b) => leadSortTs_(b) - leadSortTs_(a));
                 
                 window.__leadsData = leads;
                 return leads;
@@ -5343,6 +5440,12 @@
         async function renderLeads() {
             const leads = await loadLeadsData();
             const filteredLeads = getFilteredLeads_(leads);
+            const sortDir = window.__leadsSortDir || 'desc';
+            filteredLeads.sort((a, b) => {
+                const tsA = leadSortTs_(a);
+                const tsB = leadSortTs_(b);
+                return sortDir === 'asc' ? tsA - tsB : tsB - tsA;
+            });
             
             // Update stats
             const totalCount = filteredLeads.length;
@@ -5504,6 +5607,10 @@
                         
                         if (editingId) {
                             leadData.id = editingId;
+                            const existingLead = Array.isArray(window.__leadsData)
+                                ? window.__leadsData.find(l => l.id === editingId)
+                                : null;
+                            if (existingLead?.date) leadData.date = existingLead.date;
                         }
                         
                         await saveLead(leadData);
