@@ -323,6 +323,48 @@
             #authOverlay {
                 padding-bottom: 0 !important;
             }
+
+            /* Lead modal scroll on small screens */
+            #leadModal {
+                display: none;
+                position: fixed;
+                z-index: 99999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0, 0, 0, 0.6);
+            }
+
+            #leadModal.hidden {
+                display: none;
+            }
+
+            #leadModal:not(.hidden) {
+                display: flex !important;
+            }
+
+            /* Ensure modal content wrapper scrolls on small screens */
+            #leadModal > div.relative {
+                max-height: 100vh;
+                max-height: 100dvh;
+                overflow-y: auto;
+            }
+
+            /* Ensure form inside modal scrolls */
+            #leadForm.modal-scroll {
+                max-height: calc(100dvh - 200px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+            }
+
+            @media (max-width: 768px) {
+                #leadForm.modal-scroll {
+                    max-height: calc(100dvh - 200px - var(--gm-bottom-nav-height, 64px)) !important;
+                }
+            }
         }
     </style>
 </head>
