@@ -324,47 +324,8 @@
                 padding-bottom: 0 !important;
             }
 
-            /* Lead modal scroll on small screens */
-            #leadModal {
-                display: none;
-                position: fixed;
-                z-index: 99999;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: auto;
-                background-color: rgba(0, 0, 0, 0.6);
-            }
-
-            #leadModal.hidden {
-                display: none;
-            }
-
-            #leadModal:not(.hidden) {
-                display: flex !important;
-            }
-
-            /* Ensure modal content wrapper scrolls on small screens */
-            #leadModal > div.relative {
-                max-height: 100vh;
-                max-height: 100dvh;
-                overflow-y: auto;
-            }
-
-            /* Ensure form inside modal scrolls */
-            #leadForm.modal-scroll {
-                max-height: calc(100dvh - 200px);
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-                overscroll-behavior: contain;
-            }
-
-            @media (max-width: 768px) {
-                #leadForm.modal-scroll {
-                    max-height: calc(100dvh - 200px - var(--gm-bottom-nav-height, 64px)) !important;
-                }
-            }
+            /* Leads modals are styled via utility classes in leads.html.
+               Avoid overriding #leadModal here (it caused mobile width issues). */
         }
     </style>
 </head>
@@ -5309,7 +5270,7 @@
             if (leadId && window.__leadsData) {
                 const lead = window.__leadsData.find(l => l.id === leadId);
                 if (lead) {
-                    title.textContent = 'Редагувати вхідний';
+                    title.textContent = lead.type === 'fb' ? 'Редагувати ФБ лід' : 'Редагувати вхідний';
                     submitBtn.textContent = 'Оновити';
                     document.getElementById('editingLeadId').value = leadId;
                     if (dateInput) {
@@ -5338,6 +5299,23 @@
             if (modal) modal.classList.add('hidden');
         }
 
+        // --- FB Leads Functions ---
+        function openFbLeadModal() {
+            const modal = document.getElementById('fbLeadModal');
+            const form = document.getElementById('fbLeadForm');
+            if (modal && form) {
+                form.reset();
+                const today = new Date().toISOString().split('T')[0];
+                const dateInput = document.getElementById('fbLeadDate');
+                if (dateInput) dateInput.value = today;
+                modal.classList.remove('hidden');
+            }
+        }
+        function closeFbLeadModal() {
+            const modal = document.getElementById('fbLeadModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         // Save lead to Firebase
         async function saveLead(leadData) {
             if (!loggedInManagerId) throw new Error('Not logged in');
@@ -5349,6 +5327,7 @@
             const docRef = api.doc(api.db, 'managers', loggedInManagerId, 'leads', leadId);
             
             await api.setDoc(docRef, {
+                type: leadData.type || 'phone',
                 date: leadData.date,
                 phone: leadData.phone || '',
                 crmLink: leadData.crmLink || '',
@@ -5357,7 +5336,7 @@
                 sale: !!leadData.sale,
                 createdAt: leadData.createdAt || api.serverTimestamp(),
                 updatedAt: api.serverTimestamp()
-            });
+            }, { merge: true });
             
             return leadId;
         }
@@ -5374,10 +5353,43 @@
                 }
                 return null;
             };
-            const created = pickTs_(lead?.createdAt);
-            if (created !== null) return created;
-            const dateOnly = pickTs_(lead?.date);
-            return dateOnly !== null ? dateOnly : 0;
+
+            const dateStr = lead?.date;
+            if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                const [yyyy, mm, dd] = dateStr.split('-').map(Number);
+                return Date.UTC(yyyy, mm - 1, dd);
+            }
+            const dateTs = pickTs_(dateStr);
+            if (dateTs !== null) return dateTs;
+
+            const created = pickTs_(lead?.createdAt) ?? pickTs_(lead?.updatedAt);
+            return created !== null ? created : 0;
+        }
+
+        function leadCreatedTs_(lead) {
+            const pickTs_ = (v) => {
+                if (!v) return null;
+                if (typeof v?.toDate === 'function') return v.toDate().getTime();
+                if (typeof v?.seconds === 'number') return v.seconds * 1000;
+                if (typeof v === 'number') return v;
+                if (typeof v === 'string') {
+                    const parsed = Date.parse(v);
+                    return Number.isNaN(parsed) ? null : parsed;
+                }
+                return null;
+            };
+            return pickTs_(lead?.createdAt) ?? pickTs_(lead?.updatedAt) ?? 0;
+        }
+
+        function formatLeadDateUk_(dateStr) {
+            if (!dateStr) return '—';
+            if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                const [yyyy, mm, dd] = dateStr.split('-');
+                return `${dd}.${mm}.${yyyy}`;
+            }
+            const parsed = Date.parse(String(dateStr));
+            if (!Number.isNaN(parsed)) return new Date(parsed).toLocaleDateString('uk-UA');
+            return '—';
         }
 
         // Load leads from Firebase
@@ -5396,8 +5408,12 @@
                     leads.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Sort by date/time descending (newest first)
-                leads.sort((a, b) => leadSortTs_(b) - leadSortTs_(a));
+                // Sort by lead date descending (newest date first); tie-break by creation time
+                leads.sort((a, b) => {
+                    const primary = leadSortTs_(b) - leadSortTs_(a);
+                    if (primary !== 0) return primary;
+                    return leadCreatedTs_(b) - leadCreatedTs_(a);
+                });
                 
                 window.__leadsData = leads;
                 return leads;
@@ -5427,12 +5443,20 @@
         function getFilteredLeads_(leads) {
             const monthFilter = document.getElementById('leadMonthFilter')?.value || '';
             const statusFilter = document.getElementById('leadStatusFilter')?.value || 'all';
+            const phoneChecked = document.getElementById('leadTypePhone')?.checked ?? true;
+            const fbChecked = document.getElementById('leadTypeFb')?.checked ?? true;
+
             return leads.filter((l) => {
                 if (monthFilter) {
                     if (!l.date || !String(l.date).startsWith(monthFilter)) return false;
                 }
                 if (statusFilter !== 'all' && l.status !== statusFilter) return false;
-                return true;
+
+                const leadType = l.type || 'phone';
+                if (!phoneChecked && !fbChecked) return false;
+                if (phoneChecked && leadType === 'phone') return true;
+                if (fbChecked && leadType === 'fb') return true;
+                return false;
             });
         }
 
@@ -5444,7 +5468,11 @@
             filteredLeads.sort((a, b) => {
                 const tsA = leadSortTs_(a);
                 const tsB = leadSortTs_(b);
-                return sortDir === 'asc' ? tsA - tsB : tsB - tsA;
+                const primary = sortDir === 'asc' ? tsA - tsB : tsB - tsA;
+                if (primary !== 0) return primary;
+                const cA = leadCreatedTs_(a);
+                const cB = leadCreatedTs_(b);
+                return sortDir === 'asc' ? cA - cB : cB - cA;
             });
             
             // Update stats
@@ -5471,9 +5499,9 @@
             if (filteredLeads.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-slate-400 text-sm">
+                        <td colspan="8" class="px-4 py-8 text-center text-slate-400 text-sm">
                             <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
-                            Немає записів. Додайте перший вхідний дзвінок
+                            Немає записів. Додайте перший лід
                         </td>
                     </tr>
                 `;
@@ -5481,7 +5509,7 @@
             }
             
             tbody.innerHTML = filteredLeads.map(lead => {
-                const date = lead.date ? new Date(lead.date).toLocaleDateString('uk-UA') : '—';
+                const date = lead.date ? formatLeadDateUk_(lead.date) : '—';
                 const phone = lead.phone || '—';
                 const crmLink = lead.crmLink ? `<a href="${lead.crmLink}" target="_blank" class="text-blue-600 hover:underline"><i class="fa-solid fa-link"></i></a>` : '—';
                 const comment = lead.comment || '—';
@@ -5489,19 +5517,24 @@
                     ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold"><i class="fa-solid fa-check-circle"></i> Цільовий</span>'
                     : '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold"><i class="fa-solid fa-times-circle"></i> Нецільовий</span>';
                 
+                const typeLabel = lead.type === 'fb' 
+                    ? '<span class="text-indigo-600 font-bold text-[10px] uppercase border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 rounded">Facebook</span>'
+                    : '<span class="text-blue-600 font-bold text-[10px] uppercase border border-blue-200 bg-blue-50 px-1.5 py-0.5 rounded">Дзвінок</span>';
+
                 const saleChecked = lead.sale ? 'checked' : '';
                 return `
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3 text-sm font-medium text-slate-800">${date}</td>
+                        <td class="px-4 py-3 text-sm">${typeLabel}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">${phone}</td>
                         <td class="px-4 py-3 text-sm text-center">${crmLink}</td>
-                        <td class="px-4 py-3 text-sm text-slate-600">${comment}</td>
+                        <td class="px-4 py-3 text-sm text-slate-600 whitespace-pre-wrap">${comment}</td>
                         <td class="px-4 py-3 text-center">${statusBadge}</td>
                         <td class="px-4 py-3 text-center">
                             <input type="checkbox" class="h-4 w-4 rounded border-slate-300" ${saleChecked} onchange="toggleLeadSale('${lead.id}', this.checked)">
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <button onclick="openLeadModal('${lead.id}')" class="text-blue-600 hover:text-blue-700 p-2" title="Редагувати">
+                            <button onclick="${lead.type === 'fb' ? `openLeadModal('${lead.id}')` /* TODO: FB Edit? */ : `openLeadModal('${lead.id}')`}" class="text-blue-600 hover:text-blue-700 p-2" title="Редагувати">
                                 <i class="fa-solid fa-edit"></i>
                             </button>
                             <button onclick="deleteLead('${lead.id}')" class="text-red-600 hover:text-red-700 p-2" title="Видалити">
@@ -5521,7 +5554,8 @@
                 const XLSX = await loadXlsx_();
 
                 const rows = filteredLeads.map((lead) => ({
-                    'Дата': lead.date ? new Date(lead.date).toLocaleDateString('uk-UA') : '',
+                    'Дата': lead.date ? formatLeadDateUk_(lead.date) : '',
+                    'Тип': lead.type === 'fb' ? 'Facebook' : 'Дзвінок',
                     'Телефон': lead.phone || '',
                     'CRM': lead.crmLink || '',
                     'Коментар': lead.comment || '',
@@ -5611,6 +5645,9 @@
                                 ? window.__leadsData.find(l => l.id === editingId)
                                 : null;
                             if (existingLead?.date) leadData.date = existingLead.date;
+                            if (existingLead?.type) leadData.type = existingLead.type;
+                        } else {
+                            leadData.type = 'phone';
                         }
                         
                         await saveLead(leadData);
@@ -5619,6 +5656,46 @@
                         showToast(editingId ? 'Запис оновлено' : 'Запис додано');
                     } catch (error) {
                         console.error('Error saving lead:', error);
+                        showToast('Помилка збереження');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = editingId ? 'Оновити' : 'Зберегти';
+                    }
+                }
+
+                if (e.target.id === 'fbLeadForm') {
+                    e.preventDefault();
+                    
+                    const submitBtn = document.getElementById('submitFbLeadBtn');
+                    const application = document.getElementById('fbLeadApplication').value.trim();
+                    const comment = document.getElementById('fbLeadComment').value.trim();
+                    if (!application && !comment) return;
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Створення...';
+                    
+                    try {
+                        const status = document.querySelector('input[name="fbLeadStatus"]:checked')?.value || 'target';
+                        const leadDate = document.getElementById('fbLeadDate').value;
+                        const sale = document.getElementById('fbLeadSale')?.checked || false;
+                        
+                        const fullComment = application + (application && comment ? '\n---\n' : '') + comment;
+
+                        const leadData = {
+                            type: 'fb',
+                            date: leadDate,
+                            phone: '', // Не витягуємо номер автоматично
+                            comment: fullComment,
+                            status: status,
+                            sale: sale
+                        };
+                        
+                        await saveLead(leadData);
+                        await renderLeads();
+                        closeFbLeadModal();
+                        showToast('ФБ лід додано');
+                    } catch (error) {
+                        console.error('Error saving FB lead:', error);
                         showToast('Помилка збереження');
                     } finally {
                         submitBtn.disabled = false;
@@ -5633,6 +5710,9 @@
             document.addEventListener('click', (e) => {
                 if (e.target.id === 'leadModalBackdrop') {
                     closeLeadModal();
+                }
+                if (e.target.id === 'fbLeadModalBackdrop') {
+                    closeFbLeadModal();
                 }
             });
         }

@@ -2,36 +2,57 @@
     <!-- Header Section -->
     <div class="glass p-6 rounded-3xl shadow-sm border border-slate-200">
         <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
-                    <i class="fa-solid fa-phone-volume text-xl"></i>
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
+                    <i class="fa-solid fa-headset text-2xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Вхідні дзвінки</h2>
-                    <p class="text-sm text-slate-500">Класифікація та аналіз вхідних лідів</p>
+                    <h2 class="text-2xl font-extrabold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Ліди</h2>
+                    <p class="text-sm text-slate-500">Вхідні заявки та класифікація</p>
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                <div class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <div class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2.5">
                     <i class="fa-solid fa-calendar text-slate-400"></i>
-                    <input type="month" id="leadMonthFilter" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none">
+                    <input type="month" id="leadMonthFilter" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none" onchange="renderLeads()">
                 </div>
-                <div class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <div class="flex items-center gap-4 rounded-2xl bg-slate-50 border border-slate-200 px-4 py-2.5">
+                    <i class="fa-solid fa-layer-group text-slate-400"></i>
+                    <div class="flex items-center gap-4 text-sm font-semibold text-slate-700">
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                            <input type="checkbox" id="leadTypePhone" checked class="h-4 w-4 rounded border-slate-300 accent-blue-600" onchange="renderLeads();">
+                            <i class="fa-solid fa-phone text-blue-500 text-xs"></i>
+                            Вхідні
+                        </label>
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                            <input type="checkbox" id="leadTypeFb" checked class="h-4 w-4 rounded border-slate-300 accent-indigo-600" onchange="renderLeads();">
+                            <i class="fa-brands fa-facebook-f text-indigo-500 text-xs"></i>
+                            ФБ
+                        </label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2.5">
                     <i class="fa-solid fa-filter text-slate-400"></i>
-                    <select id="leadStatusFilter" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none">
+                    <select id="leadStatusFilter" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none" onchange="renderLeads()">
                         <option value="all">Всі статуси</option>
                         <option value="target">Цільові</option>
                         <option value="non-target">Нецільові</option>
                     </select>
                 </div>
-                <button type="button" onclick="exportLeadsToExcel()" class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold px-5 py-3 shadow-lg transition-all">
-                    <i class="fa-solid fa-file-excel"></i>
-                    Експорт в Excel
-                </button>
-                <button type="button" id="addLeadBtn" onclick="openLeadModal()" class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 shadow-lg transition-all">
-                    <i class="fa-solid fa-plus-circle"></i>
-                    Додати вхідний
-                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="exportLeadsToExcel()" class="flex items-center justify-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold px-5 py-2.5 shadow-lg transition-all text-sm h-11">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span class="hidden sm:inline">Експорт</span>
+                    </button>
+                    <button type="button" id="addLeadBtn" onclick="openLeadModal()" class="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 shadow-lg transition-all text-sm h-11">
+                        <i class="fa-solid fa-phone"></i>
+                        <span class="hidden sm:inline">Вхідний</span>
+                    </button>
+                    <button type="button" id="addFbLeadBtn" onclick="openFbLeadModal()" class="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 shadow-lg transition-all text-sm h-11">
+                        <i class="fa-brands fa-facebook-f"></i>
+                        <span class="hidden sm:inline">ФБ</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -71,8 +92,9 @@
                                 <i class="fa-solid fa-arrow-down text-xs"></i>
                             </button>
                         </th>
-                        <th class="px-4 py-3 text-left font-bold">Телефон</th>
-                        <th class="px-4 py-3 text-left font-bold">CRM</th>
+                        <th class="px-4 py-3 text-left font-bold">Тип</th>
+                        <th class="px-4 py-3 text-left font-bold">Контакт / Телефон</th>
+                        <th class="px-4 py-3 text-left font-bold">CRM / Посилання</th>
                         <th class="px-4 py-3 text-left font-bold">Коментар</th>
                         <th class="px-4 py-3 text-center font-bold">Статус</th>
                         <th class="px-4 py-3 text-center font-bold">Продаж</th>
@@ -81,9 +103,9 @@
                 </thead>
                 <tbody id="leadsTableBody" class="divide-y divide-slate-100">
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-slate-400 text-sm">
+                        <td colspan="8" class="px-4 py-8 text-center text-slate-400 text-sm">
                             <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
-                            Немає записів. Додайте перший вхідний дзвінок
+                            Немає записів. Додайте перший лід
                         </td>
                     </tr>
                 </tbody>
@@ -93,20 +115,20 @@
 </div>
 
 <!-- Modal: Add Lead -->
-<div id="leadModal" class="hidden fixed inset-0 z-50">
-    <div id="leadModalBackdrop" class="absolute inset-0 bg-slate-900/50"></div>
-    <div class="relative w-full h-full flex items-end sm:items-center justify-center p-3 sm:p-6">
-        <div class="w-full max-w-xl glass rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+<div id="leadModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div id="leadModalBackdrop" class="fixed inset-0 bg-slate-900/50"></div>
+    <div class="relative min-h-full flex items-end sm:items-center justify-center p-1 pb-24 sm:pb-6 sm:p-6">
+        <div class="relative w-full max-w-full sm:max-w-xl glass rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[85vh] sm:max-h-[90vh] flex flex-col">
             <div class="p-4 sm:p-6 bg-slate-50/60 flex items-center justify-between gap-3 border-b border-slate-100">
                 <div class="flex items-center gap-2 font-bold text-slate-800">
-                    <i class="fa-solid fa-phone-volume text-blue-600"></i>
-                    <span id="leadModalTitle">Новий вхідний дзвінок</span>
+                    <i class="fa-solid fa-phone text-blue-600"></i>
+                    <span id="leadModalTitle">Новий вхідний</span>
                 </div>
                 <button type="button" onclick="closeLeadModal()" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-200 transition-colors">
                     <i class="fa-solid fa-times text-slate-600"></i>
                 </button>
             </div>
-            <form id="leadForm" class="p-4 sm:p-6 space-y-4 modal-scroll">
+            <form id="leadForm" class="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                 <input type="hidden" id="editingLeadId" value="">
                 
                 <div>
@@ -159,6 +181,74 @@
                         Скасувати
                     </button>
                     <button type="submit" id="submitLeadBtn" class="flex-1 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Зберегти
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add FB Lead -->
+<div id="fbLeadModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div id="fbLeadModalBackdrop" class="fixed inset-0 bg-slate-900/50"></div>
+    <div class="relative min-h-full flex items-end sm:items-center justify-center p-1 pb-24 sm:pb-6 sm:p-6">
+        <div class="relative w-full max-w-full sm:max-w-xl glass rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[85vh] sm:max-h-[90vh] flex flex-col">
+            <div class="p-4 sm:p-6 bg-slate-50/60 flex items-center justify-between gap-3 border-b border-slate-100">
+                <div class="flex items-center gap-2 font-bold text-slate-800">
+                    <i class="fa-brands fa-facebook-f text-indigo-600"></i>
+                    <span>Новий ФБ лід</span>
+                </div>
+                <button type="button" onclick="closeFbLeadModal()" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-200 transition-colors">
+                    <i class="fa-solid fa-times text-slate-600"></i>
+                </button>
+            </div>
+            <form id="fbLeadForm" class="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Дата</label>
+                    <input type="date" id="fbLeadDate" required class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Заявка</label>
+                    <textarea id="fbLeadApplication" rows="4" placeholder="Вставте текст заявки..." class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none font-mono text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Коментар</label>
+                    <textarea id="fbLeadComment" rows="2" placeholder="Додатковий коментар..." class="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Статус ліда</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="fbLeadStatus" value="target" checked class="peer sr-only">
+                            <div class="p-4 rounded-2xl border-2 border-slate-200 peer-checked:border-green-500 peer-checked:bg-green-50 transition-all text-center">
+                                <i class="fa-solid fa-check-circle text-2xl text-green-500 mb-1"></i>
+                                <div class="font-bold text-sm text-slate-800">Цільовий</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="fbLeadStatus" value="non-target" class="peer sr-only">
+                            <div class="p-4 rounded-2xl border-2 border-slate-200 peer-checked:border-red-500 peer-checked:bg-red-50 transition-all text-center">
+                                <i class="fa-solid fa-times-circle text-2xl text-red-500 mb-1"></i>
+                                <div class="font-bold text-sm text-slate-800">Нецільовий</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="fbLeadSale" class="h-5 w-5 rounded border-slate-300">
+                    <label for="fbLeadSale" class="text-sm font-semibold text-slate-700">Продаж</label>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeFbLeadModal()" class="flex-1 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold transition-colors">
+                        Скасувати
+                    </button>
+                    <button type="submit" id="submitFbLeadBtn" class="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors">
                         Зберегти
                     </button>
                 </div>
