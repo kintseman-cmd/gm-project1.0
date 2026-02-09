@@ -520,8 +520,11 @@
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-lg font-bold text-gray-800">Калькулятор</h2>
                             <div class="flex items-center gap-1">
-                                <button id="creditCompareBtn" type="button" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg text-xs transition" title="Кредит">
-                                    <i class="fas fa-credit-card"></i><span class="hidden sm:inline ml-1">Кредит</span>
+                                <button id="oschadCreditBtn" type="button" class="p-2 text-green-700 hover:bg-green-50 rounded-lg text-xs transition" title="Ощадбанк">
+                                    <i class="fas fa-university"></i><span class="hidden sm:inline ml-1">Ощад</span>
+                                </button>
+                                <button id="creditCompareBtn" type="button" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg text-xs transition" title="WeAgro">
+                                    <i class="fas fa-credit-card"></i><span class="hidden sm:inline ml-1">WeAgro</span>
                                 </button>
                                 <button id="packagesBtn" type="button" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg text-xs transition" title="Пакети">
                                     <i class="fas fa-box-open"></i><span class="hidden sm:inline ml-1">Пакети</span>
@@ -644,9 +647,12 @@
                         <i class="fas fa-info-circle"></i> <span class="hidden sm:inline">Інфо</span>
                     </button>
                 </div>
-                <button id="closeCreditCompareModal" class="text-gray-400 hover:text-gray-600 p-1">
-                    <i class="fas fa-times text-lg"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] md:text-[10px] text-gray-400">Оновлено 09.02.26</span>
+                    <button id="closeCreditCompareModal" class="text-gray-400 hover:text-gray-600 p-1">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
             </div>
             <div class="mb-3 md:mb-4">
                 <div class="flex border border-gray-300 rounded">
@@ -787,9 +793,10 @@
                     <div class="grid grid-cols-2 gap-2 md:gap-4 text-[10px] md:text-xs">
                         <div>
                             <strong>Відтерм.:</strong><br>
-                            1–3: 2.5–7.5%<br>
-                            4–6: 10–15%<br>
-                            7–9: 17.5–22.5%
+                            1–3: 2.5–6%<br>
+                            4–6: 7.5–11%<br>
+                            7–9: 12.5–16%
+                            <div class="text-[8px] md:text-[10px] text-gray-400 mt-1">Оновлено 09.02.26</div>
                         </div>
                         <div>
                             <strong>Частинами:</strong><br>
@@ -803,6 +810,260 @@
             
             <div class="mt-3 md:mt-4 text-center">
                 <button id="closeCreditInfoModalBtn" type="button" class="px-4 md:px-6 py-1.5 md:py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base font-medium rounded transition">
+                    Зрозуміло
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Oshchad Credit Modal -->
+    <div id="oschadCreditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[60] flex items-center justify-center p-0 md:p-4">
+        <div class="bg-white rounded-none md:rounded-lg shadow-lg max-w-3xl w-full mx-0 md:mx-4 p-3 md:p-6 pb-20 md:pb-6 max-h-screen md:max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3 md:mb-4">
+                <h3 class="text-sm md:text-lg font-bold text-gray-800"><i class="fas fa-university mr-1 md:mr-2 text-green-600"></i>Кредит від Ощадбанку</h3>
+                <button id="closeOschadModal" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border border-gray-300 rounded mb-3 md:mb-4">
+                <button id="oschadTabConditions" type="button" class="flex-1 px-2 md:px-4 py-2 text-xs md:text-sm font-medium rounded-l bg-green-600 text-white transition"><i class="fas fa-file-contract mr-1"></i>Умови</button>
+                <button id="oschadTabCalc" type="button" class="flex-1 px-2 md:px-4 py-2 text-xs md:text-sm font-medium rounded-r bg-gray-200 text-gray-700 transition"><i class="fas fa-calculator mr-1"></i>Розрахунок</button>
+            </div>
+
+            <!-- Tab 1: Умови -->
+            <div id="oschadContentConditions" class="space-y-3 text-xs md:text-sm text-gray-700">
+                <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p class="text-[10px] md:text-xs text-gray-500 mb-2">Додаток №1 до рішення Кредитного комітету мікро-, малого та середнього бізнесу АТ «Ощадбанк» №11/15 від 30.01.2026</p>
+                    <h4 class="font-bold text-green-800 text-xs md:text-sm mb-2">Партнерська програма з ТОВ «АГРОКУБ»</h4>
+                    <p class="text-[10px] md:text-xs">Товар: сільськогосподарська техніка та обладнання бренду <strong>GENERAL MACHINES</strong></p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                    <div class="p-2 md:p-3 bg-gray-50 rounded-lg border">
+                        <h5 class="font-bold text-gray-800 text-[10px] md:text-xs mb-1"><i class="fas fa-money-bill-wave mr-1 text-green-600"></i>Сума кредиту</h5>
+                        <p class="text-[10px] md:text-xs">Мін: <strong>500 000 грн</strong></p>
+                        <p class="text-[10px] md:text-xs">Макс: <strong>50 000 000 грн</strong></p>
+                    </div>
+                    <div class="p-2 md:p-3 bg-gray-50 rounded-lg border">
+                        <h5 class="font-bold text-gray-800 text-[10px] md:text-xs mb-1"><i class="fas fa-clock mr-1 text-blue-600"></i>Строк</h5>
+                        <p class="text-[10px] md:text-xs">Мін: <strong>6 місяців</strong></p>
+                        <p class="text-[10px] md:text-xs">Макс: <strong>60 місяців</strong></p>
+                    </div>
+                    <div class="p-2 md:p-3 bg-gray-50 rounded-lg border">
+                        <h5 class="font-bold text-gray-800 text-[10px] md:text-xs mb-1"><i class="fas fa-hand-holding-usd mr-1 text-amber-600"></i>Початковий внесок</h5>
+                        <p class="text-[10px] md:text-xs">Від <strong>20%</strong> вартості товару</p>
+                    </div>
+                    <div class="p-2 md:p-3 bg-gray-50 rounded-lg border">
+                        <h5 class="font-bold text-gray-800 text-[10px] md:text-xs mb-1"><i class="fas fa-percent mr-1 text-red-500"></i>Комісія</h5>
+                        <p class="text-[10px] md:text-xs"><strong>1,99%</strong> від суми кредиту (одноразово)</p>
+                    </div>
+                </div>
+
+                <!-- Рівними частинами -->
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="font-bold text-blue-800 text-xs md:text-sm mb-2"><i class="fas fa-chart-bar mr-1"></i>Рівними частинами (щомісяця)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[9px] md:text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-blue-100">
+                                    <th class="border border-blue-200 p-1 md:p-2 text-left">Строк</th>
+                                    <th class="border border-blue-200 p-1 md:p-2 text-center">від 20%</th>
+                                    <th class="border border-blue-200 p-1 md:p-2 text-center">від 30%</th>
+                                    <th class="border border-blue-200 p-1 md:p-2 text-center">від 40%</th>
+                                    <th class="border border-blue-200 p-1 md:p-2 text-center">від 50%</th>
+                                    <th class="border border-blue-200 p-1 md:p-2 text-center">від 60%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-green-50">
+                                    <td class="border border-blue-200 p-1 md:p-2 font-semibold">1–12 міс.</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center font-bold text-green-700">0,01%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center font-bold text-green-700">0,01%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center font-bold text-green-700">0,01%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center font-bold text-green-700">0,01%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center font-bold text-green-700">0,01%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-blue-200 p-1 md:p-2 font-semibold">13–24 міс.</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">7,55%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">6,43%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">4,97%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">2,94%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">0,13%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-blue-200 p-1 md:p-2 font-semibold">25–36 міс.</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">11,02%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">10,23%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">9,19%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">7,76%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">5,87%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-blue-200 p-1 md:p-2 font-semibold">37–48 міс.</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">13,08%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">12,46%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">11,63%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">10,49%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">9,06%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-blue-200 p-1 md:p-2 font-semibold">49–60 міс.</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">14,05%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">13,53%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">12,84%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">11,88%</td>
+                                    <td class="border border-blue-200 p-1 md:p-2 text-center">10,73%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Індивідуальний графік -->
+                <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <h4 class="font-bold text-purple-800 text-xs md:text-sm mb-2"><i class="fas fa-calendar-alt mr-1"></i>Індивідуальний графік (сезонний)</h4>
+                    <p class="text-[9px] md:text-[10px] text-purple-600 mb-2">Рівними частинами не менше ніж у 3 будь-які місяці кредитування</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[9px] md:text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-purple-100">
+                                    <th class="border border-purple-200 p-1 md:p-2 text-left">Строк</th>
+                                    <th class="border border-purple-200 p-1 md:p-2 text-center">від 20%</th>
+                                    <th class="border border-purple-200 p-1 md:p-2 text-center">від 30%</th>
+                                    <th class="border border-purple-200 p-1 md:p-2 text-center">від 40%</th>
+                                    <th class="border border-purple-200 p-1 md:p-2 text-center">від 50%</th>
+                                    <th class="border border-purple-200 p-1 md:p-2 text-center">від 60%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-green-50">
+                                    <td class="border border-purple-200 p-1 md:p-2 font-semibold">1–12 міс.</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">6,17%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">4,93%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">3,29%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">1,02%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center font-bold text-green-700">0,01%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-purple-200 p-1 md:p-2 font-semibold">13–24 міс.</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">9,88%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">9,03%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">7,92%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">6,39%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">4,33%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-purple-200 p-1 md:p-2 font-semibold">25–36 міс.</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">12,20%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">11,54%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">10,68%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">9,50%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">7,98%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-purple-200 p-1 md:p-2 font-semibold">37–48 міс.</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">13,79%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">13,24%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">12,52%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">11,53%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">10,32%</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-purple-200 p-1 md:p-2 font-semibold">49–60 міс.</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">14,52%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">14,05%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">13,43%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">12,57%</td>
+                                    <td class="border border-purple-200 p-1 md:p-2 text-center">11,57%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Додаткові умови -->
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <h4 class="font-bold text-amber-800 text-xs md:text-sm mb-1"><i class="fas fa-info-circle mr-1"></i>Додаткові умови</h4>
+                    <ul class="list-disc list-inside text-[10px] md:text-xs space-y-1">
+                        <li><strong>Позичальник:</strong> юридична особа або ФОП (мікро-, малий та середній бізнес)</li>
+                        <li><strong>Вид кредиту:</strong> Кредит / Невідновлювальна кредитна лінія</li>
+                        <li><strong>Страхування:</strong> заставленого майна в акредитованих страхових компаніях</li>
+                        <li><strong>Забезпечення:</strong> можливе оформлення в заставу майнових прав на товар</li>
+                    </ul>
+                </div>
+
+                <!-- Документи для заявки -->
+                <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 class="font-bold text-red-800 text-xs md:text-sm mb-1"><i class="fas fa-file-alt mr-1"></i>Для оформлення заявки потрібно:</h4>
+                    <ol class="list-decimal list-inside text-[10px] md:text-xs space-y-1">
+                        <li>ПІБ клієнта</li>
+                        <li>Контактний телефон клієнта</li>
+                        <li>Реєстраційні дані по ФОП/ТОВ</li>
+                        <li>Витяг з ЄДР</li>
+                        <li>Рахунок-фактура</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Tab 2: Розрахунок -->
+            <div id="oschadContentCalc" class="hidden space-y-3 text-xs md:text-sm text-gray-700">
+                <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 class="font-bold text-green-800 text-xs md:text-sm mb-2"><i class="fas fa-calculator mr-1"></i>Розрахунок кредиту</h4>
+                    <div id="oschadCalcError" class="hidden p-2 mb-2 bg-red-100 border border-red-300 rounded text-[10px] md:text-xs text-red-700"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                        <div>
+                            <label class="block text-[10px] md:text-xs font-semibold text-gray-700 mb-1">Вартість товару (з калькулятора)</label>
+                            <input id="oschadProductPrice" type="text" readonly class="w-full p-2 border border-gray-300 rounded bg-gray-100 text-xs md:text-sm font-semibold text-gray-700" value="0 грн">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] md:text-xs font-semibold text-gray-700 mb-1">Початковий внесок (%)</label>
+                            <select id="oschadAdvancePercent" class="w-full p-2 border border-gray-300 rounded text-xs md:text-sm">
+                                <option value="20">20%</option>
+                                <option value="30">30%</option>
+                                <option value="40">40%</option>
+                                <option value="50">50%</option>
+                                <option value="60">60%</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] md:text-xs font-semibold text-gray-700 mb-1">Строк (місяців)</label>
+                            <select id="oschadTermMonths" class="w-full p-2 border border-gray-300 rounded text-xs md:text-sm">
+                                <option value="6">6</option>
+                                <option value="12" selected>12</option>
+                                <option value="18">18</option>
+                                <option value="24">24</option>
+                                <option value="36">36</option>
+                                <option value="48">48</option>
+                                <option value="60">60</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] md:text-xs font-semibold text-gray-700 mb-1">Тип графіку</label>
+                            <select id="oschadScheduleType" class="w-full p-2 border border-gray-300 rounded text-xs md:text-sm">
+                                <option value="equal">Рівними частинами</option>
+                                <option value="seasonal">Індивідуальний (сезонний)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="oschadCalcResult" class="hidden space-y-1 text-[10px] md:text-xs">
+                        <div class="flex justify-between"><span>Вартість товару:</span><span id="oschadResPrice" class="font-semibold"></span></div>
+                        <div class="flex justify-between"><span>Початковий внесок:</span><span id="oschadResAdvance" class="font-semibold text-green-700"></span></div>
+                        <div class="flex justify-between"><span>Сума кредиту:</span><span id="oschadResCredit" class="font-semibold text-blue-700"></span></div>
+                        <div class="flex justify-between"><span>Ставка (% річних):</span><span id="oschadResRate" class="font-semibold"></span></div>
+                        <div class="flex justify-between"><span>Комісія (1,99%):</span><span id="oschadResCommission" class="font-semibold text-red-600"></span></div>
+                        <hr class="border-gray-300">
+                        <div class="flex justify-between"><span>Щомісячний платіж (орієнтовно):</span><span id="oschadResMonthly" class="font-bold text-lg text-green-800"></span></div>
+                        <div class="flex justify-between"><span>Загальна сума виплат:</span><span id="oschadResTotalPay" class="font-semibold"></span></div>
+                        <div class="flex justify-between"><span>Переплата:</span><span id="oschadResOverpay" class="font-semibold text-red-600"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 md:mt-4 text-center">
+                <button id="closeOschadModalBtn" type="button" class="px-4 md:px-6 py-1.5 md:py-2 bg-green-600 hover:bg-green-700 text-white text-sm md:text-base font-medium rounded transition">
                     Зрозуміло
                 </button>
             </div>
@@ -2083,10 +2344,10 @@
 
             function renderDeferredTable(advanceAmount, baseTotal, maxCredit) {
                 deferredTableBody.innerHTML = '';
-                // Render only months 1..9 for deferred program (Weagro mapping)
+                // Render only months 1..9 for deferred program (updated 09.02.26)
                 const rates = {
-                    1: 0.025, 2: 0.050, 3: 0.075, 4: 0.100, 5: 0.125, 6: 0.150,
-                    7: 0.175, 8: 0.200, 9: 0.225
+                    1: 0.025, 2: 0.045, 3: 0.060, 4: 0.075, 5: 0.090, 6: 0.110,
+                    7: 0.125, 8: 0.145, 9: 0.160
                 };
                 const useMaxCredit = Number.isFinite(maxCredit) && maxCredit > 0;
                 for (let month = 1; month <= 9; month++) {
@@ -2213,6 +2474,168 @@
             }
 
             if (creditCompareBtn) creditCompareBtn.addEventListener('click', openCreditCompareModal);
+
+            // Oshchad Credit Modal handlers
+            const oschadCreditBtn = document.getElementById('oschadCreditBtn');
+            const oschadCreditModal = document.getElementById('oschadCreditModal');
+            const closeOschadModal = document.getElementById('closeOschadModal');
+            const closeOschadModalBtn = document.getElementById('closeOschadModalBtn');
+
+            function openOschadModal() {
+                // Get current total from main calculator
+                const totalText = document.getElementById('final-total')?.textContent || '0';
+                const totalValue = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                const priceEl = document.getElementById('oschadProductPrice');
+                if (priceEl) priceEl.value = Math.round(totalValue).toLocaleString('uk-UA') + ' грн';
+                priceEl._rawValue = totalValue;
+                
+                // Check minimum credit amount
+                const errEl = document.getElementById('oschadCalcError');
+                const minCredit = 450000;
+                const advPct = parseInt(document.getElementById('oschadAdvancePercent')?.value || '20');
+                const creditAmount = totalValue * (1 - advPct / 100);
+                if (totalValue > 0 && creditAmount < minCredit) {
+                    errEl.textContent = `Сума кредиту (${Math.round(creditAmount).toLocaleString('uk-UA')} грн) менше мінімальної (450 000 грн). Збільшіть суму товару або зменшіть внесок.`;
+                    errEl.classList.remove('hidden');
+                } else {
+                    errEl.classList.add('hidden');
+                }
+                
+                oschadCalcUpdate();
+                oschadCreditModal.classList.remove('hidden');
+            }
+
+            // Oshchad calculator rates
+            const oschadRatesEqual = {
+                // {termRange: [advPct]: rate}
+                '1-12':  {20: 0.0001, 30: 0.0001, 40: 0.0001, 50: 0.0001, 60: 0.0001},
+                '13-24': {20: 0.0755, 30: 0.0643, 40: 0.0497, 50: 0.0294, 60: 0.0013},
+                '25-36': {20: 0.1102, 30: 0.1023, 40: 0.0919, 50: 0.0776, 60: 0.0587},
+                '37-48': {20: 0.1308, 30: 0.1246, 40: 0.1163, 50: 0.1049, 60: 0.0906},
+                '49-60': {20: 0.1405, 30: 0.1353, 40: 0.1284, 50: 0.1188, 60: 0.1073}
+            };
+            const oschadRatesSeasonal = {
+                '1-12':  {20: 0.0617, 30: 0.0493, 40: 0.0329, 50: 0.0102, 60: 0.0001},
+                '13-24': {20: 0.0988, 30: 0.0903, 40: 0.0792, 50: 0.0639, 60: 0.0433},
+                '25-36': {20: 0.1220, 30: 0.1154, 40: 0.1068, 50: 0.0950, 60: 0.0798},
+                '37-48': {20: 0.1379, 30: 0.1324, 40: 0.1252, 50: 0.1153, 60: 0.1032},
+                '49-60': {20: 0.1452, 30: 0.1405, 40: 0.1343, 50: 0.1257, 60: 0.1157}
+            };
+
+            function getOschadRate(months, advPct, type) {
+                const table = type === 'seasonal' ? oschadRatesSeasonal : oschadRatesEqual;
+                let rangeKey;
+                if (months <= 12) rangeKey = '1-12';
+                else if (months <= 24) rangeKey = '13-24';
+                else if (months <= 36) rangeKey = '25-36';
+                else if (months <= 48) rangeKey = '37-48';
+                else rangeKey = '49-60';
+                // Find nearest advance bracket
+                const brackets = [20, 30, 40, 50, 60];
+                let bracket = 20;
+                for (const b of brackets) {
+                    if (advPct >= b) bracket = b;
+                }
+                return table[rangeKey]?.[bracket] || 0;
+            }
+
+            function oschadCalcUpdate() {
+                const priceEl = document.getElementById('oschadProductPrice');
+                const totalValue = priceEl?._rawValue || 0;
+                const advPct = parseInt(document.getElementById('oschadAdvancePercent')?.value || '20');
+                const months = parseInt(document.getElementById('oschadTermMonths')?.value || '12');
+                const scheduleType = document.getElementById('oschadScheduleType')?.value || 'equal';
+                const errEl = document.getElementById('oschadCalcError');
+                const resultEl = document.getElementById('oschadCalcResult');
+
+                if (totalValue <= 0) {
+                    resultEl.classList.add('hidden');
+                    errEl.textContent = 'Оберіть товар у калькуляторі, щоб розрахувати кредит.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                const advance = totalValue * advPct / 100;
+                const creditAmount = totalValue - advance;
+                const minCredit = 450000;
+
+                if (creditAmount < minCredit) {
+                    resultEl.classList.add('hidden');
+                    errEl.textContent = `Сума кредиту (${Math.round(creditAmount).toLocaleString('uk-UA')} грн) менше мінімальної (450 000 грн). Збільшіть суму товару або зменшіть % внеску.`;
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                errEl.classList.add('hidden');
+                const rate = getOschadRate(months, advPct, scheduleType);
+                const commission = creditAmount * 0.0199;
+
+                // Annuity monthly payment: M = P * [r(1+r)^n] / [(1+r)^n - 1]
+                const monthlyRate = rate / 12;
+                let monthlyPayment;
+                if (monthlyRate > 0.000001) {
+                    const factor = Math.pow(1 + monthlyRate, months);
+                    monthlyPayment = creditAmount * (monthlyRate * factor) / (factor - 1);
+                } else {
+                    monthlyPayment = creditAmount / months;
+                }
+                const totalPay = monthlyPayment * months;
+                const overpay = totalPay - creditAmount;
+
+                const fmt = (v) => Math.round(v).toLocaleString('uk-UA') + ' грн';
+                document.getElementById('oschadResPrice').textContent = fmt(totalValue);
+                document.getElementById('oschadResAdvance').textContent = fmt(advance) + ` (${advPct}%)`;
+                document.getElementById('oschadResCredit').textContent = fmt(creditAmount);
+                document.getElementById('oschadResRate').textContent = (rate * 100).toFixed(2) + '%';
+                document.getElementById('oschadResCommission').textContent = fmt(commission);
+                document.getElementById('oschadResMonthly').textContent = fmt(monthlyPayment);
+                document.getElementById('oschadResTotalPay').textContent = fmt(totalPay + commission);
+                document.getElementById('oschadResOverpay').textContent = fmt(overpay + commission);
+                resultEl.classList.remove('hidden');
+            }
+
+            // Bind calculator controls
+            document.getElementById('oschadAdvancePercent')?.addEventListener('change', oschadCalcUpdate);
+            document.getElementById('oschadTermMonths')?.addEventListener('change', oschadCalcUpdate);
+            document.getElementById('oschadScheduleType')?.addEventListener('change', oschadCalcUpdate);
+            function closeOschadModalFn() {
+                oschadCreditModal.classList.add('hidden');
+            }
+
+            if (oschadCreditBtn) oschadCreditBtn.addEventListener('click', openOschadModal);
+            if (closeOschadModal) closeOschadModal.addEventListener('click', closeOschadModalFn);
+            if (closeOschadModalBtn) closeOschadModalBtn.addEventListener('click', closeOschadModalFn);
+            oschadCreditModal.addEventListener('click', (e) => {
+                if (e.target === oschadCreditModal) closeOschadModalFn();
+            });
+
+            // Oshchad tabs
+            const oschadTabConditions = document.getElementById('oschadTabConditions');
+            const oschadTabCalc = document.getElementById('oschadTabCalc');
+            const oschadContentConditions = document.getElementById('oschadContentConditions');
+            const oschadContentCalc = document.getElementById('oschadContentCalc');
+
+            function switchOschadTab(tab) {
+                if (tab === 'conditions') {
+                    oschadTabConditions.classList.add('bg-green-600', 'text-white');
+                    oschadTabConditions.classList.remove('bg-gray-200', 'text-gray-700');
+                    oschadTabCalc.classList.add('bg-gray-200', 'text-gray-700');
+                    oschadTabCalc.classList.remove('bg-green-600', 'text-white');
+                    oschadContentConditions.classList.remove('hidden');
+                    oschadContentCalc.classList.add('hidden');
+                } else {
+                    oschadTabCalc.classList.add('bg-green-600', 'text-white');
+                    oschadTabCalc.classList.remove('bg-gray-200', 'text-gray-700');
+                    oschadTabConditions.classList.add('bg-gray-200', 'text-gray-700');
+                    oschadTabConditions.classList.remove('bg-green-600', 'text-white');
+                    oschadContentCalc.classList.remove('hidden');
+                    oschadContentConditions.classList.add('hidden');
+                    oschadCalcUpdate();
+                }
+            }
+
+            if (oschadTabConditions) oschadTabConditions.addEventListener('click', () => switchOschadTab('conditions'));
+            if (oschadTabCalc) oschadTabCalc.addEventListener('click', () => switchOschadTab('calc'));
 
             // Credit Info Modal handlers
             const creditInfoBtn = document.getElementById('creditInfoBtn');
