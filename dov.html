@@ -374,6 +374,7 @@
                         <option value="OleksandrDenisov">Олександр Денисов</option>
                         <option value="ArturEvtushenko">Артур Євтушенко</option>
                         <option value="IvanYakushik">Іван Якушик</option>
+                        <option value="manager6">Адмін</option>
                     </select>
                 </div>
                 <div>
@@ -3670,11 +3671,17 @@
             document.getElementById('addPlanPanel')?.classList.add('hidden');
         }
 
-        document.getElementById('addPlanBtn')?.addEventListener('click', openAddPlanPanel_);
-        document.getElementById('addPlanCancelBtn')?.addEventListener('click', closeAddPlanPanel_);
-        document.getElementById('addPlanYear')?.addEventListener('input', refreshAddPlanGoal_);
-        document.getElementById('addPlanMonth')?.addEventListener('change', refreshAddPlanGoal_);
-        document.getElementById('addPlanSaveBtn')?.addEventListener('click', async () => {
+        function bindPlanListeners_() {
+            const addBtn = document.getElementById('addPlanBtn');
+            const cancelBtn = document.getElementById('addPlanCancelBtn');
+            const yearInput = document.getElementById('addPlanYear');
+            const monthSelect = document.getElementById('addPlanMonth');
+            const saveBtn = document.getElementById('addPlanSaveBtn');
+            if (addBtn && !addBtn.__bound) { addBtn.addEventListener('click', openAddPlanPanel_); addBtn.__bound = true; }
+            if (cancelBtn && !cancelBtn.__bound) { cancelBtn.addEventListener('click', closeAddPlanPanel_); cancelBtn.__bound = true; }
+            if (yearInput && !yearInput.__bound) { yearInput.addEventListener('input', refreshAddPlanGoal_); yearInput.__bound = true; }
+            if (monthSelect && !monthSelect.__bound) { monthSelect.addEventListener('change', refreshAddPlanGoal_); monthSelect.__bound = true; }
+            if (saveBtn && !saveBtn.__bound) { saveBtn.__bound = true; saveBtn.addEventListener('click', async () => {
             if (!loggedInManagerId) return;
             const btn = document.getElementById('addPlanSaveBtn');
             withButtonLoading_(btn, true, 'Зберегти', 'Збереження...');
@@ -3709,7 +3716,9 @@
             withButtonLoading_(btn, false);
 
             setTimeout(updateStats, 600);
-        });
+        }); }
+        }
+        bindPlanListeners_();
 
         // Load settings page
         async function loadSettings() {
@@ -5313,6 +5322,7 @@
 
                 // Ініціалізуємо UI планів
                 initAddPlanUI_();
+                bindPlanListeners_();
                 renderLocalPlans_();
             } catch (error) {
                 console.error('Error loading plans:', error);
