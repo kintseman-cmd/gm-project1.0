@@ -551,6 +551,10 @@
                                 <button type="button" id="adjustment-percent" class="adj-btn px-2.5 py-1.5 text-xs font-medium rounded-md transition">%</button>
                             </div>
                             <div id="applied-adjustments-list" class="mt-2 space-y-1 hidden"></div>
+                            <div id="redPriceDiscountWarning" class="hidden mt-2 p-2 bg-amber-50 border border-amber-300 rounded-lg text-[10px] text-amber-800 leading-snug">
+                                <i class="fas fa-exclamation-triangle mr-1 text-amber-500"></i>
+                                <strong>Увага:</strong> Обрана червона ціна вже є найнижчою. Додаткова знижка потребує узгодження з Дмитром.
+                            </div>
                         </div>
 
                         <!-- Чек -->
@@ -558,6 +562,8 @@
                             <div class="flex items-center justify-between mb-3 pb-2 border-b border-dashed border-gray-300">
                                 <span class="text-xs font-bold text-gray-700 uppercase tracking-wider">Чек</span>
                                 <div class="flex items-center gap-1.5">
+                                    <button type="button" id="applyAllBlueBtn" class="hidden px-2 py-1 text-[10px] font-semibold rounded bg-blue-500 text-white hover:bg-blue-600 transition" title="Застосувати сині спец-ціни до всіх товарів" onclick="applyAllSpecialPrices_('blue')"><i class="fas fa-tag mr-0.5"></i>Синя</button>
+                                    <button type="button" id="applyAllRedBtn" class="hidden px-2 py-1 text-[10px] font-semibold rounded bg-red-500 text-white hover:bg-red-600 transition" title="Застосувати червоні спец-ціни до всіх товарів" onclick="applyAllSpecialPrices_('red')"><i class="fas fa-tag mr-0.5"></i>Червона</button>
                                     <span class="px-2 py-1 text-[10px] font-semibold rounded bg-green-100 text-green-700">ПДВ</span>
                                     <button type="button" id="vatDiscount25Btn" class="px-2 py-1 text-[10px] font-semibold rounded bg-blue-500 text-white hover:bg-blue-600 transition" title="Компенсація 25%">25%</button>
                                 </div>
@@ -1708,6 +1714,18 @@
             calculateTotal();
             scheduleCalcSave_();
         }
+
+        // Show/hide warning when red price is combined with a discount.
+        function updateRedPriceDiscountWarning_() {
+            const warn = document.getElementById('redPriceDiscountWarning');
+            if (!warn) return;
+            const hasRedPrice = Object.values(cart).some(it => it && it.specialTag === 'red');
+            const hasMinusAdj = appliedAdjustments_.some(a => a.mode === 'minus');
+            // Also check the current input preview if it's in minus mode
+            const inputEl = document.getElementById('adjustment-input');
+            const previewMinus = adjustmentMode_ === 'minus' && parseFloat(String(inputEl?.value ?? '').replace(/\s/g, '')) > 0;
+            warn.classList.toggle('hidden', !(hasRedPrice && (hasMinusAdj || previewMinus)));
+        }
         
         function removeAdjustment_(id) {
             appliedAdjustments_ = appliedAdjustments_.filter(a => a.id !== id);
@@ -1876,6 +1894,13 @@
             const savings = document.getElementById('packageSavingsEstimate');
             
             if (!block || !content) return;
+
+            // If any cart item has a special price applied, hide package progress entirely
+            const anySpecial = Object.values(cart).some(it => it && (it.specialTag === 'blue' || it.specialTag === 'red'));
+            if (anySpecial) {
+                block.classList.add('hidden');
+                return;
+            }
 
             // Check what's needed for each package
             const loaderNames = new Set([
@@ -3399,6 +3424,68 @@
             toggleItemSpecialPriceForKey(tag, key);
         }
 
+        // Apply or remove special price (blue/red) for ALL eligible cart items at once.
+        function applyAllSpecialPrices_(tag) {
+            if (tag !== 'blue' && tag !== 'red') return;
+            // Determine if we should apply or remove: if ALL eligible items already have this tag, remove; otherwise apply.
+            const eligibleKeys = Object.keys(cart).filter(k => {
+                const it = cart[k];
+                const val = tag === 'blue' ? Number(it.specialPriceBlue2) : Number(it.specialPriceRed2);
+                return it && Number.isFinite(val) && val > 0;
+            });
+            if (!eligibleKeys.length) return;
+            const allActive = eligibleKeys.every(k => String(cart[k].specialTag || '') === tag);
+            for (const key of eligibleKeys) {
+                const it = cart[key];
+                const val = tag === 'blue' ? Number(it.specialPriceBlue2) : Number(it.specialPriceRed2);
+                if (!Number.isFinite(Number(it.basePrice2))) it.basePrice2 = Number(it.price2);
+                if (!Number.isFinite(Number(it.basePrice1))) it.basePrice1 = Number(it.price1);
+                if (allActive) {
+                    // Remove special price
+                    const bp2 = Number(it.basePrice2);
+                    const bp1 = Number(it.basePrice1);
+                    if (Number.isFinite(bp2)) { it.price2 = bp2; it.price = bp2; }
+                    if (Number.isFinite(bp1)) it.price1 = bp1;
+                    it.specialTag = null;
+                } else {
+                    // Apply special price
+                    it.price2 = val;
+                    it.price1 = computePrice1FromVatPrice_(val);
+                    it.price = val;
+                    it.specialTag = tag;
+                }
+            }
+            calculateTotal();
+            scheduleCalcSave_();
+        }
+
+        // Update visibility of blue/red bulk buttons in receipt header.
+        function updateBulkSpecialPriceButtons_() {
+            const blueBtn = document.getElementById('applyAllBlueBtn');
+            const redBtn = document.getElementById('applyAllRedBtn');
+            if (!blueBtn || !redBtn) return;
+            let hasBlue = false, hasRed = false;
+            let allBlue = true, allRed = true;
+            let blueCount = 0, redCount = 0;
+            for (const k in cart) {
+                const it = cart[k];
+                if (!it) continue;
+                if (Number(it.specialPriceBlue2) > 0) { hasBlue = true; blueCount++; if (it.specialTag !== 'blue') allBlue = false; }
+                if (Number(it.specialPriceRed2) > 0) { hasRed = true; redCount++; if (it.specialTag !== 'red') allRed = false; }
+            }
+            if (!hasBlue) allBlue = false;
+            if (!hasRed) allRed = false;
+            blueBtn.classList.toggle('hidden', !hasBlue);
+            redBtn.classList.toggle('hidden', !hasRed);
+            // Visual feedback: ring when all eligible are active
+            blueBtn.classList.toggle('ring-2', allBlue);
+            blueBtn.classList.toggle('ring-blue-300', allBlue);
+            blueBtn.classList.toggle('ring-offset-1', allBlue);
+            redBtn.classList.toggle('ring-2', allRed);
+            redBtn.classList.toggle('ring-red-300', allRed);
+            redBtn.classList.toggle('ring-offset-1', allRed);
+        }
+
         // Toggle special price for a specific cart key (supports multiple special-priced items).
         function toggleItemSpecialPriceForKey(tag, key) {
             if (!key || !cart[key]) return;
@@ -4184,9 +4271,11 @@
             const totalBeforeComp = baseTotal + adjustmentVal;
 
             // Package discounts: priority order: PROFESSIONAL (10%) > STANDARD (5%) > AGGREGATE PAIR (5%).
-            const proActive = isProfessionalPackageActive_();
-            const stdActive = isStandardPackageActive_();
-            const aggActive = isAggregatePairActive_();
+            // If any cart item uses a special price (blue/red), packages are NOT applied.
+            const hasAnySpecialPrice_ = Object.values(cart).some(it => it && (it.specialTag === 'blue' || it.specialTag === 'red'));
+            const proActive = !hasAnySpecialPrice_ && isProfessionalPackageActive_();
+            const stdActive = !hasAnySpecialPrice_ && isStandardPackageActive_();
+            const aggActive = !hasAnySpecialPrice_ && isAggregatePairActive_();
             let packageDiscount = 0;
             const packageElem = document.getElementById('receipt-package-discount');
             const packageProElem = document.getElementById('receipt-package-pro-discount');
@@ -4281,6 +4370,12 @@
 
             // Show/hide special calculator buttons for selected item
             updateGeneralXCalcPricesUi_();
+
+            // Show/hide bulk blue/red buttons in receipt header
+            updateBulkSpecialPriceButtons_();
+
+            // Show/hide red-price + discount warning
+            updateRedPriceDiscountWarning_();
 
             // Persist state after recalculation (debounced).
             scheduleCalcSave_();

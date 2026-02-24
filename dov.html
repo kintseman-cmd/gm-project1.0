@@ -403,6 +403,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
+                    <button onclick="loadDashboard()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-600/80 hover:bg-purple-500/90 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
+                        <i class="fa-solid fa-chart-line"></i> <span>Dashboard</span>
+                    </button>
                     <button onclick="loadLeads()" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 text-slate-100 transition-colors text-sm font-semibold whitespace-nowrap">
                         <i class="fa-solid fa-users"></i> <span>Ліди</span>
                     </button>
@@ -5026,6 +5029,267 @@
                     generateBtn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Створити КП';
                 }
             }
+        }
+
+        // ==================== DASHBOARD ====================
+        async function loadDashboard() {
+            try {
+                const mainContent = document.getElementById('mainContent');
+                if (!mainContent) return;
+                mainContent.innerHTML = '<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-4xl text-slate-400"></i></div>';
+                const response = await fetch('dashboard.html');
+                if (!response.ok) throw new Error('Failed to load dashboard');
+                const html = await response.text();
+                const backButton = '<div class="mb-4"><button onclick="restoreMainContent()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors text-sm font-semibold"><i class="fa-solid fa-arrow-left"></i> <span>Назад до продажів</span></button></div>';
+                mainContent.innerHTML = backButton + html;
+                await refreshDashboard();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.innerHTML = '<div class="glass p-6 rounded-3xl shadow-sm border border-red-200"><div class="text-center text-red-600"><i class="fa-solid fa-exclamation-triangle mb-2"></i><p>Помилка завантаження Dashboard</p></div></div>';
+                }
+            }
+        }
+
+        async function refreshDashboard() {
+            const loading = document.getElementById('dashboardLoading');
+            const content = document.getElementById('dashboardContent');
+            const refreshIcon = document.getElementById('dashRefreshIcon');
+            if (loading) loading.classList.remove('hidden');
+            if (content) content.classList.add('hidden');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+            try {
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = now.getMonth(); // 0-based
+
+                // Current month boundaries
+                const monthStart = new Date(yyyy, mm, 1);
+                const monthEnd = new Date(yyyy, mm + 1, 1);
+
+                // Current week boundaries (Monday-based)
+                const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // Mon=0
+                const weekStart = new Date(yyyy, mm, now.getDate() - dayOfWeek);
+                weekStart.setHours(0, 0, 0, 0);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 7);
+
+                // Today boundaries
+                const todayStart = new Date(yyyy, mm, now.getDate(), 0, 0, 0, 0);
+                const todayEnd = new Date(yyyy, mm, now.getDate() + 1, 0, 0, 0, 0);
+
+                // Working days in month (Mon-Fri)
+                const totalWorkDays = countWorkDays_(monthStart, monthEnd);
+                const passedWorkDays = countWorkDays_(monthStart, now) || 1;
+                const remainingWorkDays = Math.max(totalWorkDays - passedWorkDays, 0);
+
+                // Week fraction of month plan
+                const weekFraction = totalWorkDays > 0 ? 5 / totalWorkDays : 0.25;
+                // Day fraction of month plan
+                const dayFraction = totalWorkDays > 0 ? 1 / totalWorkDays : 0.05;
+
+                // Load all managers in parallel (skip Адмін)
+                const managerIds = Object.keys(MANAGERS).filter(id => id !== 'manager6');
+                const results = await Promise.allSettled(managerIds.map(id => fs_getStats_(id)));
+
+                let totalMonthGoal = 0;
+                let totalMonthSales = 0;
+                let totalWeekSales = 0;
+                let totalDaySales = 0;
+                let totalMonthDeals = 0;
+                const managerData = [];
+
+                const periodKey = `${yyyy}-${String(mm + 1).padStart(2, '0')}`;
+
+                for (let i = 0; i < managerIds.length; i++) {
+                    const mId = managerIds[i];
+                    const mName = MANAGERS[mId]?.name || mId;
+                    const res = results[i];
+
+                    if (res.status !== 'fulfilled') {
+                        managerData.push({ id: mId, name: mName, goal: 0, month: 0, week: 0, day: 0, deals: 0, error: true });
+                        continue;
+                    }
+
+                    const { history, plans } = res.value;
+                    // Find plan for current month
+                    const plan = (plans || []).find(p => p.period === periodKey);
+                    const goal = plan ? plan.goal : 0;
+
+                    let monthSales = 0, weekSales = 0, daySales = 0, monthDeals = 0;
+                    for (const order of (history || [])) {
+                        const d = new Date(order.date);
+                        if (!Number.isFinite(d.getTime())) continue;
+                        const amt = Number(order.amount) || 0;
+                        if (d >= monthStart && d < monthEnd) {
+                            monthSales += amt;
+                            monthDeals++;
+                            if (d >= weekStart && d < weekEnd) weekSales += amt;
+                            if (d >= todayStart && d < todayEnd) daySales += amt;
+                        }
+                    }
+
+                    totalMonthGoal += goal;
+                    totalMonthSales += monthSales;
+                    totalWeekSales += weekSales;
+                    totalDaySales += daySales;
+                    totalMonthDeals += monthDeals;
+
+                    managerData.push({ id: mId, name: mName, goal, month: monthSales, week: weekSales, day: daySales, deals: monthDeals, error: false });
+                }
+
+                // Sort leaderboard by month sales desc
+                managerData.sort((a, b) => b.month - a.month);
+
+                const fmt = (v) => Number(v).toLocaleString('uk-UA', { maximumFractionDigits: 0 });
+                const monthNames = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+
+                // === Fill summary cards ===
+                const monthPct = totalMonthGoal > 0 ? Math.round((totalMonthSales / totalMonthGoal) * 100) : 0;
+                const weekGoal = Math.round(totalMonthGoal * weekFraction);
+                const weekPct = weekGoal > 0 ? Math.round((totalWeekSales / weekGoal) * 100) : 0;
+                const dayGoal = Math.round(totalMonthGoal * dayFraction);
+                const dayPct = dayGoal > 0 ? Math.round((totalDaySales / dayGoal) * 100) : 0;
+
+                setTextById_('dashMonthLabel', `${monthNames[mm]} ${yyyy}`);
+                setTextById_('dashMonthTotal', `${fmt(totalMonthSales)} ₴`);
+                setTextById_('dashMonthGoal', `${fmt(totalMonthGoal)} ₴`);
+                setTextById_('dashMonthPercent', `${monthPct}%`);
+                setBarWidth_('dashMonthBar', Math.min(monthPct, 100));
+
+                const wStart = `${weekStart.getDate()}.${weekStart.getMonth() + 1}`;
+                const wEnd = new Date(weekEnd.getTime() - 86400000);
+                setTextById_('dashWeekLabel', `${wStart} — ${wEnd.getDate()}.${wEnd.getMonth() + 1}`);
+                setTextById_('dashWeekTotal', `${fmt(totalWeekSales)} ₴`);
+                setTextById_('dashWeekGoal', `${fmt(weekGoal)} ₴`);
+                setTextById_('dashWeekPercent', `${weekPct}%`);
+                setBarWidth_('dashWeekBar', Math.min(weekPct, 100));
+
+                setTextById_('dashDayLabel', `${now.getDate()} ${monthNames[mm].toLowerCase()}`,'');
+                setTextById_('dashDayTotal', `${fmt(totalDaySales)} ₴`);
+                setTextById_('dashDayGoal', `${fmt(dayGoal)} ₴`);
+                setTextById_('dashDayPercent', `${dayPct}%`);
+                setBarWidth_('dashDayBar', Math.min(dayPct, 100));
+
+                // === Extra insights ===
+                setTextById_('dashTotalDeals', String(totalMonthDeals));
+                const avgCheck = totalMonthDeals > 0 ? Math.round(totalMonthSales / totalMonthDeals) : 0;
+                setTextById_('dashAvgCheck', `${fmt(avgCheck)} ₴`);
+                const forecast = passedWorkDays > 0 ? Math.round((totalMonthSales / passedWorkDays) * totalWorkDays) : 0;
+                setTextById_('dashForecast', `${fmt(forecast)} ₴`);
+
+                // Top manager today
+                const topToday = managerData.filter(m => !m.error).sort((a, b) => b.day - a.day)[0];
+                if (topToday && topToday.day > 0) {
+                    setTextById_('dashTopToday', topToday.name);
+                    setTextById_('dashTopTodayAmount', `${fmt(topToday.day)} ₴`);
+                } else {
+                    setTextById_('dashTopToday', 'Ще немає продажів');
+                    setTextById_('dashTopTodayAmount', '');
+                }
+
+                // === Leaderboard ===
+                const leaderboard = document.getElementById('dashLeaderboard');
+                if (leaderboard) {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    leaderboard.innerHTML = managerData.map((m, idx) => {
+                        const pct = m.goal > 0 ? Math.round((m.month / m.goal) * 100) : 0;
+                        const medal = idx < 3 ? medals[idx] : `<span class="text-slate-400 text-xs font-bold">${idx + 1}</span>`;
+                        const barColor = pct >= 100 ? 'from-green-500 to-emerald-500' : pct >= 50 ? 'from-blue-500 to-cyan-500' : 'from-rose-500 to-orange-500';
+                        const pctColor = pct >= 100 ? 'text-green-700 bg-green-100' : pct >= 50 ? 'text-blue-700 bg-blue-100' : 'text-rose-700 bg-rose-100';
+                        return `
+                            <div class="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors">
+                                <div class="w-8 h-8 flex items-center justify-center text-lg">${medal}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-bold text-sm text-slate-800 truncate">${escapeHtml_(m.name)}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-bold text-slate-700">${fmt(m.month)} ₴</span>
+                                            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${pctColor}">${pct}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-1.5">
+                                        <div class="bg-gradient-to-r ${barColor} h-1.5 rounded-full transition-all duration-700" style="width:${Math.min(pct, 100)}%"></div>
+                                    </div>
+                                    <div class="flex justify-between mt-1 text-[10px] text-slate-400">
+                                        <span>План: ${fmt(m.goal)} ₴</span>
+                                        <span>Тиждень: ${fmt(m.week)} ₴ · Сьогодні: ${fmt(m.day)} ₴</span>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }).join('');
+                }
+
+                // === Detail table ===
+                const rows = document.getElementById('dashManagerRows');
+                const totals = document.getElementById('dashManagerTotals');
+                if (rows) {
+                    rows.innerHTML = managerData.map(m => {
+                        const pct = m.goal > 0 ? Math.round((m.month / m.goal) * 100) : 0;
+                        const pctColor = pct >= 100 ? 'text-green-700 bg-green-100' : pct >= 50 ? 'text-blue-700 bg-blue-100' : 'text-rose-700 bg-rose-100';
+                        const avg = m.deals > 0 ? Math.round(m.month / m.deals) : 0;
+                        return `<tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3 font-semibold text-slate-800">${escapeHtml_(m.name)}${m.error ? ' <span class="text-[10px] text-red-400">(помилка)</span>' : ''}</td>
+                            <td class="px-4 py-3 text-right text-slate-600">${fmt(m.goal)}</td>
+                            <td class="px-4 py-3 text-right font-bold text-slate-800">${fmt(m.month)}</td>
+                            <td class="px-4 py-3 text-center"><span class="text-xs font-bold px-2 py-0.5 rounded-full ${pctColor}">${pct}%</span></td>
+                            <td class="px-4 py-3 text-right text-slate-600">${fmt(m.week)}</td>
+                            <td class="px-4 py-3 text-right text-slate-600">${fmt(m.day)}</td>
+                            <td class="px-4 py-3 text-right text-slate-600">${m.deals}</td>
+                            <td class="px-4 py-3 text-right text-slate-600">${fmt(avg)}</td>
+                        </tr>`;
+                    }).join('');
+                }
+                if (totals) {
+                    const totalAvg = totalMonthDeals > 0 ? Math.round(totalMonthSales / totalMonthDeals) : 0;
+                    totals.innerHTML = `<tr>
+                        <td class="px-4 py-3 text-slate-800">Всього</td>
+                        <td class="px-4 py-3 text-right text-slate-800">${fmt(totalMonthGoal)}</td>
+                        <td class="px-4 py-3 text-right text-slate-800">${fmt(totalMonthSales)}</td>
+                        <td class="px-4 py-3 text-center"><span class="text-xs font-bold px-2 py-0.5 rounded-full ${monthPct >= 100 ? 'text-green-700 bg-green-100' : monthPct >= 50 ? 'text-blue-700 bg-blue-100' : 'text-rose-700 bg-rose-100'}">${monthPct}%</span></td>
+                        <td class="px-4 py-3 text-right text-slate-800">${fmt(totalWeekSales)}</td>
+                        <td class="px-4 py-3 text-right text-slate-800">${fmt(totalDaySales)}</td>
+                        <td class="px-4 py-3 text-right text-slate-800">${totalMonthDeals}</td>
+                        <td class="px-4 py-3 text-right text-slate-800">${fmt(totalAvg)}</td>
+                    </tr>`;
+                }
+
+                // Timestamp
+                setTextById_('dashboardLastUpdate', `Оновлено: ${now.toLocaleTimeString('uk-UA')}`);
+
+            } catch (err) {
+                console.error('Dashboard refresh error:', err);
+            } finally {
+                if (loading) loading.classList.add('hidden');
+                if (content) content.classList.remove('hidden');
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+            }
+        }
+
+        // Helper: count working days (Mon-Fri) in range
+        function countWorkDays_(start, end) {
+            let count = 0;
+            const d = new Date(start);
+            while (d < end) {
+                const dow = d.getDay();
+                if (dow !== 0 && dow !== 6) count++;
+                d.setDate(d.getDate() + 1);
+            }
+            return count;
+        }
+
+        // Helper: set text by element id
+        function setTextById_(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        // Helper: set progress bar width
+        function setBarWidth_(id, pct) {
+            const el = document.getElementById(id);
+            if (el) el.style.width = Math.min(pct, 100) + '%';
         }
 
         // Load plans page

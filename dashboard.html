@@ -1,0 +1,161 @@
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="glass p-6 rounded-3xl shadow-sm border border-slate-200">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
+                    <i class="fa-solid fa-chart-line text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Dashboard</h2>
+                    <p class="text-sm text-slate-500">Зведення по всіх менеджерах</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="dashboardLastUpdate" class="text-xs text-slate-400"></div>
+                <button type="button" onclick="refreshDashboard()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm transition-all shadow-lg">
+                    <i class="fa-solid fa-arrows-rotate" id="dashRefreshIcon"></i> Оновити
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="dashboardLoading" class="text-center py-12">
+        <i class="fa-solid fa-spinner fa-spin text-4xl text-slate-400"></i>
+        <p class="text-sm text-slate-500 mt-3">Завантаження даних по менеджерах...</p>
+    </div>
+
+    <!-- Content (hidden until loaded) -->
+    <div id="dashboardContent" class="hidden space-y-6">
+
+        <!-- Summary cards: Month / Week / Day -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Month -->
+            <div class="glass p-5 rounded-2xl border border-violet-200 bg-violet-50/30">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                        <i class="fa-solid fa-calendar text-violet-600 text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-violet-600 uppercase">Поточний місяць</div>
+                        <div id="dashMonthLabel" class="text-[10px] text-slate-400"></div>
+                    </div>
+                </div>
+                <div id="dashMonthTotal" class="text-3xl font-black text-slate-800 mb-1">—</div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs text-slate-500">План:</span>
+                    <span id="dashMonthGoal" class="text-xs font-bold text-slate-600">—</span>
+                    <span id="dashMonthPercent" class="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">—</span>
+                </div>
+                <div class="w-full bg-violet-100 rounded-full h-2 mt-3">
+                    <div id="dashMonthBar" class="bg-gradient-to-r from-violet-500 to-purple-600 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+                </div>
+            </div>
+
+            <!-- Week -->
+            <div class="glass p-5 rounded-2xl border border-blue-200 bg-blue-50/30">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <i class="fa-solid fa-calendar-week text-blue-600 text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-blue-600 uppercase">Поточний тиждень</div>
+                        <div id="dashWeekLabel" class="text-[10px] text-slate-400"></div>
+                    </div>
+                </div>
+                <div id="dashWeekTotal" class="text-3xl font-black text-slate-800 mb-1">—</div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs text-slate-500">Норма тижня:</span>
+                    <span id="dashWeekGoal" class="text-xs font-bold text-slate-600">—</span>
+                    <span id="dashWeekPercent" class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">—</span>
+                </div>
+                <div class="w-full bg-blue-100 rounded-full h-2 mt-3">
+                    <div id="dashWeekBar" class="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+                </div>
+            </div>
+
+            <!-- Day -->
+            <div class="glass p-5 rounded-2xl border border-emerald-200 bg-emerald-50/30">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <i class="fa-solid fa-clock text-emerald-600 text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-emerald-600 uppercase">Сьогодні</div>
+                        <div id="dashDayLabel" class="text-[10px] text-slate-400"></div>
+                    </div>
+                </div>
+                <div id="dashDayTotal" class="text-3xl font-black text-slate-800 mb-1">—</div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs text-slate-500">Денна норма:</span>
+                    <span id="dashDayGoal" class="text-xs font-bold text-slate-600">—</span>
+                    <span id="dashDayPercent" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">—</span>
+                </div>
+                <div class="w-full bg-emerald-100 rounded-full h-2 mt-3">
+                    <div id="dashDayBar" class="bg-gradient-to-r from-emerald-500 to-green-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-500"></i> Рейтинг менеджерів (місяць)
+                </h3>
+            </div>
+            <div class="p-4">
+                <div id="dashLeaderboard" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- Extra insights row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass p-5 rounded-2xl border border-slate-200">
+                <div class="text-xs font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-receipt mr-1"></i>Всього угод (місяць)</div>
+                <div id="dashTotalDeals" class="text-3xl font-black text-slate-800">0</div>
+            </div>
+            <div class="glass p-5 rounded-2xl border border-amber-200 bg-amber-50/30">
+                <div class="text-xs font-bold text-amber-600 uppercase mb-1"><i class="fa-solid fa-coins mr-1"></i>Середній чек</div>
+                <div id="dashAvgCheck" class="text-3xl font-black text-amber-700">0 ₴</div>
+            </div>
+            <div class="glass p-5 rounded-2xl border border-cyan-200 bg-cyan-50/30">
+                <div class="text-xs font-bold text-cyan-600 uppercase mb-1"><i class="fa-solid fa-bolt mr-1"></i>Прогноз на місяць</div>
+                <div id="dashForecast" class="text-3xl font-black text-cyan-700">0 ₴</div>
+            </div>
+            <div class="glass p-5 rounded-2xl border border-rose-200 bg-rose-50/30">
+                <div class="text-xs font-bold text-rose-600 uppercase mb-1"><i class="fa-solid fa-fire mr-1"></i>Топ-менеджер дня</div>
+                <div id="dashTopToday" class="text-xl font-black text-rose-700">—</div>
+                <div id="dashTopTodayAmount" class="text-sm font-semibold text-rose-500"></div>
+            </div>
+        </div>
+
+        <!-- Per-manager detailed table -->
+        <div class="glass rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 bg-slate-50/50 border-b border-slate-100">
+                <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-table-cells text-slate-500"></i> Деталі по менеджерах
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-bold">Менеджер</th>
+                            <th class="px-4 py-3 text-right font-bold">План ₴</th>
+                            <th class="px-4 py-3 text-right font-bold">Факт (місяць) ₴</th>
+                            <th class="px-4 py-3 text-center font-bold">%</th>
+                            <th class="px-4 py-3 text-right font-bold">Тиждень ₴</th>
+                            <th class="px-4 py-3 text-right font-bold">Сьогодні ₴</th>
+                            <th class="px-4 py-3 text-right font-bold">Угод</th>
+                            <th class="px-4 py-3 text-right font-bold">Сер. чек ₴</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashManagerRows" class="divide-y divide-slate-100"></tbody>
+                    <tfoot id="dashManagerTotals" class="bg-slate-50 font-bold text-sm border-t-2 border-slate-300"></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
