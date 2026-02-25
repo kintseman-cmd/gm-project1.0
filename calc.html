@@ -1098,7 +1098,7 @@
                     <ul class="list-disc list-inside mt-1">
                         <li>1 x Навантажувач GM (будь-яка модель) зі стандартним ковшом</li>
                         <li>1 x Джойстик керування (обов'язково)</li>
-                        <li>1 x Додатковий аксесуар на вибір (обов'язково)</li>
+                        <li>1 x Додатковий аксесуар на вибір з "Навісне до кунів" або "Відвали" (обов'язково)</li>
                     </ul>
                 </div>
 
@@ -1109,7 +1109,7 @@
                     <ul class="list-disc list-inside mt-1">
                         <li>1 x Навантажувач GM (будь-яка модель) зі стандартним ковшом</li>
                         <li>1 x Джойстик керування (обов'язково)</li>
-                        <li>2 x Додаткових аксесуари на вибір (обов'язково)</li>
+                        <li>2 x Додаткових аксесуари на вибір з "Навісне до кунів" або "Відвали" (обов'язково)</li>
                     </ul>
                     <p class="mt-2 font-semibold text-blue-800">ЦІЛЬОВА АУДИТОРІЯ:</p>
                     <ul class="list-disc list-inside mt-1 text-sm">
@@ -1854,7 +1854,7 @@
 
                 if (/Джойстик/.test(name) && /(2Р-40|2Р-80)/.test(name)) hasJoystick = true;
 
-                if (cat === 'Навісне до кунів') hasNavisne = true;
+                if (cat === 'Навісне до кунів' || cat === 'Відвали') hasNavisne = true;
             }
 
             return hasLoader && hasJoystick && hasNavisne;
@@ -1880,7 +1880,7 @@
 
                 if (/Джойстик/.test(name) && /(2Р-40|2Р-80)/.test(name)) hasJoystick = true;
 
-                if (cat === 'Навісне до кунів') navisneQty += qty;
+                if (cat === 'Навісне до кунів' || cat === 'Відвали') navisneQty += qty;
             }
 
             return hasLoaderWithBucket && hasJoystick && navisneQty >= 2;
@@ -1926,7 +1926,7 @@
                 if (loaderNames.has(name)) hasLoader = true;
                 if (cat === 'Куни' && /з\s*ковш/i.test(name)) hasLoaderWithBucket = true;
                 if (/Джойстик/.test(name) && /(2Р-40|2Р-80)/.test(name)) hasJoystick = true;
-                if (cat === 'Навісне до кунів') navisneQty += qty;
+                if (cat === 'Навісне до кунів' || cat === 'Відвали') navisneQty += qty;
                 
                 // Check aggregates
                 const aggregateNames = new Set([
@@ -1983,8 +1983,8 @@
                 title.innerHTML = 'До пакету "ПРОФЕСІЙНИЙ" (-10%)';
                 html += '<p class="text-gray-700">✅ Навантажувач зі стандартним ковшом</p>';
                 html += '<p class="text-gray-700">✅ Джойстик керування</p>';
-                html += '<p class="text-gray-700">✅ 1 аксесуар з "Навісне до кунів"</p>';
-                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібно ще 1 аксесуар з "Навісне до кунів"</p>';
+                html += '<p class="text-gray-700">✅ 1 аксесуар з "Навісне до кунів" або "Відвали"</p>';
+                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібно ще 1 аксесуар з "Навісне до кунів" або "Відвали"</p>';
             }
             // Check Standard package
             else if (hasLoader && hasJoystick && navisneQty === 0) {
@@ -1993,7 +1993,7 @@
                 title.innerHTML = 'До пакету "СТАНДРАТНИЙ" (-5%)';
                 html += '<p class="text-gray-700">✅ Навантажувач зі стандартним ковшом</p>';
                 html += '<p class="text-gray-700">✅ Джойстик керування</p>';
-                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібно 1 аксесуар з "Навісне до кунів"</p>';
+                html += '<p class="text-orange-600 font-semibold">⚠️ Потрібно 1 аксесуар з "Навісне до кунів" або "Відвали"</p>';
             }
             else if (hasLoader && !hasJoystick && navisneQty >= 1) {
                 showBlock = true;
@@ -2001,7 +2001,7 @@
                 title.innerHTML = 'До пакету "СТАНДРАТНИЙ" (-5%)';
                 html += '<p class="text-gray-700">✅ Навантажувач зі стандартним ковшом</p>';
                 html += '<p class="text-orange-600 font-semibold">⚠️ Потрібен Джойстик (2Р-40 або 2Р-80)</p>';
-                html += '<p class="text-gray-700">✅ Аксесуари з "Навісне до кунів"</p>';
+                html += '<p class="text-gray-700">✅ Аксесуари з "Навісне до кунів" або "Відвали"</p>';
             }
             // Check Aggregate package
             else if (aggQty === 1) {
